@@ -300,7 +300,7 @@ function renderStepper(){
     return g+`<button class="st ${i===cur&&!T.rulesOpen?"cur":""} ${st[i]?"done":""}" data-act="go" data-i="${i}" ${i===cur&&!T.rulesOpen?'aria-current="step"':""}><span class="n" title="${s.aux?s.short:"Passo "+(i+1)}">${ICO(st[i]?"i-check":STEP_ICONS[s.id]||"i-list")}</span><span>${s.short}<small>${s.sub}</small></span></button>`}).join("")}</div>`;
   $("#chatCtx").textContent=STEPS[cur].aux?"Registro":"Passo "+(cur+1);
 }
-function render(){renderChrome();const s=STEPS[cur];const main=$("#main");const top=main.scrollTop;main.innerHTML=T.rulesOpen?rulesPage():shell(cur,s.view());main.scrollTop=top;if(T.fresh?.size)T.fresh.forEach(id=>main.querySelector(`[data-k="req-${id}"],[data-k="t-${id}"]`)?.classList.add("fresh"));
+function render(){renderChrome();const s=STEPS[cur];const main=$("#main");const top=main.scrollTop,spk=main.querySelector(".sp")?.dataset.panel,spt=main.querySelector(".sp-b")?.scrollTop||0;main.innerHTML=T.rulesOpen?rulesPage():shell(cur,s.view());main.scrollTop=top;{const sp=main.querySelector(".sp");document.body.classList.toggle("panel-open",!!sp);if(sp){document.documentElement.style.setProperty("--top-h",($(".app > header")?.offsetHeight||64)+"px");if(sp.dataset.panel===spk)sp.querySelector(".sp-b").scrollTop=spt}}if(T.fresh?.size)T.fresh.forEach(id=>main.querySelector(`[data-k="req-${id}"],[data-k="t-${id}"]`)?.classList.add("fresh"));
   $$("details[data-k]",main).forEach(d=>{if(openSet.has(d.dataset.k))d.open=true});if(document.querySelector("#chatLog .act:not(.done)"))renderChat();else renderSugg();if(T.focusTab){T.focusTab=false;$('.tab[aria-selected="true"]')?.focus()}}
 function msgHtml(id){const m=msgs[id];return m?`<div class="msg ${m.t}" role="status">${m.html??esc(m.text)}</div>`:""}
 function setMsg(id,t,text,html){msgs[id]={t,text,html};scheduleRender()}
@@ -392,6 +392,34 @@ function reqBar(r,rf){if(!r.length)return"";const f=T.rq,rels=[...new Set(r.map(
    <label class="rq-f">Release<select id="rqRel"><option value="*">Tutte</option>${rels.map(v=>`<option value="${esc(v)}" ${v===f.rel?"selected":""}>${esc(v)} (${r.filter(x=>x.release===v).length})</option>`).join("")}</select></label></div>
    <p class="small muted rq-count" id="rqCount">${rqCount(rf.length,r.length)}</p>`}
 const rqCount=(n,t)=>n<t?`${n} di ${t} requisiti · <button type="button" class="link" data-act="rqReset">Togli i filtri</button>`:"";
+/* Tabelle compatte con pannello di modifica che scorre da destra (Requisiti e Backlog).
+   Clic o Invio su una riga apre il pannello; ↑ ↓ passano alla riga vicina; Esc chiude. */
+T.panel=null;T.panelIds=[];
+const COMP_SHORT={"Web App":"Web","Mobile App":"Mobile","Back-end/Cloud":"BE","Firmware":"FW"};
+function dtRow(kind,id,cells){const sel=T.panel?.kind===kind&&T.panel.id===id;
+  return`<tr class="dt-r${sel?" sel":""}" data-k="${kind==="req"?"req":"t"}-${id}" data-act="openRow" data-kind="${kind}" data-id="${id}" tabindex="0"${sel?' aria-current="true"':""}>${cells}</tr>`}
+function sidePanel(kind,id,head,body){const ids=T.panelIds||[],i=ids.indexOf(id);
+  return`<aside class="sp" aria-label="Dettaglio della riga" data-panel="${kind}:${id}"><div class="sp-h"><div class="sp-t" tabindex="-1">${head}</div><div class="sp-nav">
+   <button type="button" class="icon-btn" data-act="spMove" data-d="-1" aria-label="Riga precedente (freccia su)" title="Riga precedente (↑)" ${i>0?"":"disabled"}>↑</button>
+   <button type="button" class="icon-btn" data-act="spMove" data-d="1" aria-label="Riga successiva (freccia giù)" title="Riga successiva (↓)" ${i>=0&&i<ids.length-1?"":"disabled"}>↓</button>
+   <button type="button" class="icon-btn" data-act="spClose" aria-label="Chiudi il pannello (Esc)" title="Chiudi (Esc)">×</button></div></div><div class="sp-b">${body}</div></aside>`}
+function traceCell(code,ts){const n=ts.length,c=ts.filter(t=>t.state==="created").length;if(!n)return'<span class="pill warn">nessuno</span>';
+  const [cl,l]=c===n?["ok",`${n} · in Jira`]:c?["",`${c} di ${n} in Jira`]:["",n===1?"1 bozza":`${n} bozze`];
+  return`<button type="button" class="pill ${cl} pill-btn" data-act="reqTickets" data-code="${esc(code)}" title="Apri i ticket di ${esc(code)} nel Backlog">${l}</button>`}
+function reqTable(r,rf){if(!r.length)return'<p class="empty">Nessun requisito ancora. Estraili con Claude o aggiungili a mano.</p>';
+  T.panelIds=rf.map(x=>x.id);if(!rf.length)return'<p class="empty">Nessun requisito corrisponde ai filtri.</p>';
+  const by={};ticketList().forEach(t=>{(by[t.req]=by[t.req]||[]).push(t)});
+  return`<div class="dt-wrap"><table class="dt"><colgroup><col style="width:96px"><col><col style="width:150px"><col style="width:140px"><col style="width:130px"><col style="width:170px"></colgroup>
+   <thead><tr><th scope="col">ID</th><th scope="col">Titolo</th><th scope="col">Componenti</th><th scope="col">Release</th><th scope="col">Ticket</th><th scope="col">Note</th></tr></thead>
+   <tbody>${rf.map(x=>dtRow("req",x.id,`<td><span class="key">${esc(x.code)}</span></td><td class="dt-t" title="${esc(x.title)}">${esc(x.title)}</td><td class="dt-t muted">${(x.components||[]).map(c=>COMP_SHORT[c]||c).join(" · ")||"—"}</td><td>${x.release?`<span class="pill" title="${esc(x.release)}">${esc(x.release)}</span>`:'<span class="pill err">manca</span>'}</td><td>${traceCell(x.code,by[x.code]||[])}</td><td>${[x.questions&&'<span class="pill warn">domande</span>',x.designReady&&'<span class="pill ok">design pronto</span>'].filter(Boolean).join(" ")}</td>`)).join("")}</tbody></table></div>`}
+function reqTrace(x){const ts=ticketList().filter(t=>t.req===x.code);
+  return`<div class="sp-sec"><h3>Ticket di questo requisito</h3>${ts.length?`<ul class="trace">${ts.map(t=>`<li><span class="key">${esc(t.ref)}</span><span class="tt">${esc(fullTitle(t))}</span>${t.state==="created"&&t.key?browse(t.key):'<span class="pill">bozza</span>'}</li>`).join("")}</ul><button type="button" class="link" data-act="reqTickets" data-code="${esc(x.code)}">Apri nel Backlog →</button>`:'<p class="small muted" style="margin:0">Nessun ticket ancora: si generano al passo Backlog.</p>'}</div>`}
+function reqForm(x){const b="reqs:"+x.id+":";
+  return`<div class="grid">${F("ID requisito",bind(b+"code",x.code))}${F("Release",bind(b+"release",x.release,{dl:"relList",ph:"Es. Release 1"}))}${F("Titolo",bind(b+"title",x.title),"wide")}${F("Descrizione (punto di vista dell'utente)",bind(b+"desc",x.desc,{area:1,rows:3}),"wide")}
+    <div class="f wide"><span class="small muted" style="font-weight:600">Componenti</span><div class="row">${REQ_COMPS.map(c=>`<label class="row small"><input type="checkbox" data-multi="${b}components" value="${esc(c)}" ${(x.components||[]).includes(c)?"checked":""} ${READONLY?"disabled":""}> ${c}</label>`).join("")}<label class="row small" style="margin-left:12px"><input type="checkbox" data-bind="${b}designReady" ${x.designReady?"checked":""} ${READONLY?"disabled":""}> Design già pronto</label></div></div>
+    ${F("Note UI/UX",bind(b+"ui",x.ui,{area:1,rows:2}),"wide")}${F("Dipendenze esterne",bind(b+"extDeps",x.extDeps))}${F("Dipendenze interne",bind(b+"intDeps",x.intDeps,{ph:"Es. REQ-004"}))}${F("Domande aperte",bind(b+"questions",x.questions,{area:1,rows:2}),"wide")}</div>
+    ${reqTrace(x)}
+    <div class="toolbar" style="margin-top:12px">${x.source?`<span class="small muted">Fonte: ${esc(x.source)}</span><span style="flex:1"></span>`:""}${B("delReq",T.arm["req"+x.id]?"Conferma eliminazione":"Elimina requisito",{cls:T.arm["req"+x.id]?"armed":"danger",data:{id:x.id}})}</div>`}
 function docsView(){const d=arr("docs").sort((a,b)=>(a.at||0)-(b.at||0));
   let h=`<label class="drop" id="drop"><input type="file" id="fileIn" multiple accept=".docx,.pdf,.xlsx,.xls,.csv,.txt,.md,.markdown,.json,image/png,image/jpeg,image/webp,image/gif" ${READONLY?"disabled":""}><b>Trascina qui i file o scegli dal computer</b><span class="small muted">Word (.docx), PDF, Excel (.xlsx, .xls), CSV, testo, Markdown, immagini</span></label>`;
   if(T.uploads.length)h+=`<div class="list" style="margin-top:10px">${T.uploads.map(u=>`<div class="row small"><span class="pill ${u.s==="ok"?"ok":u.s==="err"?"err":"acc"}">${u.s==="ok"?"Caricato":u.s==="err"?"Errore":"In lavorazione"}</span><b>${esc(u.name)}</b><span class="muted">${esc(u.note||"")}</span></div>`).join("")}</div>`;
@@ -416,13 +444,9 @@ STEPS.push({id:"reqs",phase:"Preparazione",short:"Requisiti",sub:"Carica, estrai
   if(r.length){const miss=r.filter(x=>!x.release).length;
    h+=`<div class="toolbar"><span class="pill ${miss?"warn":"ok"}">${miss?miss+" requisiti senza release":"Tutti i requisiti hanno una release"}</span><span class="pill">${r.filter(x=>x.questions).length} con domande aperte</span><span style="flex:1"></span>${B("validateReqs",P().reqsValidatedAt?"Validata il "+new Date(P().reqsValidatedAt).toLocaleDateString("it-IT")+" · valida di nuovo":"Valida la lista (PO)")}</div>`}
   h+=reqBar(r,rf);
-  h+=`<div class="list">${rf.map(x=>{const b="reqs:"+x.id+":";const flags=[!x.release&&'<span class="pill err">senza release</span>',x.questions&&'<span class="pill warn">domande aperte</span>',x.designReady&&'<span class="pill ok">design pronto</span>'].filter(Boolean).join(" ");
-   return det("req-"+x.id,`<span class="key">${esc(x.code)}</span><span class="ttl">${esc(x.title)}</span>${(x.components||[]).map(c=>`<span class="pill acc">${esc(c)}</span>`).join(" ")}${x.release?`<span class="pill">${esc(x.release)}</span>`:""}${flags}`,
-   `<div class="grid">${F("ID requisito",bind(b+"code",x.code))}${F("Release",bind(b+"release",x.release,{dl:"relList",ph:"Es. Release 1"}))}${F("Titolo",bind(b+"title",x.title),"wide")}${F("Descrizione (punto di vista dell'utente)",bind(b+"desc",x.desc,{area:1,rows:3}),"wide")}
-    <div class="f wide"><span class="small muted" style="font-weight:600">Componenti</span><div class="row">${REQ_COMPS.map(c=>`<label class="row small"><input type="checkbox" data-multi="${b}components" value="${esc(c)}" ${(x.components||[]).includes(c)?"checked":""} ${READONLY?"disabled":""}> ${c}</label>`).join("")}<label class="row small" style="margin-left:12px"><input type="checkbox" data-bind="${b}designReady" ${x.designReady?"checked":""} ${READONLY?"disabled":""}> Design già pronto</label></div></div>
-    ${F("Note UI/UX",bind(b+"ui",x.ui,{area:1,rows:2}),"wide")}${F("Dipendenze esterne",bind(b+"extDeps",x.extDeps))}${F("Dipendenze interne",bind(b+"intDeps",x.intDeps,{ph:"Es. REQ-004"}))}${F("Domande aperte",bind(b+"questions",x.questions,{area:1,rows:2}),"wide")}</div>
-    <div class="toolbar" style="margin-top:10px">${x.source?`<span class="small muted">Fonte: ${esc(x.source)}</span><span style="flex:1"></span>`:""}${B("delReq",T.arm["req"+x.id]?"Conferma eliminazione":"Elimina requisito",{cls:T.arm["req"+x.id]?"armed":"danger",data:{id:x.id}})}</div>`)}).join("")||(r.length?'<p class="empty">Nessun requisito corrisponde ai filtri.</p>':'<p class="empty">Nessun requisito ancora. Estraili con Claude o aggiungili a mano.</p>')}</div>
+  h+=reqTable(r,rf)+`
   <div class="card warn small" style="margin-top:14px">Controlla che ogni nota UI/UX sia sulla riga giusta: nei fogli del cliente le colonne sfalsate sono un errore frequente.</div>`;
+  if(T.panel?.kind==="req"){const x=S.reqs[T.panel.id];if(x)h+=sidePanel("req",x.id,`<span class="key">${esc(x.code)}</span><span>${esc(x.title)}</span>`,reqForm(x))}
   return h},
  ask:["Riassumi i documenti caricati in 5 punti","Quali requisiti hanno dipendenze esterne?","Ci sono requisiti duplicati o sovrapposti?","Proponi l'ordine dei requisiti in base alle dipendenze"]});
 
@@ -523,15 +547,22 @@ function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.rele
    ${AIB("genTickets",!todo.length?"Tutti i requisiti hanno ticket":done?`Scomponi ${nReq(todo.length)} senza ticket`:`Genera ticket per ${nReq(todo.length)}`,{cls:todo.length?"primary":"",dis:!todo.length||!k.epics.length})}</div>
    <p class="small muted" style="margin:8px 0 0">${!k.epics.length?"Servono prima le epiche nel kit (passo 4). ":""}${todo.length&&done?`${done===1?"1 requisito ha":done+" requisiti hanno"} già i ticket e non ${done===1?"viene toccato":"vengono toccati"}: Claude scompone solo ${todo.length===1?"quello che non ne ha":"i "+todo.length+" che non ne hanno"}. `:!todo.length&&inRel.length?`${inRel.length===1?"L'unico requisito ha":"Tutti i "+inRel.length+" requisiti hanno"} già i ticket. Per rifare quelli di un requisito usa «Rigenera» sulla sua riga. `:""}Claude scrive i ticket in inglese con i modelli del kit, uno o più per ogni requisito.</p>
    ${T.prog.genTickets?progBlock("genTickets"):T.genLog?`<div class="log" style="margin-top:10px">${esc(T.genLog)}</div>`:""}</div>`;
-  const groups=[...inRel.map(r=>({r,ts:ts.filter(t=>t.req===r.code)})),{r:null,ts:ts.filter(t=>!rs.some(r=>r.code===t.req)&&(T.rel==="*"||t.release===T.rel))}].filter(g=>g.ts.length);
-  h+=`<div class="toolbar list-bar"><h2 style="margin:0;font-size:17px">Ticket per requisito</h2><span style="flex:1"></span><label class="row small"><input type="checkbox" id="onlyIssues" ${T.onlyIssues?"checked":""}> Solo con problemi</label>${B("addTicket","Aggiungi a mano")}${B("exportTickets","Esporta CSV",{ro:1,dis:!ts.length})}</div>`;
-  h+=groups.map(({r,ts:gts})=>{const shown=T.onlyIssues?gts.filter(t=>{const i=issuesOf(t);return i.e.length||i.w.length}):gts;if(!shown.length)return"";const bad=gts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;
-   return`<div class="group"><div class="group-h">${r?`<span class="key">${esc(r.code)}</span><h3 style="margin:0">${esc(r.title)}</h3>`:`<h3 style="margin:0">Ticket senza requisito</h3>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")}):""}</div><div class="list">${shown.map(ticketItem).join("")}</div></div>`}).join("")||(ts.length?'<p class="empty">Nessun ticket corrisponde al filtro.</p>':'<p class="empty">Nessun ticket ancora. Scegli la release e premi «Genera ticket».</p>');
+  const groups0=[...inRel.map(r=>({r,ts:ts.filter(t=>t.req===r.code)})),{r:null,ts:ts.filter(t=>!rs.some(r=>r.code===t.req)&&(T.rel==="*"||t.release===T.rel))}].filter(g=>g.ts.length);
+  const groups=T.bReq?groups0.filter(g=>g.r?.code===T.bReq):groups0;
+  h+=`<div class="toolbar list-bar"><h2 style="margin:0;font-size:17px">Ticket per requisito</h2>${T.bReq?`<span class="pill primary">Solo ${esc(T.bReq)}</span><button type="button" class="link" data-act="bReqClear">Mostra tutti</button>`:""}<span style="flex:1"></span><label class="row small"><input type="checkbox" id="onlyIssues" ${T.onlyIssues?"checked":""}> Solo con problemi</label>${B("addTicket","Aggiungi a mano")}${B("exportTickets","Esporta CSV",{ro:1,dis:!ts.length})}</div>`;
+  const ids=[];
+  const bodies=groups.map(({r,ts:gts})=>{const shown=T.onlyIssues?gts.filter(t=>{const i=issuesOf(t);return i.e.length||i.w.length}):gts;if(!shown.length)return"";const bad=gts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;shown.forEach(t=>ids.push(t.id));
+   return`<tbody><tr class="dt-g"><th colspan="6" scope="rowgroup"><div class="dt-gh">${r?`<span class="key">${esc(r.code)}</span><span class="dt-t">${esc(r.title)}</span>`:`<span>Ticket senza requisito</span>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")}):""}</div></th></tr>${shown.map(ticketRow).join("")}</tbody>`}).join("");
+  T.panelIds=ids;
+  h+=bodies?`<div class="dt-wrap"><table class="dt"><colgroup><col style="width:92px"><col style="width:96px"><col><col style="width:180px"><col style="width:150px"><col style="width:160px"></colgroup>
+   <thead><tr><th scope="col">Rif.</th><th scope="col">Tipo</th><th scope="col">Titolo</th><th scope="col">Epica</th><th scope="col">Problemi</th><th scope="col">Stato</th></tr></thead>${bodies}</table></div>`:(ts.length?'<p class="empty">Nessun ticket corrisponde al filtro.</p>':'<p class="empty">Nessun ticket ancora. Scegli la release e premi «Genera ticket».</p>');
+  if(T.panel?.kind==="ticket"){const t=S.tickets[T.panel.id];if(t)h+=sidePanel("ticket",t.id,`<span class="key">${esc(t.ref)}</span><span class="pill acc">${esc(t.type)}</span><span>${esc(fullTitle(t))}</span>`,ticketForm(t))}
   return h}
-function ticketItem(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked=t.state==="created";
- const st=t.state==="created"?`${browse(t.key)}${vOf(t)==="ok"?'<span class="pill ok">verificato</span>':vOf(t)?'<span class="pill warn">da verificare</span>':""}`:t.state==="error"?'<span class="pill err">errore Jira</span>':t.state==="unknown"?'<span class="pill warn">esito incerto</span>':'<span class="pill">bozza</span>';
- return det("t-"+t.id,`<span class="key">${esc(t.ref)}</span><span class="pill acc">${esc(t.type)}</span><span class="ttl">${esc(fullTitle(t))}</span>${e.length&&!locked?`<span class="pill err">${e.length} errori</span>`:""}${w.length&&!locked?`<span class="pill warn">${w.length} avvisi</span>`:""}${st}`,
- `${locked?`<div class="msg info">Creato in Jira come ${browse(t.key)}. Le modifiche qui non aggiornano Jira.${vOf(t)&&vOf(t)!=="ok"?" "+esc(vOf(t)):""}</div>`:""}
+const ticketState=t=>t.state==="created"?`${browse(t.key)}${vOf(t)==="ok"?'<span class="pill ok">verificato</span>':vOf(t)?'<span class="pill warn">da verificare</span>':""}`:t.state==="error"?'<span class="pill err">errore Jira</span>':t.state==="unknown"?'<span class="pill warn">esito incerto</span>':'<span class="pill">bozza</span>';
+function ticketRow(t){const{e,w}=issuesOf(t),locked=t.state==="created";
+ return dtRow("ticket",t.id,`<td><span class="key">${esc(t.ref)}</span></td><td><span class="pill acc">${esc(t.type)}</span></td><td class="dt-t" title="${esc(fullTitle(t))}">${esc(fullTitle(t))}</td><td class="dt-t muted" title="${esc(t.epic||"")}">${esc(t.epic||"—")}</td><td>${!locked&&e.length?`<span class="pill err">${e.length===1?"1 errore":e.length+" errori"}</span> `:""}${!locked&&w.length?`<span class="pill warn">${w.length===1?"1 avviso":w.length+" avvisi"}</span>`:""}</td><td class="dt-st">${ticketState(t)}</td>`)}
+function ticketForm(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked=t.state==="created";
+ return`${locked?`<div class="msg info">Creato in Jira come ${browse(t.key)}. Le modifiche qui non aggiornano Jira.${vOf(t)&&vOf(t)!=="ok"?" "+esc(vOf(t)):""}</div>`:""}
  ${t.err?`<div class="msg err">${esc(t.err)}</div>`:""}
  ${(e.length||w.length)&&!locked?`<div class="issues">${e.map(x=>`<span class="pill err">${esc(x)}</span>`).join("")}${w.map(x=>`<span class="pill warn">${esc(x)}</span>`).join("")}</div>`:""}
  <div class="grid">${F("Tipo",sel(b+"type",t.type,TYPES,{empty:false}))}${F("Area (prefisso)",sel(b+"area",t.area,Object.entries(AREAS).map(([k2,a])=>[k2,a.prefix+" "+a.label]),{empty:false}))}
@@ -542,7 +573,7 @@ function ticketItem(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked
   ${F("Collegamenti (es. blocks: T-004, relates: T-002)",`<input data-links="${t.id}" value="${esc(linksText(t))}" ${READONLY?"disabled":""}>`,"wide")}</div>
  <p class="small muted" style="margin:8px 0 0">Requisito: ${esc(t.req||"—")} · Label: ${labelsOf(t).map(esc).join(", ")||"—"}</p>
  ${(t.assumptions||[]).length?`<div class="card note small" style="margin:10px 0 0"><b>Ipotesi dichiarate da Claude</b><ul style="margin:4px 0 0">${t.assumptions.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></div>`:""}
- <div class="toolbar" style="margin-top:10px">${B("applyTemplate",T.arm["tpl"+t.id]?"Conferma: sostituisci la descrizione":"Usa il modello vuoto",{cls:T.arm["tpl"+t.id]?"armed":"",data:{id:t.id},dis:locked})}${B("delTicket",T.arm["t"+t.id]?"Conferma eliminazione":"Elimina ticket",{cls:T.arm["t"+t.id]?"armed":"danger",data:{id:t.id},dis:locked})}</div>`)}
+ <div class="toolbar" style="margin-top:10px">${B("applyTemplate",T.arm["tpl"+t.id]?"Conferma: sostituisci la descrizione":"Usa il modello vuoto",{cls:T.arm["tpl"+t.id]?"armed":"",data:{id:t.id},dis:locked})}${B("delTicket",T.arm["t"+t.id]?"Conferma eliminazione":"Elimina ticket",{cls:T.arm["t"+t.id]?"armed":"danger",data:{id:t.id},dis:locked})}</div>`}
 
 /* ---------- 7. Creazione su Jira ---------- */
 /* Anteprima della struttura per livelli: Project › Fasi › Epiche › Ticket. Si sceglie una Fase e un'epica per vedere cosa contengono. */
@@ -681,6 +712,12 @@ function bridgeSettings(){const custom=BS.bridgeUrl()!==BS.DEFAULT_BRIDGE;
    <div class="toolbar" style="margin-top:10px"><button class="primary" data-act="saveBridge">Salva e ricollega</button><button data-act="resetBridge">Ripristina l'indirizzo del Mac</button></div>`)}
 {const sid=ls.get("stepid:"+PID,""),ix=STEPS.findIndex(x=>x.id===sid);cur=ix>=0?ix:0}
 const A={};
+const rowOf=p=>p&&document.querySelector(`#main tr[data-k="${p.kind==="req"?"req":"t"}-${p.id}"]`);
+A.openRow=el=>{const kind=el.dataset.kind,id=el.dataset.id;if(T.panel?.kind===kind&&T.panel.id===id)return;T.panel={kind,id};render();rowOf(T.panel)?.scrollIntoView({block:"nearest"});$("#main .sp .sp-t")?.focus({preventScroll:true})};
+A.spClose=()=>{const p=T.panel;T.panel=null;render();rowOf(p)?.focus({preventScroll:true})};
+A.spMove=el=>{const ids=T.panelIds||[],i=ids.indexOf(T.panel?.id),j=i+(+el.dataset.d);if(!T.panel||j<0||j>=ids.length)return;T.panel={...T.panel,id:ids[j]};render();rowOf(T.panel)?.scrollIntoView({block:"nearest"})};
+A.reqTickets=el=>{T.bReq=el.dataset.code;T.bTab="tickets";T.rel="*";T.onlyIssues=false;A.go({dataset:{i:STEPS.findIndex(s=>s.id==="backlog")}})};
+A.bReqClear=()=>{T.bReq=null;render()};
 A.rqReset=()=>{T.rq={q:"",show:"all",rel:"*"};render()};
 A.csPick=el=>{T.cs=T.cs||{};if(el.dataset.ph){T.cs.ph=el.dataset.ph;T.cs.ep=null}if(el.dataset.ep)T.cs.ep=el.dataset.ep;render()};
 A.stopProg=el=>{const p=T.prog[el.dataset.prog];if(p){p.stop=true;progPaint(el.dataset.prog)}};
@@ -721,7 +758,7 @@ A.saveBridge=()=>{let u=($("#brUrl").value||"").trim();if(u&&!/^https?:\/\//i.te
 A.resetBridge=()=>{BS.setBridge("","");toast("Indirizzo ripristinato.");checkBridge()};
 A.bTab=el=>{T.bTab=el.dataset.tab;ls.set("bTab:"+PID,T.bTab);T.focusTab=true;render()};
 document.addEventListener("keydown",e=>{const tb=e.target.closest&&e.target.closest('[role="tab"]');if(!tb)return;const tl=[...tb.parentElement.querySelectorAll('[role="tab"]')];let i=tl.indexOf(tb);if(e.key==="ArrowRight")i=(i+1)%tl.length;else if(e.key==="ArrowLeft")i=(i-1+tl.length)%tl.length;else if(e.key==="Home")i=0;else if(e.key==="End")i=tl.length-1;else return;e.preventDefault();tl[i].focus();tl[i].click()});
-A.go=el=>{const i=+el.dataset.i;if(i<0||i>=STEPS.length)return;T.rulesOpen=false;if(i!==cur)T.fresh=null;if(i!==cur)markSeen();cur=i;ls.set("stepid:"+PID,STEPS[i].id);$("#main").scrollTop=0;render();
+A.go=el=>{const i=+el.dataset.i;if(i<0||i>=STEPS.length)return;T.rulesOpen=false;T.panel=null;if(STEPS[i].id!=="backlog")T.bReq=null;if(i!==cur)T.fresh=null;if(i!==cur)markSeen();cur=i;ls.set("stepid:"+PID,STEPS[i].id);$("#main").scrollTop=0;render();
   if(STEPS[i].id==="create"&&!T.pre&&MCP&&P().key&&!busy.preflight&&!READONLY)setTimeout(()=>{if(cur===i&&!T.pre&&!busy.preflight)A.preflight()},150)};
 /* Avanzamento delle operazioni lunghe di Claude: barra, tempo trascorso, risultati man mano, «Ferma» tra un'unità e l'altra. */
 T.prog={};let PROG_T=null;
@@ -1048,11 +1085,17 @@ function copyText(t,el){const done=()=>{if(el){const o=el.textContent;el.textCon
   try{navigator.clipboard.writeText(t).then(done,fb)}catch(e){fb()}}
 
 /* ================= eventi ================= */
-document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.disabled)return;e.preventDefault();const f=A[b.dataset.act];if(f)f(b)});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.disabled)return;const ln=e.target.closest("a[href]");if(ln&&ln!==b&&b.contains(ln))return;e.preventDefault();const f=A[b.dataset.act];if(f)f(b)});
 document.addEventListener("toggle",e=>{const d=e.target;if(d.matches?.("details[data-k]")){d.open?openSet.add(d.dataset.k):openSet.delete(d.dataset.k);ls.set("open",[...openSet].slice(-200))}},true);
+// tastiera per tabelle e pannello: Invio apre la riga, ↑ ↓ cambiano riga, Esc chiude
+document.addEventListener("keydown",e=>{const t=e.target,typing=t.closest?.("input,textarea,select,[contenteditable]");
+  if(e.key==="Escape"&&T.panel){if(document.querySelector(".dd-menu:not([hidden])"))return;if(typing&&!t.closest(".sp"))return;if(typing)t.blur();e.preventDefault();A.spClose();return}
+  if(typing||e.altKey||e.metaKey||e.ctrlKey)return;
+  if((e.key==="Enter"||e.key===" ")&&t.matches?.('tr[data-act="openRow"]')){e.preventDefault();A.openRow(t);return}
+  if(T.panel&&(e.key==="ArrowDown"||e.key==="ArrowUp")&&!t.closest?.('[role="tab"],select')){e.preventDefault();A.spMove({dataset:{d:e.key==="ArrowDown"?1:-1}})}});
 // ricerca nei requisiti: filtra le righe senza ridisegnare la pagina, così il cursore resta nel campo
 document.addEventListener("input",e=>{if(e.target.id!=="rqSearch")return;T.rq.q=e.target.value;const all=reqList(),vis=new Set(reqFilter(all).map(x=>x.id));
-  $$('#main details[data-k^="req-"]').forEach(d=>{d.hidden=!vis.has(d.dataset.k.slice(4))});const c=$("#rqCount");if(c)c.innerHTML=rqCount(vis.size,all.length)});
+  $$('#main tr[data-k^="req-"]').forEach(d=>{d.hidden=!vis.has(d.dataset.k.slice(4))});T.panelIds=reqFilter(all).map(x=>x.id);const c=$("#rqCount");if(c)c.innerHTML=rqCount(vis.size,all.length)});
 document.addEventListener("change",e=>{const el=e.target;
   if(el.id==="stepSelect"){A.go({dataset:{i:el.value}});return}
   if(el.id==="relPick"){T.rel=el.value;render();return}

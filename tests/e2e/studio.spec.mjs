@@ -39,7 +39,7 @@ test("lo studio ha 6 passi più il Registro, e ricorda il passo aperto", async (
 test("i requisiti si filtrano per stato e si cercano per titolo", async ({ page }) => {
   await openStudio(page);
   await goToStep(page, "Requisiti");
-  const rows = page.locator('#main details[data-k^="req-"]:visible');
+  const rows = page.locator('#main tr[data-k^="req-"]:visible');
   const total = await rows.count();
   expect(total).toBeGreaterThan(10);
 
@@ -48,12 +48,49 @@ test("i requisiti si filtrano per stato e si cercano per titolo", async ({ page 
   const filtered = await rows.count();
   expect(filtered).toBeLessThan(total);
 
-  const first = (await rows.first().locator(".ttl").textContent()).trim();
+  const first = (await rows.first().locator("td.dt-t").first().textContent()).trim();
   await page.locator("[data-act=rqReset]").click();
   await page.locator("#rqSearch").fill(first.slice(0, 12));
   await expect(page.locator("#rqSearch")).toBeFocused(); // la ricerca non ridisegna la pagina
   expect(await rows.count()).toBeGreaterThanOrEqual(1);
   expect(await rows.count()).toBeLessThan(total);
+});
+
+test("tabelle compatte: il pannello si apre, scorre con le frecce, si chiude con Esc", async ({ page }) => {
+  await openStudio(page);
+  await goToStep(page, "Requisiti");
+  const rows = page.locator('#main tr[data-k^="req-"]');
+  const code = (await rows.nth(0).locator(".key").textContent()).trim();
+  const next = (await rows.nth(1).locator(".key").textContent()).trim();
+  await rows.nth(0).click();
+  const panel = page.locator(".sp");
+  await expect(panel).toBeVisible();
+  await expect(panel.locator(".sp-t")).toContainText(code);
+  await expect(panel.locator("textarea").first()).toBeVisible(); // il modulo completo è nel pannello
+  await page.keyboard.press("ArrowDown");
+  await expect(panel.locator(".sp-t")).toContainText(next);
+  await page.keyboard.press("Escape");
+  await expect(panel).toHaveCount(0);
+  await expect(rows.nth(1)).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".sp .sp-t")).toContainText(next);
+});
+
+test("tracciabilità: dal requisito ai suoi ticket nel Backlog", async ({ page }) => {
+  await openStudio(page);
+  await goToStep(page, "Requisiti");
+  const cell = page.locator("#main tr[data-k^='req-'] [data-act=reqTickets]").first();
+  const code = (await cell.locator("xpath=ancestor::tr").locator(".key").textContent()).trim();
+  await cell.click();
+  await expect(page.locator("#main h1")).toContainText("Scomponi i requisiti in ticket");
+  await expect(page.locator(".list-bar")).toContainText(`Solo ${code}`);
+  await expect(page.locator("#main .dt-g")).toHaveCount(1);
+  const tickets = page.locator('#main tr[data-k^="t-"]');
+  expect(await tickets.count()).toBeGreaterThan(0);
+  await tickets.first().click();
+  await expect(page.locator(".sp")).toContainText("Descrizione");
+  await page.locator("[data-act=bReqClear]").click();
+  expect(await page.locator("#main .dt-g").count()).toBeGreaterThan(1);
 });
 
 test("Crea su Jira: anteprima a colonne, poi struttura completa e collegata", async ({ page, request }) => {
