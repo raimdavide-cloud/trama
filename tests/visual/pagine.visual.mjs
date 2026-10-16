@@ -1,0 +1,50 @@
+// Confronto visivo pixel per pixel, solo in locale (le immagini di riferimento dipendono da sistema e caratteri del Mac).
+// Aggiornare le immagini dopo un cambiamento voluto: npm run test:visual -- --update-snapshots
+import { test, expect } from "@playwright/test";
+
+const PROJECT = "/studio?p=progetto-prova";
+const shot = { fullPage: true, animations: "disabled", maxDiffPixelRatio: 0 };
+
+test.beforeEach(async ({ request, page }) => {
+  await request.get("/__sim/reset");
+  await page.clock.setFixedTime(new Date("2026-10-16T10:00:00")); // orari e date sempre uguali
+});
+
+for (const path of ["/", "/brand", "/installazione", "/privacy", "/componenti"]) {
+  test(`pagina ${path}`, async ({ page }) => {
+    await page.goto(path);
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page).toHaveScreenshot(`pagina${path === "/" ? "-home" : path.replace(/\//g, "-")}.png`, { ...shot, mask: [page.locator(".player")] });
+  });
+}
+
+test("studio · progetti", async ({ page }) => {
+  await page.goto("/studio");
+  await expect(page.locator(".proj-card")).toHaveCount(1);
+  await page.evaluate(() => document.fonts.ready);
+  await expect(page).toHaveScreenshot("studio-progetti.png", shot);
+});
+
+const STEPS = ["Progetto Jira", "Requisiti", "Domande di apertura", "Kit di progetto", "Backlog", "Crea su Jira", "Registro decisioni"];
+for (const [i, name] of STEPS.entries()) {
+  test(`studio · ${name}`, async ({ page }) => {
+    await page.goto(PROJECT);
+    await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
+    await page.locator("#stepList .st", { hasText: name }).click();
+    if (name === "Crea su Jira") await expect(page.locator("#ackBox")).toBeVisible({ timeout: 20_000 });
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page.locator("#main")).toHaveScreenshot(`studio-${i + 1}.png`, { ...shot });
+  });
+}
+
+test("studio · regole, barra in alto e pannello Collegamenti", async ({ page }) => {
+  await page.goto(PROJECT);
+  await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
+  await page.locator("#rulesBtn").click();
+  await page.evaluate(() => document.fonts.ready);
+  await expect(page.locator("#main")).toHaveScreenshot("studio-regole.png", shot);
+  await page.locator("[data-act=closeRules]").click();
+  await page.locator("#capChips button").click();
+  await expect(page.locator(".app > header")).toHaveScreenshot("studio-barra.png", shot);
+  await expect(page.locator("#bridgePanel")).toHaveScreenshot("studio-collegamenti.png", shot);
+});

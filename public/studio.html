@@ -12,420 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap">
-<style>
-/* Layout: barra superiore + tre colonne (passi · area di lavoro · chat Claude); sotto 1180px la chat diventa un pannello, sotto 760px i passi diventano un menu */
-:root{--tx-blue:#0072CE;
-  /* Valori del design system Trama (vedi /trama.css e /brand) */
-  --bg:#F5F6FA; --surface:#FFFFFF; --sunk:#ECEEF5; --fg:#151A33; --muted:#5A6180; --line:#DADDEA;
-  --accent:#3448C5; --accent-fg:#FFFFFF; --accent-soft:#E6E9FA; --brand-thread:#F2A541;
-  --ok:#1F6B4A; --ok-soft:#E1F2E9; --warn:#9A5B06; --warn-soft:#FCEFD9; --err:#B33A24; --err-soft:#FBE6E1;
-  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
-  --f-body:"Figtree","Segoe UI",system-ui,sans-serif;
-  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --tx-blue:#5AAEF5; --bg:#0D1129; --surface:#151A3A; --sunk:#1C2248; --fg:#E8EAF6; --muted:#9BA2C7; --line:#2A3160;
-  --accent:#8C9BFF; --accent-fg:#0D1129; --accent-soft:#1F2757; --brand-thread:#F4B45A;
-  --ok:#5FCB97; --ok-soft:#133126; --warn:#F4B45A; --warn-soft:#3A2C12; --err:#FF8E7A; --err-soft:#3B1A16; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --tx-blue:#5AAEF5; --bg:#0D1129; --surface:#151A3A; --sunk:#1C2248; --fg:#E8EAF6; --muted:#9BA2C7; --line:#2A3160;
-  --accent:#8C9BFF; --accent-fg:#0D1129; --accent-soft:#1F2757; --brand-thread:#F4B45A;
-  --ok:#5FCB97; --ok-soft:#133126; --warn:#F4B45A; --warn-soft:#3A2C12; --err:#FF8E7A; --err-soft:#3B1A16; color-scheme:dark}
-*{box-sizing:border-box}
-:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-[hidden]{display:none!important}
-img{max-width:100%}
-html,body{height:100%}
-a{color:var(--accent)}
-.who{flex:none}
-body.gate .body{grid-template-columns:minmax(0,1fr)}
-body.gate #stepper,body.gate #chat,body.gate #chatFab{display:none!important}
-body.gate #main{max-width:980px;margin:0 auto;width:100%}
-.projgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.proj-card{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
-.proj-card h2{margin:0;font-size:17px}
-.proj-card .row{margin-top:auto}
-.sync{font:500 12px var(--f-body);color:var(--muted)}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--f-body);
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
-.app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr)}
-.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--line)}
-.brand{font:800 20px/1 var(--f-display);letter-spacing:-.03em;display:flex;align-items:center;gap:9px}
-.brand svg{width:26px;height:26px;flex:none}
-.wm{display:inline-flex;align-items:baseline}
-.brand .wm-t{width:auto;height:.64em;flex:none;fill:var(--tx-blue);margin-right:.045em}
-.ic{width:1.2em;height:1.2em;flex:none;vertical-align:-.2em}
-.h1-ic{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:11px;background:var(--accent-soft);color:var(--accent);vertical-align:-6px;margin-right:12px}
-.h1-ic .ic{width:22px;height:22px}
-.dd{position:relative;min-width:0}
-.dd-btn{display:inline-flex;align-items:center;gap:8px;background:none;border:1px solid transparent;border-radius:9px;padding:5px 8px;font:inherit;color:inherit;cursor:pointer;min-width:0;max-width:100%}
-.dd-btn:hover,.dd-btn[aria-expanded="true"]{background:var(--sunk)}
-.dd-btn:focus-visible,.icon-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.chev{width:12px;height:12px;flex:none;color:var(--muted)}
-.proj{font-weight:600}
-.proj-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.proj-k{font:600 12px var(--f-mono);color:var(--muted);background:var(--sunk);border-radius:6px;padding:1px 6px;flex:none}
-.proj-k:empty{display:none}
-.dd-btn:hover .proj-k,.dd-btn[aria-expanded="true"] .proj-k{background:var(--surface)}
-.dd-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:60;min-width:240px;max-width:min(320px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 1px 2px rgba(20,27,71,.06),0 12px 32px rgba(20,27,71,.14)}
-.dd-menu.right{left:auto;right:0}
-.dd-menu a,.dd-menu button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;padding:9px 10px;border:0;border-radius:8px;background:none;color:var(--fg);font:500 14px var(--f-body);text-decoration:none;cursor:pointer;min-height:0}
-.dd-menu a:hover,.dd-menu button:hover,.dd-menu a:focus-visible,.dd-menu button:focus-visible{background:var(--sunk);outline:none}
-.dd-head{display:grid;gap:2px;padding:8px 10px 10px}.dd-head b{font-size:14px}.dd-head span{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}.dd-head span:empty{display:none}
-.dd-sep{height:1px;background:var(--line);margin:6px 4px}
-.dd-lbl{font:600 11px var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:6px 10px 2px}
-.av-btn{padding:3px 6px 3px 3px;border-radius:999px}
-.av-btn img,.av{width:28px;height:28px;border-radius:50%;flex:none}
-.av{display:inline-grid;place-items:center;background:var(--accent-soft);color:var(--accent);font:600 12px var(--f-body)}
-.icon-btn{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:9px;border:0;background:none;color:var(--muted);cursor:pointer;flex:none;padding:0}
-.icon-btn:hover,.icon-btn[aria-pressed="true"]{background:var(--sunk);color:var(--accent)}
-.icon-btn .ic{width:19px;height:19px}
-.chip.dot-only{padding:0;width:22px;height:22px;justify-content:center;gap:0}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
-.chip{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--f-body);padding:3px 10px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
-.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--muted)}
-.chip.ok{background:var(--ok-soft);color:var(--ok)}.chip.ok::before{background:var(--ok)}
-.chip.warn{background:var(--warn-soft);color:var(--warn)}.chip.warn::before{background:var(--warn)}
-.chip.err{background:var(--err-soft);color:var(--err)}.chip.err::before{background:var(--err)}
-.chip.plain::before{display:none}
-button.chip{border:0;cursor:pointer;min-height:0}button.chip:hover{filter:brightness(.96)}button.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.ai-off{display:inline-flex;cursor:help}
-.bridge-panel{border-color:var(--accent)}
-details.item>summary .q-ans{flex:1 1 100%;min-width:0;padding-left:17px;margin-top:-4px;color:var(--muted);font-size:13.5px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-details.item[open]>summary .q-ans{display:none}
-.body{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:0}
-#stepper{overflow:auto;padding:18px 16px 18px 0;border-right:1px solid var(--line)}
-#main{overflow:auto;padding:22px 28px 40px;min-width:0}
-#chat{position:fixed;right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(94px + env(safe-area-inset-bottom,0px));width:min(410px,calc(100vw - 40px));height:min(680px,calc(100dvh - 130px));z-index:30;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;min-height:0;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 22px 60px rgba(20,27,71,.24),0 3px 10px rgba(20,27,71,.10);overflow:hidden;visibility:hidden;opacity:0;transform:translateY(16px) scale(.97);transform-origin:bottom right;pointer-events:none;transition:opacity .18s,transform .22s cubic-bezier(.2,.9,.3,1.1),visibility 0s .22s}
-#chat.open{visibility:visible;opacity:1;transform:none;pointer-events:auto;transition:opacity .18s,transform .22s cubic-bezier(.2,.9,.3,1.1)}
-.progress{margin:0 0 16px}
-.progress b{font:500 12px var(--f-mono);color:var(--muted)}
-.bar{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;margin-top:6px}
-.bar i{display:block;height:100%;background:var(--accent)}
-.phase{font:500 11px var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:16px 0 4px 8px}
-.st{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:0;background:none;padding:7px 8px;border-radius:7px;color:var(--fg);font:500 14px/1.25 var(--f-body);cursor:pointer}
-.st:hover{background:var(--sunk)}
-.st.cur{background:var(--accent-soft)}
-.st .n{flex:none;width:30px;height:30px;border-radius:9px;border:1.5px solid var(--line);display:grid;place-items:center;color:var(--muted);background:var(--surface)}
-.st .n .ic{width:16px;height:16px}
-.st.cur .n{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
-.st.done .n{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
-.st small{display:block;color:var(--muted);font-weight:400;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.st>span:last-child{min-width:0;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-#stepSelect{display:none}
-.eyebrow{font:500 12px var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
-h1{font:700 30px/1.12 var(--f-display);letter-spacing:-.015em;margin:6px 0 6px;text-wrap:balance}
-h2{font:700 18px/1.25 var(--f-display);margin:0 0 10px}
-h3{font:600 15px/1.3 var(--f-body);margin:16px 0 8px}
-.lead{color:var(--muted);margin:0 0 14px;max-width:72ch}
-details.lead-c{margin:0 0 10px;max-width:72ch}
-details.lead-c>summary{list-style:none;cursor:pointer;display:flex;gap:12px;align-items:baseline}
-details.lead-c>summary::-webkit-details-marker,details.checks-c>summary::-webkit-details-marker{display:none}
-details.lead-c .lead{display:block;margin:0;flex:1 1 auto;min-width:0}
-details.lead-c:not([open]) .lead{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.more{flex:none;font-size:13px;font-weight:600;color:var(--accent)}
-details.lead-c[open] .more-c,details.lead-c:not([open]) .more-o{display:none}
-details.checks-c{margin:0 0 18px}
-details.checks-c>summary{list-style:none;cursor:pointer;display:inline-flex;gap:8px;align-items:center;max-width:100%;font-size:13.5px;padding:5px 12px;border-radius:999px;background:var(--sunk)}
-details.checks-c>summary::after{content:"";width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);flex:none;transition:transform .15s}
-details.checks-c[open]>summary{margin-bottom:10px}
-details.checks-c[open]>summary::after{transform:rotate(-135deg) translateY(-1px)}
-.cc-n{font-weight:600;flex:none}.cc-n.ok{color:var(--ok)}
-.cc-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
-.checks{list-style:none;padding:0;margin:0 0 18px;display:grid;gap:6px;max-width:760px}
-.checks li{display:flex;gap:10px;align-items:flex-start;font-size:14px}
-.checks .dot{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--line);margin-top:1px;display:grid;place-items:center}
-.checks li.ok{color:var(--muted)}
-.checks li.ok .dot{background:var(--ok);border-color:var(--ok)}
-.checks li.ok .dot::after{content:"";width:7px;height:4px;border-left:2px solid var(--surface);border-bottom:2px solid var(--surface);transform:rotate(-45deg) translate(1px,-1px)}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:0 0 14px;min-width:0}
-.card.note{background:var(--sunk);border-color:transparent}
-.card.warn{background:var(--warn-soft);border-color:transparent;color:var(--fg)}
-.card.err{background:var(--err-soft);border-color:transparent}
-.card.okc{background:var(--ok-soft);border-color:transparent}
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:18px 0 14px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.tab{display:flex;align-items:center;gap:8px;flex:none;white-space:nowrap;border:0;border-bottom:3px solid transparent;border-radius:0;background:none;color:var(--muted);font:600 14.5px var(--f-body);padding:11px 14px;margin-bottom:-1px;cursor:pointer}
-.tab:hover:not(:disabled){color:var(--fg);border-color:transparent;border-bottom-color:var(--line)}
-.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
-.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:6px}
-[role="tabpanel"]:focus{outline:none}
-.list-bar{margin-top:6px}
-.sec-h{font:700 19px var(--f-display);letter-spacing:-.01em;margin:30px 0 12px}
-.sec-h:first-child{margin-top:6px}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
-button,.btn{font:600 13.5px var(--f-body);cursor:pointer;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 13px;line-height:1.3}
-button:hover:not(:disabled){border-color:var(--accent)}
-button:disabled{opacity:.5;cursor:not-allowed}
-button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
-button.danger{color:var(--err)}
-button.armed{background:var(--err);border-color:var(--err);color:var(--surface)}
-button.link{border:0;background:none;padding:2px 4px;color:var(--accent)}
-.toolbar button.link{padding:8px 10px}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-label.f{display:flex;flex-direction:column;gap:4px;font:600 12px var(--f-body);color:var(--muted);min-width:0}
-input,select,textarea{font:14px var(--f-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
-textarea{resize:vertical;line-height:1.45}
-textarea.code{font:12.5px/1.5 var(--f-mono)}
-input[type=checkbox],input[type=radio]{width:16px;height:16px;accent-color:var(--accent);flex:none;margin:0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
-.grid .wide{grid-column:1/-1}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.muted{color:var(--muted)}
-.small{font-size:13px}
-.mono{font-family:var(--f-mono);font-size:.9em}
-.key{font:500 12.5px var(--f-mono);background:var(--sunk);padding:1px 6px;border-radius:4px;white-space:nowrap}
-.pill{display:inline-block;font:600 11px var(--f-body);padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
-.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.err{background:var(--err-soft);color:var(--err)}.pill.acc{background:var(--accent-soft);color:var(--accent)}
-.list{display:grid;gap:8px}
-details.item{background:var(--surface);border:1px solid var(--line);border-radius:9px;min-width:0}
-details.item>summary{list-style:none;cursor:pointer;padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-details.item>summary::-webkit-details-marker{display:none}
-details.item>summary .ttl{flex:1 1 220px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-details.item>summary .key,details.item>summary .pill{flex:none}
-details.item>summary::before{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);flex:none;transition:transform .15s}
-details.item[open]>summary::before{transform:rotate(45deg)}
-details.item>.in{padding:4px 14px 14px;border-top:1px solid var(--line)}
-.ttl{font-weight:600;flex:1 1 220px;min-width:0}
-.issues{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
-.group{margin:0 0 18px}
-.group-h{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin:0 0 8px}
-.tw{overflow-x:auto;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
-table{border-collapse:collapse;width:100%;font-size:13.5px}
-th,td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--line)}
-th{font:600 11.5px var(--f-body);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--sunk);white-space:nowrap}
-tr:last-child td{border-bottom:0}
-td{font-variant-numeric:tabular-nums}
-.drop{display:grid;place-items:center;text-align:center;gap:6px;border:2px dashed var(--line);border-radius:10px;padding:26px 16px;background:var(--surface);cursor:pointer}
-.drop.over{border-color:var(--accent);background:var(--accent-soft)}
-.drop input{display:none}
-.health{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 12px;background:var(--surface)}
-.health-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.health-l{list-style:none;margin:10px 0 0;padding:0}
-.health-l li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
-.health-l li:first-child{border-top:0}
-.health-l li.ok .ic{color:var(--ok)}.health-l li.ko .ic{color:var(--err)}
-.health-l .hd{font-size:13px;color:var(--muted);text-align:right}.health-l li.ko .hd{color:var(--err)}
-@media(max-width:760px){.health-l li{grid-template-columns:auto minmax(0,1fr)}.health-l .hd{grid-column:2;text-align:left}}
-.prog{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:12px 0;background:var(--surface)}
-.prog-h{display:flex;align-items:center;gap:10px;font-weight:600;min-width:0}.prog-h .ic{color:var(--accent)}
-.prog-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prog-e{font:500 13px var(--f-mono);color:var(--muted);flex:none}
-.prog .track{height:6px;border-radius:999px;background:var(--sunk);overflow:hidden;margin:10px 0 8px}
-.prog .track>i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .4s ease}
-.prog .track.ind>i{width:35%;animation:prog-ind 1.4s ease-in-out infinite}
-@keyframes prog-ind{from{transform:translateX(-100%)}to{transform:translateX(290%)}}
-.prog-f{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.prog-items{list-style:none;margin:10px 0 0;padding:10px 0 0;border-top:1px solid var(--line);display:grid;gap:6px}
-.prog-items li{display:flex;gap:8px;align-items:center;font-size:13.5px;min-width:0;animation:prog-in .3s ease-out}
-.prog-items .key{flex:none}.prog-items .tt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prog-items .sk i{display:block;height:9px;border-radius:4px;background:var(--sunk)}.prog-items .sk i:first-child{width:52px;flex:none}.prog-items .sk i:last-child{flex:1;max-width:55%}
-@keyframes prog-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-details.item.fresh{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-@media(prefers-reduced-motion:reduce){.prog .track.ind>i{animation:none;width:100%;opacity:.45}.prog-items li{animation:none}}
-.sc{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:12px;margin-top:14px}
-.sc-c{min-width:0}.sc-c h3{margin:0 0 8px;font:600 11px var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
-.sc-b{display:grid;gap:4px;width:100%;text-align:left;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--surface);margin:0 0 6px;cursor:pointer;font:inherit;color:inherit;min-height:0}
-.sc-b:hover{border-color:var(--accent)}.sc-b.sel{border-color:var(--accent);background:var(--accent-soft)}.sc-b[tabindex="-1"]{cursor:default}
-.sc-t{font-weight:600;font-size:13.5px;overflow-wrap:anywhere}
-.sc-s{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
-.sc-n{font-size:13.5px;margin:0 0 4px}.sc-n b{font-weight:700}
-.sc-l{margin:8px 0 0;padding-left:16px;font-size:12.5px;color:var(--muted)}.sc-l li{margin:3px 0;overflow-wrap:anywhere}
-@media(max-width:760px){.sc{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.rq-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:0 0 6px}
-.rq-bar input[type=search]{flex:1 1 240px;min-width:0}
-.rq-f{display:grid;gap:4px;font-size:12.5px;color:var(--muted);flex:0 1 auto}
-@media(max-width:760px){.rq-f{flex:1 1 140px;min-width:0}.rq-f select{width:100%;min-width:0}}
-.rq-count{margin:0 0 10px;min-height:20px}
-.pk-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}.pk-h h1{margin-bottom:6px}
-.proj-card{position:relative;transition:border-color .15s}.proj-card:hover{border-color:var(--accent)}
-.pc-link{position:absolute;inset:0;border-radius:inherit;z-index:1}.pc-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.pc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}.pc-top h2{margin:0;font-size:17px;overflow-wrap:anywhere}
-.pc-dd{position:relative;z-index:2;margin:-6px -8px 0 0}.pc-dd .dd-menu{min-width:200px}
-.pc-meta{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);min-width:0;flex-wrap:wrap}
-.pc-stats{font-size:14.5px}
-.proj-new{border:1.5px dashed var(--line);border-radius:10px;background:none;color:var(--accent);font:600 15px var(--f-body);min-height:130px;cursor:pointer}
-.proj-new:hover{border-color:var(--accent);background:var(--accent-soft)}
-@media(max-width:760px){.proj-new{display:none}}
-.np-card{margin-bottom:16px}.pk-data{margin-top:28px}
-.dd-menu .danger-item{color:var(--err)}
-.rules-toc{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 16px}
-.rules-sec{scroll-margin-top:16px}
-.rules-sec h2{display:flex;align-items:center;gap:10px}
-.h2-ic{display:inline-flex;color:var(--accent)}.h2-ic .ic{width:18px;height:18px}
-.rules-l{margin:0;padding-left:20px}.rules-l li{margin:6px 0;max-width:80ch;line-height:1.5}
-
-.foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}
-.msg{padding:10px 14px;border-radius:8px;margin:0 0 14px;font-size:14px}
-.msg.ok{background:var(--ok-soft)}.msg.err{background:var(--err-soft)}.msg.warn{background:var(--warn-soft)}.msg.info{background:var(--accent-soft)}
-.log{font:12.5px/1.6 var(--f-mono);background:var(--sunk);border-radius:8px;padding:10px 12px;max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-word}
-pre.prev{font:12.5px/1.5 var(--f-mono);background:var(--sunk);border-radius:8px;padding:12px;max-height:280px;overflow:auto;white-space:pre-wrap;word-break:break-word;margin:8px 0 0}
-.stat{display:flex;gap:18px;flex-wrap:wrap}
-.stat div{min-width:96px}
-.stat b{display:block;font:700 22px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
-.stat span{font-size:12px;color:var(--muted)}
-/* chat */
-.chat-h{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
-.chat-h h2{margin:0;font-size:16px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#chatLog{overflow:auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
-.bub{max-width:100%;padding:9px 12px;border-radius:10px;font-size:14px;line-height:1.5;word-break:break-word}
-.bub.u{align-self:flex-end;background:var(--accent);color:var(--accent-fg);max-width:88%;white-space:pre-wrap}
-.bub.a{background:var(--sunk)}
-.bub.a p{margin:0 0 8px}.bub.a p:last-child{margin:0}
-.bub.a ul,.bub.a ol{margin:4px 0 8px;padding-left:20px}
-.bub.a code{font:12.5px var(--f-mono);background:var(--surface);padding:0 4px;border-radius:3px}
-.bub.a h4{margin:8px 0 4px;font-size:14px}
-.bub.n{align-self:center;background:none;color:var(--muted);font-size:12.5px;padding:0;text-align:center}
-.sugg{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 8px}
-.sugg button{font-weight:500;font-size:12.5px;padding:5px 10px;border-radius:999px;background:var(--bg);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
-.chat-top{min-width:0}
-#chatMem{padding:10px 16px 12px;border-bottom:1px solid var(--line);background:var(--bg);font-size:13px}
-.mem-t{font-weight:700;margin-bottom:6px}
-.mem-l{margin:0 0 8px;padding-left:18px}.mem-l li{margin:3px 0}
-.mem-s{margin:0 0 8px}.mem-s p{margin:6px 0 0;white-space:pre-wrap;color:var(--muted)}
-.act{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;background:var(--surface)}
-.act.done{border-left-color:var(--ok);opacity:.85}
-.act-t{font-weight:700;display:flex;gap:6px;align-items:center}
-.act-l{font-size:12.5px;color:var(--muted);margin-top:3px;white-space:pre-wrap;word-break:break-word}
-.act-b{margin-top:8px}
-.bub-foot{margin-top:4px;text-align:right}.bub-foot .link{font-size:12px;color:var(--muted)}
-.sugg button.ideas{border-style:dashed}
-#chatForm{padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);display:grid;gap:8px}
-#chatForm textarea{min-height:64px;max-height:180px}
-.empty{color:var(--muted);font-size:14px;padding:6px 2px}
-#chatFab{position:fixed;right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:31;height:60px;min-width:60px;padding:0;display:flex;align-items:center;justify-content:flex-end;gap:0;border-radius:30px;border:0;background:var(--accent);color:var(--accent-fg);box-shadow:0 10px 28px rgba(20,27,71,.32),inset 0 1px 0 rgba(255,255,255,.22);cursor:pointer;transition:transform .18s cubic-bezier(.2,.9,.3,1.3),box-shadow .18s}
-#chatFab:hover:not(:disabled){transform:translateY(-3px);border:0;box-shadow:0 14px 32px rgba(20,27,71,.36),inset 0 1px 0 rgba(255,255,255,.22)}
-#chatFab:active{transform:translateY(0) scale(.96)}
-#chatFab:focus-visible{outline:3px solid #F2A541;outline-offset:3px}
-#chatFab .fab-lb{order:-1;max-width:0;overflow:hidden;white-space:nowrap;opacity:0;font:600 14px var(--f-body);padding:0;transition:max-width .25s ease,opacity .2s,padding .25s}
-#chatFab:hover .fab-lb,#chatFab:focus-visible .fab-lb,#chatFab.hint .fab-lb{max-width:170px;opacity:1;padding:0 4px 0 22px}
-#chatFab[aria-expanded="true"] .fab-lb{max-width:0;opacity:0;padding:0}
-#chatFab .fab-ic{position:relative;flex:none;width:60px;height:60px;display:grid;place-items:center}
-#chatFab .fab-bub{width:36px;height:36px;overflow:visible;transition:transform .25s,opacity .2s}
-#chatFab .fab-x{position:absolute;width:24px;height:24px;opacity:0;transform:rotate(-90deg) scale(.6);transition:transform .25s,opacity .2s;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
-#chatFab[aria-expanded="true"] .fab-bub{opacity:0;transform:rotate(90deg) scale(.6)}
-#chatFab[aria-expanded="true"] .fab-x{opacity:1;transform:none}
-.bubble{fill:var(--accent-fg)}.wf{fill:var(--accent)}.wp{fill:#F2A541}.wf2{stroke:var(--accent-fg);stroke-width:1.3;paint-order:stroke}
-.fab-bub .wf,.fab-bub .wp,.chat-mark .wf,.chat-mark .wp{transform-box:fill-box;transform-origin:center}
-#chatFab.dot .fab-ic::after{content:"";position:absolute;top:9px;right:9px;width:13px;height:13px;border-radius:50%;background:#F2A541;border:2.5px solid var(--accent);animation:fabpop .4s cubic-bezier(.2,1.6,.4,1)}
-#chatFab.busy::before{content:"";position:absolute;right:-5px;top:-5px;bottom:-5px;width:70px;border-radius:50%;border:3px solid transparent;border-top-color:#F2A541;animation:fabspin 1.1s linear infinite}
-#chat .rz{position:absolute;z-index:3}
-#chat .rz[data-r=n]{left:24px;right:24px;top:0;height:7px;cursor:ns-resize}
-#chat .rz[data-r=s]{left:24px;right:24px;bottom:0;height:7px;cursor:ns-resize}
-#chat .rz[data-r=w]{top:24px;bottom:24px;left:0;width:7px;cursor:ew-resize}
-#chat .rz[data-r=e]{top:24px;bottom:24px;right:0;width:7px;cursor:ew-resize}
-#chat .rz[data-r=nw]{left:0;top:0;width:24px;height:24px;cursor:nwse-resize}
-#chat .rz[data-r=se]{right:0;bottom:0;width:24px;height:24px;cursor:nwse-resize}
-#chat .rz[data-r=ne]{right:0;top:0;width:24px;height:24px;cursor:nesw-resize}
-#chat .rz[data-r=sw]{left:0;bottom:0;width:24px;height:24px;cursor:nesw-resize}
-#chat .chat-h{cursor:grab;touch-action:none;user-select:none}
-#chat .chat-h button{cursor:pointer}
-body.chat-drag,body.chat-drag *{user-select:none!important;cursor:grabbing!important}
-#chatClose .m{display:none}
-.chat-h .chat-mark{display:inline-grid;vertical-align:-6px;width:26px;height:26px;margin-right:8px;border-radius:50%;background:var(--accent);place-items:center}
-.chat-h .chat-mark svg{width:19px;height:19px}
-@keyframes fabpop{0%{transform:scale(0)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
-@keyframes fabspin{to{transform:rotate(360deg)}}
-@keyframes fabbreath{0%,72%,100%{box-shadow:0 10px 28px rgba(20,27,71,.32),inset 0 1px 0 rgba(255,255,255,.22),0 0 0 0 rgba(242,165,65,0)}86%{box-shadow:0 10px 28px rgba(20,27,71,.32),inset 0 1px 0 rgba(255,255,255,.22),0 0 0 12px rgba(242,165,65,.22)}}
-@keyframes weaveA{0%,100%{transform:translateX(-1.6px)}50%{transform:translateX(1.6px)}}
-@keyframes weaveB{0%,100%{transform:translateX(1.6px)}50%{transform:translateX(-1.6px)}}
-@keyframes warpUp{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.82)}}
-@media(prefers-reduced-motion:no-preference){
-  #chatFab:not(.busy):not([aria-expanded="true"]){animation:fabbreath 7s ease-in-out 3s infinite}
-  #chatFab:hover .wf1,#chatFab:hover .wf3{animation:weaveA 1.2s ease-in-out infinite}
-  #chatFab:hover .wf2{animation:weaveB 1.2s ease-in-out infinite}
-  #chatFab.busy .wf1,#chatFab.busy .wf3{animation:weaveA .9s ease-in-out infinite}
-  #chatFab.busy .wf2{animation:weaveB .9s ease-in-out infinite}
-  #chatFab.busy .wp{animation:warpUp .9s ease-in-out infinite}
-}
-@media(hover:none){#chatFab:hover .fab-lb:not(.x){max-width:0;opacity:0;padding:0}#chatFab:hover{transform:none}}
-@media(prefers-reduced-motion:reduce){#chatFab.busy::before{animation:none;border-color:#F2A541}#chat,#chatFab,#chatFab *{transition:none!important}}
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:14px;z-index:50;max-width:min(560px,calc(100vw - 32px))}
-@media(max-width:1180px){
-  .body{grid-template-columns:220px minmax(0,1fr)}
-}
-@media(max-width:760px){
-  .app{height:auto;display:block}
-  .body{display:block}
-  #stepper{border:0;padding:12px 0 0;overflow:visible}
-  #stepper .progress,#stepList{display:none}
-  #stepSelect{display:block}
-  #main{overflow:visible;padding:16px 0 90px}
-  h1{font-size:24px}
-}
-@media(prefers-reduced-motion:reduce){#chat,details.item>summary::before{transition:none}}
-
-/* ===== ottimizzazione mobile (iPhone / Safari) ===== */
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-button,.btn,summary,select{touch-action:manipulation}
-@media(max-width:760px){
-  body{font-size:16px}
-  input,select,textarea{font-size:16px;padding:10px 12px;border-radius:8px}   /* 16px evita lo zoom automatico di Safari */
-  input[type=checkbox],input[type=radio]{width:22px;height:22px}
-  button,.btn{min-height:44px;padding:10px 16px;font-size:15px}
-  button.link{min-height:44px;padding:8px}
-  .top{gap:6px 10px;padding:10px 0}
-  .brand{font-size:17px}
-  .top{flex-wrap:nowrap}
-  .brand .wm{display:none}
-  .pmenu{flex:1 1 auto}
-  .proj{font-size:14.5px;min-height:40px}
-  .chips{margin-left:auto;flex:none;flex-wrap:nowrap;gap:4px}
-  .chip{font-size:11.5px;padding:3px 8px}
-  button.chip{min-height:30px}
-  button.chip.dot-only{min-height:0;width:26px;height:26px}
-  .icon-btn{width:40px;height:40px}
-  .top{gap:6px 8px}
-  .dd-menu,.dd-menu.right{position:fixed;top:60px;left:16px;right:16px;max-width:none;min-width:0}
-  #capChips button.chip{font-size:0;padding:0;gap:0;width:28px;height:28px;min-height:0;justify-content:center}
-  .av-btn{padding:4px;border-radius:999px;min-height:40px}.av-btn .chev{display:none}
-  .dd-menu a,.dd-menu button{min-height:44px;font-size:15px}
-  #stepper{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);padding:8px 0;margin:0;border-bottom:1px solid var(--line)}
-  #stepper select{font-weight:600}
-  #main{padding:16px 0 calc(150px + env(safe-area-inset-bottom,0px))}
-  h1{font-size:24px;margin:4px 0}
-  h2{font-size:17px}
-  .lead{font-size:15px}
-  .grid{grid-template-columns:minmax(0,1fr);gap:12px}
-  .card{padding:14px}
-  .toolbar{gap:8px}
-  .toolbar>button,.toolbar>.btn,.toolbar>.ai-off{flex:1 1 auto}
-  .ai-off>button{flex:1 1 auto}
-  details.item>summary{padding:12px 14px;gap:8px}
-  details.item>.in{padding:6px 12px 14px}
-  .ttl{flex:1 1 calc(100% - 28px)}
-  .stat{gap:12px 20px}
-  .stat b{font-size:20px}
-  table{font-size:13px}
-  th,td{padding:8px 10px}
-  .tw{margin-inline:-2px}
-  .projgrid{grid-template-columns:minmax(0,1fr)}
-  .foot{position:sticky;bottom:0;z-index:4;background:var(--bg);margin-top:20px;padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));gap:8px;flex-wrap:nowrap}
-  .foot button{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-inline:8px;font-size:13px}
-  .foot .pre{display:none}
-  .tab{min-height:46px;padding:12px}
-  #chatFab{bottom:calc(84px + env(safe-area-inset-bottom,0px));right:calc(14px + env(safe-area-inset-right,0px));height:56px;min-width:56px}
-  #chatFab .fab-ic{width:56px;height:56px}
-  body.chat-open #chatFab{display:none}
-  #chat{right:0;left:0;top:0;bottom:0;width:100%;height:100dvh;border:0;border-radius:0;padding-top:env(safe-area-inset-top,0px);box-shadow:none;transform-origin:center bottom}
-  #chatLog{padding:12px}
-  #chatClose{min-width:64px}
-  #chat .rz,#chatReset,#chatCtx{display:none!important}
-  #chat .chat-h{cursor:default;touch-action:auto}
-  #chatClose .d{display:none}#chatClose .m{display:inline}
-  #chatForm{padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px))}
-  #chatForm textarea{min-height:56px}
-  .sugg{padding:0 12px 8px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
-  .sugg button{flex:none;min-height:36px}
-  .drop{padding:22px 12px}
-  #toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
-  .proj-card .row a.btn{flex:1;justify-content:center;text-align:center}
-  .pill{white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;line-height:1.35;vertical-align:middle}
-  .issues .pill{white-space:normal;padding:4px 10px}
-}
-@media(max-width:760px) and (hover:none){
-  details.item>summary:active,.st:active{background:var(--sunk)}
-}
-</style>
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/studio.css">
 <!-- seo:start (generato da scripts/seo/build.mjs: non modificare a mano) -->
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -437,9 +25,10 @@ button,.btn,summary,select{touch-action:manipulation}
 </head>
 <body>
 
+<div class="desk-only" role="alert"><div class="card"><div class="eyebrow">Trama</div><h1>Trama è pensato per il computer</h1><p class="lead" style="margin:0 0 16px">Lo studio lavora con tabelle, pannelli e documenti lunghi: aprilo da un computer, con una finestra larga almeno 900 pixel.</p><a href="/">Torna alla home</a></div></div>
 <div class="app">
   <header class="top">
-    <a class="brand" href="/" style="text-decoration:none;color:inherit" aria-label="Trama, home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span></a>
+    <a class="brand" href="/" style="text-decoration:none;color:inherit"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama, home</span></a>
     <div class="dd pmenu" id="pmenu" hidden>
       <button type="button" class="dd-btn proj" id="projBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="projMenu"><span class="proj-n" id="projName"></span><span class="proj-k" id="projKey"></span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="dd-menu" id="projMenu" role="menu" hidden></div>
@@ -447,7 +36,7 @@ button,.btn,summary,select{touch-action:manipulation}
     <div class="chips" id="capChips"></div>
     <button type="button" class="icon-btn" id="rulesBtn" data-act="openRules" aria-label="Regole del playbook" title="Regole del playbook" hidden><svg class="ic"><use href="/icons.svg#i-shield"/></svg></button>
     <div class="dd who" id="who" hidden>
-      <button type="button" class="dd-btn av-btn" id="userBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="userMenu" aria-label="Il tuo account"><img id="whoPic" alt=""><span class="av" id="whoIni" hidden></span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button type="button" class="dd-btn av-btn" id="userBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="userMenu"><img id="whoPic" alt=""><span class="av" id="whoIni" hidden></span><span class="sr-only">Il tuo account</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="dd-menu right" id="userMenu" role="menu" hidden>
         <div class="dd-head"><b id="whoName"></b><span id="whoMail"></span></div>
         <a role="menuitem" href="/studio">Tutti i progetti</a>
@@ -479,7 +68,7 @@ button,.btn,summary,select{touch-action:manipulation}
     </aside>
   </div>
 </div>
-<button id="chatFab" type="button" aria-label="Apri la chat con Claude" aria-expanded="false" aria-controls="chat" title="Chat con Claude"><span class="fab-lb">Chiedi a Claude</span><span class="fab-ic"><svg class="fab-bub" viewBox="0 0 32 32" aria-hidden="true"><path class="bubble" d="M10 4.5h12a6.5 6.5 0 0 1 6.5 6.5v6.5a6.5 6.5 0 0 1-6.5 6.5h-6.4l-5.6 4.2V24A6.5 6.5 0 0 1 3.5 17.5V11A6.5 6.5 0 0 1 10 4.5z"/><rect class="wf wf1" x="8" y="8.9" width="16" height="2.6" rx="1.3"/><rect class="wf wf3" x="8" y="17.1" width="16" height="2.6" rx="1.3"/><rect class="wp" x="14.7" y="7.1" width="2.6" height="14.4" rx="1.3"/><rect class="wf wf2" x="8" y="13" width="16" height="2.6" rx="1.3"/></svg><svg class="fab-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></span></button>
+<button id="chatFab" type="button" aria-label="Chiedi a Claude: apri la chat" aria-expanded="false" aria-controls="chat" title="Chat con Claude"><span class="fab-lb">Chiedi a Claude</span><span class="fab-ic"><svg class="fab-bub" viewBox="0 0 32 32" aria-hidden="true"><path class="bubble" d="M10 4.5h12a6.5 6.5 0 0 1 6.5 6.5v6.5a6.5 6.5 0 0 1-6.5 6.5h-6.4l-5.6 4.2V24A6.5 6.5 0 0 1 3.5 17.5V11A6.5 6.5 0 0 1 10 4.5z"/><rect class="wf wf1" x="8" y="8.9" width="16" height="2.6" rx="1.3"/><rect class="wf wf3" x="8" y="17.1" width="16" height="2.6" rx="1.3"/><rect class="wp" x="14.7" y="7.1" width="2.6" height="14.4" rx="1.3"/><rect class="wf wf2" x="8" y="13" width="16" height="2.6" rx="1.3"/></svg><svg class="fab-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></span></button>
 <div id="toast" hidden role="status"></div>
 
 <script src="/studio-runtime.js"></script>
@@ -712,7 +301,7 @@ function renderStepper(){
     return g+`<button class="st ${i===cur&&!T.rulesOpen?"cur":""} ${st[i]?"done":""}" data-act="go" data-i="${i}" ${i===cur&&!T.rulesOpen?'aria-current="step"':""}><span class="n" title="${s.aux?s.short:"Passo "+(i+1)}">${ICO(st[i]?"i-check":STEP_ICONS[s.id]||"i-list")}</span><span>${s.short}<small>${s.sub}</small></span></button>`}).join("")}</div>`;
   $("#chatCtx").textContent=STEPS[cur].aux?"Registro":"Passo "+(cur+1);
 }
-function render(){renderChrome();const s=STEPS[cur];const main=$("#main");const top=main.scrollTop;main.innerHTML=T.rulesOpen?rulesPage():shell(cur,s.view());main.scrollTop=top;if(T.fresh?.size)T.fresh.forEach(id=>main.querySelector(`[data-k="req-${id}"],[data-k="t-${id}"]`)?.classList.add("fresh"));
+function render(){renderChrome();const s=STEPS[cur];const main=$("#main");const top=main.scrollTop,spk=main.querySelector(".sp")?.dataset.panel,spt=main.querySelector(".sp-b")?.scrollTop||0;main.innerHTML=T.rulesOpen?rulesPage():shell(cur,s.view());main.scrollTop=top;{const sp=main.querySelector(".sp");document.body.classList.toggle("panel-open",!!sp);if(sp){document.documentElement.style.setProperty("--top-h",($(".app > header")?.offsetHeight||64)+"px");if(sp.dataset.panel===spk)sp.querySelector(".sp-b").scrollTop=spt}}labelTableFields(main);if(T.fresh?.size)T.fresh.forEach(id=>main.querySelector(`[data-k="req-${id}"],[data-k="t-${id}"]`)?.classList.add("fresh"));
   $$("details[data-k]",main).forEach(d=>{if(openSet.has(d.dataset.k))d.open=true});if(document.querySelector("#chatLog .act:not(.done)"))renderChat();else renderSugg();if(T.focusTab){T.focusTab=false;$('.tab[aria-selected="true"]')?.focus()}}
 function msgHtml(id){const m=msgs[id];return m?`<div class="msg ${m.t}" role="status">${m.html??esc(m.text)}</div>`:""}
 function setMsg(id,t,text,html){msgs[id]={t,text,html};scheduleRender()}
@@ -722,7 +311,7 @@ function stepHead(s,cs){const seen=SEEN.has(s.id);
   if(!seen)return`<p class="lead">${s.goal}</p>${cs.length?list:""}`;
   const req=cs.filter(c=>!c.opt),okN=req.filter(c=>c.ok).length,miss=req.find(c=>!c.ok),opt=cs.find(c=>c.opt&&!c.ok);
   const sum=miss?`<span class="cc-n">${okN} di ${req.length}</span><span class="cc-t">Manca: ${miss.t}</span>`:`<span class="cc-n ok">✓ Passo completato</span>${opt?`<span class="cc-t">Facoltativo: ${opt.t}</span>`:""}`;
-  return`<details class="lead-c" data-k="lead-${s.id}"><summary><span class="lead">${s.goal}</span><span class="more more-c">Leggi tutto</span><span class="more more-o">Riduci</span></summary></details>${cs.length?`<details class="checks-c" data-k="checks-${s.id}"><summary aria-label="Controlli del passo">${sum}</summary>${list}</details>`:""}`}
+  return`<details class="lead-c" data-k="lead-${s.id}"><summary><span class="lead">${s.goal}</span><span class="more more-c">Leggi tutto</span><span class="more more-o">Riduci</span></summary></details>${cs.length?`<details class="checks-c" data-k="checks-${s.id}"><summary>${sum}</summary>${list}</details>`:""}`}
 /* Regole del playbook: pagina a sé, aperta dalla barra in alto o dal collegamento in fondo a ogni passo. Non è un passo. */
 function rulesPage(){const back=STEPS[cur],list=STEPS.filter(x=>x.rules?.length);
   return`<div class="eyebrow">Playbook PO+AI</div><h1><span class="h1-ic">${ICO("i-shield")}</span>Regole del playbook</h1>
@@ -804,6 +393,57 @@ function reqBar(r,rf){if(!r.length)return"";const f=T.rq,rels=[...new Set(r.map(
    <label class="rq-f">Release<select id="rqRel"><option value="*">Tutte</option>${rels.map(v=>`<option value="${esc(v)}" ${v===f.rel?"selected":""}>${esc(v)} (${r.filter(x=>x.release===v).length})</option>`).join("")}</select></label></div>
    <p class="small muted rq-count" id="rqCount">${rqCount(rf.length,r.length)}</p>`}
 const rqCount=(n,t)=>n<t?`${n} di ${t} requisiti · <button type="button" class="link" data-act="rqReset">Togli i filtri</button>`:"";
+/* Tabelle compatte con pannello di modifica che scorre da destra (Requisiti e Backlog).
+   Clic o Invio su una riga apre il pannello; ↑ ↓ passano alla riga vicina; Esc chiude. */
+T.panel=null;T.panelIds=[];
+const COMP_SHORT={"Web App":"Web","Mobile App":"Mobile","Back-end/Cloud":"BE","Firmware":"FW"};
+function dtRow(kind,id,cells){const sel=T.panel?.kind===kind&&T.panel.id===id;
+  return`<tr class="dt-r${sel?" sel":""}" data-k="${kind==="req"?"req":"t"}-${id}" data-act="openRow" data-kind="${kind}" data-id="${id}" tabindex="0"${sel?' aria-current="true"':""}>${cells}</tr>`}
+function sidePanel(kind,id,head,body){const ids=T.panelIds||[],i=ids.indexOf(id);
+  return`<aside class="sp" aria-label="Dettaglio della riga" data-panel="${kind}:${id}"><div class="sp-h"><div class="sp-t" tabindex="-1">${head}</div><div class="sp-nav">
+   <button type="button" class="icon-btn" data-act="spMove" data-d="-1" aria-label="Riga precedente (freccia su)" title="Riga precedente (↑)" ${i>0?"":"disabled"}>↑</button>
+   <button type="button" class="icon-btn" data-act="spMove" data-d="1" aria-label="Riga successiva (freccia giù)" title="Riga successiva (↓)" ${i>=0&&i<ids.length-1?"":"disabled"}>↓</button>
+   <button type="button" class="icon-btn" data-act="spClose" aria-label="Chiudi il pannello (Esc)" title="Chiudi (Esc)">×</button></div></div><div class="sp-b">${body}</div></aside>`}
+function traceCell(code,ts){const n=ts.length,c=ts.filter(t=>t.state==="created").length;if(!n)return'<span class="pill warn">nessuno</span>';
+  const [cl,l]=c===n?["ok",`${n} · in Jira`]:c?["",`${c} di ${n} in Jira`]:["",n===1?"1 bozza":`${n} bozze`];
+  return`<button type="button" class="pill ${cl} pill-btn" data-act="reqTickets" data-code="${esc(code)}" title="Apri i ticket di ${esc(code)} nel Backlog">${l}</button>`}
+function reqTable(r,rf){if(!r.length)return'<p class="empty">Nessun requisito ancora. Estraili con Claude o aggiungili a mano.</p>';
+  T.panelIds=rf.map(x=>x.id);if(!rf.length)return'<p class="empty">Nessun requisito corrisponde ai filtri.</p>';
+  const by={};ticketList().forEach(t=>{(by[t.req]=by[t.req]||[]).push(t)});
+  return`<div class="dt-wrap"><table class="dt"><colgroup><col style="width:96px"><col><col style="width:150px"><col style="width:140px"><col style="width:130px"><col style="width:170px"></colgroup>
+   <thead><tr><th scope="col">ID</th><th scope="col">Titolo</th><th scope="col">Componenti</th><th scope="col">Release</th><th scope="col">Ticket</th><th scope="col">Note</th></tr></thead>
+   <tbody>${rf.map(x=>dtRow("req",x.id,`<td><span class="key">${esc(x.code)}</span></td><td class="dt-t" title="${esc(x.title)}">${esc(x.title)}</td><td class="dt-t muted">${(x.components||[]).map(c=>COMP_SHORT[c]||c).join(" · ")||"—"}</td><td>${x.release?`<span class="pill" title="${esc(x.release)}">${esc(x.release)}</span>`:'<span class="pill err">manca</span>'}</td><td>${traceCell(x.code,by[x.code]||[])}</td><td>${[x.questions&&'<span class="pill warn">domande</span>',x.designReady&&'<span class="pill ok">design pronto</span>'].filter(Boolean).join(" ")}</td>`)).join("")}</tbody></table></div>`}
+function reqTrace(x){const ts=ticketList().filter(t=>t.req===x.code);
+  return`<div class="sp-sec"><h3>Ticket di questo requisito</h3>${ts.length?`<ul class="trace">${ts.map(t=>`<li><span class="key">${esc(t.ref)}</span><span class="tt">${esc(fullTitle(t))}</span>${t.state==="created"&&t.key?browse(t.key):'<span class="pill">bozza</span>'}</li>`).join("")}</ul><button type="button" class="link" data-act="reqTickets" data-code="${esc(x.code)}">Apri nel Backlog →</button>`:'<p class="small muted" style="margin:0">Nessun ticket ancora: si generano al passo Backlog.</p>'}</div>`}
+function reqForm(x){const b="reqs:"+x.id+":";
+  return`<div class="grid">${F("ID requisito",bind(b+"code",x.code))}${F("Release",bind(b+"release",x.release,{dl:"relList",ph:"Es. Release 1"}))}${F("Titolo",bind(b+"title",x.title),"wide")}${F("Descrizione (punto di vista dell'utente)",bind(b+"desc",x.desc,{area:1,rows:3}),"wide")}
+    <div class="f wide"><span class="small muted" style="font-weight:600">Componenti</span><div class="row">${REQ_COMPS.map(c=>`<label class="row small"><input type="checkbox" data-multi="${b}components" value="${esc(c)}" ${(x.components||[]).includes(c)?"checked":""} ${READONLY?"disabled":""}> ${c}</label>`).join("")}<label class="row small" style="margin-left:12px"><input type="checkbox" data-bind="${b}designReady" ${x.designReady?"checked":""} ${READONLY?"disabled":""}> Design già pronto</label></div></div>
+    ${F("Note UI/UX",bind(b+"ui",x.ui,{area:1,rows:2}),"wide")}${F("Dipendenze esterne",bind(b+"extDeps",x.extDeps))}${F("Dipendenze interne",bind(b+"intDeps",x.intDeps,{ph:"Es. REQ-004"}))}${F("Domande aperte",bind(b+"questions",x.questions,{area:1,rows:2}),"wide")}</div>
+    ${reqTrace(x)}
+    <div class="toolbar" style="margin-top:12px">${x.source?`<span class="small muted">Fonte: ${esc(x.source)}</span><span style="flex:1"></span>`:""}${B("delReq",T.arm["req"+x.id]?"Conferma eliminazione":"Elimina requisito",{cls:T.arm["req"+x.id]?"armed":"danger",data:{id:x.id}})}</div>`}
+/* Registro: filtri (testo, tipo, fonte), colonne vuote nascoste, azioni nel menu «⋯» della riga. */
+function decFilter(d){const f=T.dq||(T.dq={q:"",type:"*",src:"*"}),q=f.q.trim().toLowerCase();
+  return d.filter(x=>(f.type==="*"||x.type===f.type)&&(f.src==="*"||(x.source||"")===f.src)&&(!q||[x.text,x.who,x.source,x.impact].join(" ").toLowerCase().includes(q)))}
+const decCount=(n,t)=>n<t?`${n} di ${t} decisioni · <button type="button" class="link" data-act="decReset">Togli i filtri</button>`:(t===1?"1 decisione":t+" decisioni");
+function decTable(d){if(!d.length)return'<p class="empty">Nessuna decisione ancora. Le risposte alle domande di apertura entrano da sole; le altre si aggiungono qui o dalla chat.</p>';
+  const f=T.dq||(T.dq={q:"",type:"*",src:"*"}),df=decFilter(d),num=new Map(d.map((x,i)=>[x.id,i+1]));
+  const cnt=(k,v)=>d.filter(x=>(x[k]||"")===v).length,types=[...new Set(d.map(x=>x.type).filter(Boolean))],srcs=[...new Set(d.map(x=>x.source||""))].filter(Boolean);
+  const has=k=>d.some(x=>String(x[k]||"").trim()),cols=[["who","Chi",120],["type","Tipo",150],["source","Fonte",140],["impact","Impatto",160],["kit","Kit",64],["replaces","Sostituisce",104]].filter(([k])=>has(k));
+  const bar=`<div class="rq-bar"><input type="search" id="decSearch" placeholder="Cerca nelle decisioni" aria-label="Cerca nelle decisioni" value="${esc(f.q)}" autocomplete="off">
+   <label class="rq-f">Tipo<select id="decType"><option value="*">Tutti</option>${types.map(v=>`<option value="${esc(v)}" ${v===f.type?"selected":""}>${esc(v)} (${cnt("type",v)})</option>`).join("")}</select></label>
+   <label class="rq-f">Fonte<select id="decSrc"><option value="*">Tutte</option>${srcs.map(v=>`<option value="${esc(v)}" ${v===f.src?"selected":""}>${esc(v)} (${cnt("source",v)})</option>`).join("")}</select></label></div>
+   <p class="small muted rq-count" id="decCount">${decCount(df.length,d.length)}</p>`;
+  const cell=(x,k)=>k==="replaces"?(x.replaces&&num.get(x.replaces)?"#"+num.get(x.replaces):""):k==="type"||k==="source"?`<span class="dt-t" title="${esc(x[k]||"")}">${esc(x[k]||"")}</span>`:esc(x[k]||"");
+  const rows=df.map(x=>{const n=num.get(x.id),sup=d.some(y=>y.replaces===x.id),armed=T.arm["d"+x.id];
+   return`<tr data-dec="${x.id}"${sup?' class="superseded"':""}><td class="muted">${n}</td><td class="mono small">${esc(x.date)}</td><td>${esc(x.text)}${sup?' <span class="pill">sostituita</span>':""}</td>${cols.map(([k])=>`<td>${cell(x,k)}</td>`).join("")}
+    <td>${READONLY?"":`<div class="dd row-dd"><button type="button" class="dd-btn icon-btn" aria-haspopup="menu" aria-expanded="${!!armed}" aria-label="Azioni per la decisione ${n}"><span aria-hidden="true">⋯</span></button><div class="dd-menu right" role="menu" ${armed?"":"hidden"}><button type="button" role="menuitem" class="danger-item" data-act="delDecision" data-id="${x.id}">${armed?"Conferma: elimina la decisione":"Elimina decisione"}</button></div></div>`}</td></tr>`}).join("");
+  return bar+`<div class="dt-wrap dt-menus"><table class="dt dt-dec"><colgroup><col style="width:44px"><col style="width:100px"><col>${cols.map(([,,w])=>`<col style="width:${w}px">`).join("")}<col style="width:56px"></colgroup>
+   <thead><tr><th scope="col">#</th><th scope="col">Data</th><th scope="col">Decisione</th>${cols.map(([,l])=>`<th scope="col">${l}</th>`).join("")}<th scope="col"><span class="sr-only">Azioni</span></th></tr></thead><tbody>${rows||`<tr><td colspan="${4+cols.length}" class="muted">Nessuna decisione corrisponde ai filtri.</td></tr>`}</tbody></table></div>`}
+/* Accessibilità: i campi dentro le tabelle (kit, struttura…) non hanno un'etichetta propria, la loro etichetta visiva
+   è l'intestazione di colonna. Qui la diamo anche ai lettori di schermo: «Colonna, riga N». */
+function labelTableFields(root){root.querySelectorAll("table").forEach(tb=>{const hs=[...tb.querySelectorAll("thead th")].map(th=>th.textContent.trim());if(!hs.length)return;
+  tb.querySelectorAll("tbody tr").forEach((tr,ri)=>{[...tr.children].forEach((td,ci)=>{td.querySelectorAll("input:not([type=hidden]),select,textarea").forEach(el=>{if(el.getAttribute("aria-label")||el.labels?.length)return;
+   const h=hs[ci]||(el.type==="checkbox"?"Seleziona":"Valore");el.setAttribute("aria-label",`${h}, riga ${ri+1}`)})})})})}
 function docsView(){const d=arr("docs").sort((a,b)=>(a.at||0)-(b.at||0));
   let h=`<label class="drop" id="drop"><input type="file" id="fileIn" multiple accept=".docx,.pdf,.xlsx,.xls,.csv,.txt,.md,.markdown,.json,image/png,image/jpeg,image/webp,image/gif" ${READONLY?"disabled":""}><b>Trascina qui i file o scegli dal computer</b><span class="small muted">Word (.docx), PDF, Excel (.xlsx, .xls), CSV, testo, Markdown, immagini</span></label>`;
   if(T.uploads.length)h+=`<div class="list" style="margin-top:10px">${T.uploads.map(u=>`<div class="row small"><span class="pill ${u.s==="ok"?"ok":u.s==="err"?"err":"acc"}">${u.s==="ok"?"Caricato":u.s==="err"?"Errore":"In lavorazione"}</span><b>${esc(u.name)}</b><span class="muted">${esc(u.note||"")}</span></div>`).join("")}</div>`;
@@ -828,13 +468,9 @@ STEPS.push({id:"reqs",phase:"Preparazione",short:"Requisiti",sub:"Carica, estrai
   if(r.length){const miss=r.filter(x=>!x.release).length;
    h+=`<div class="toolbar"><span class="pill ${miss?"warn":"ok"}">${miss?miss+" requisiti senza release":"Tutti i requisiti hanno una release"}</span><span class="pill">${r.filter(x=>x.questions).length} con domande aperte</span><span style="flex:1"></span>${B("validateReqs",P().reqsValidatedAt?"Validata il "+new Date(P().reqsValidatedAt).toLocaleDateString("it-IT")+" · valida di nuovo":"Valida la lista (PO)")}</div>`}
   h+=reqBar(r,rf);
-  h+=`<div class="list">${rf.map(x=>{const b="reqs:"+x.id+":";const flags=[!x.release&&'<span class="pill err">senza release</span>',x.questions&&'<span class="pill warn">domande aperte</span>',x.designReady&&'<span class="pill ok">design pronto</span>'].filter(Boolean).join(" ");
-   return det("req-"+x.id,`<span class="key">${esc(x.code)}</span><span class="ttl">${esc(x.title)}</span>${(x.components||[]).map(c=>`<span class="pill acc">${esc(c)}</span>`).join(" ")}${x.release?`<span class="pill">${esc(x.release)}</span>`:""}${flags}`,
-   `<div class="grid">${F("ID requisito",bind(b+"code",x.code))}${F("Release",bind(b+"release",x.release,{dl:"relList",ph:"Es. Release 1"}))}${F("Titolo",bind(b+"title",x.title),"wide")}${F("Descrizione (punto di vista dell'utente)",bind(b+"desc",x.desc,{area:1,rows:3}),"wide")}
-    <div class="f wide"><span class="small muted" style="font-weight:600">Componenti</span><div class="row">${REQ_COMPS.map(c=>`<label class="row small"><input type="checkbox" data-multi="${b}components" value="${esc(c)}" ${(x.components||[]).includes(c)?"checked":""} ${READONLY?"disabled":""}> ${c}</label>`).join("")}<label class="row small" style="margin-left:12px"><input type="checkbox" data-bind="${b}designReady" ${x.designReady?"checked":""} ${READONLY?"disabled":""}> Design già pronto</label></div></div>
-    ${F("Note UI/UX",bind(b+"ui",x.ui,{area:1,rows:2}),"wide")}${F("Dipendenze esterne",bind(b+"extDeps",x.extDeps))}${F("Dipendenze interne",bind(b+"intDeps",x.intDeps,{ph:"Es. REQ-004"}))}${F("Domande aperte",bind(b+"questions",x.questions,{area:1,rows:2}),"wide")}</div>
-    <div class="toolbar" style="margin-top:10px">${x.source?`<span class="small muted">Fonte: ${esc(x.source)}</span><span style="flex:1"></span>`:""}${B("delReq",T.arm["req"+x.id]?"Conferma eliminazione":"Elimina requisito",{cls:T.arm["req"+x.id]?"armed":"danger",data:{id:x.id}})}</div>`)}).join("")||(r.length?'<p class="empty">Nessun requisito corrisponde ai filtri.</p>':'<p class="empty">Nessun requisito ancora. Estraili con Claude o aggiungili a mano.</p>')}</div>
+  h+=reqTable(r,rf)+`
   <div class="card warn small" style="margin-top:14px">Controlla che ogni nota UI/UX sia sulla riga giusta: nei fogli del cliente le colonne sfalsate sono un errore frequente.</div>`;
+  if(T.panel?.kind==="req"){const x=S.reqs[T.panel.id]&&{...S.reqs[T.panel.id],id:T.panel.id};if(x)h+=sidePanel("req",x.id,`<span class="key">${esc(x.code)}</span><span>${esc(x.title)}</span>`,reqForm(x))}
   return h},
  ask:["Riassumi i documenti caricati in 5 punti","Quali requisiti hanno dipendenze esterne?","Ci sono requisiti duplicati o sovrapposti?","Proponi l'ordine dei requisiti in base alle dipendenze"]});
 
@@ -935,15 +571,22 @@ function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.rele
    ${AIB("genTickets",!todo.length?"Tutti i requisiti hanno ticket":done?`Scomponi ${nReq(todo.length)} senza ticket`:`Genera ticket per ${nReq(todo.length)}`,{cls:todo.length?"primary":"",dis:!todo.length||!k.epics.length})}</div>
    <p class="small muted" style="margin:8px 0 0">${!k.epics.length?"Servono prima le epiche nel kit (passo 4). ":""}${todo.length&&done?`${done===1?"1 requisito ha":done+" requisiti hanno"} già i ticket e non ${done===1?"viene toccato":"vengono toccati"}: Claude scompone solo ${todo.length===1?"quello che non ne ha":"i "+todo.length+" che non ne hanno"}. `:!todo.length&&inRel.length?`${inRel.length===1?"L'unico requisito ha":"Tutti i "+inRel.length+" requisiti hanno"} già i ticket. Per rifare quelli di un requisito usa «Rigenera» sulla sua riga. `:""}Claude scrive i ticket in inglese con i modelli del kit, uno o più per ogni requisito.</p>
    ${T.prog.genTickets?progBlock("genTickets"):T.genLog?`<div class="log" style="margin-top:10px">${esc(T.genLog)}</div>`:""}</div>`;
-  const groups=[...inRel.map(r=>({r,ts:ts.filter(t=>t.req===r.code)})),{r:null,ts:ts.filter(t=>!rs.some(r=>r.code===t.req)&&(T.rel==="*"||t.release===T.rel))}].filter(g=>g.ts.length);
-  h+=`<div class="toolbar list-bar"><h2 style="margin:0;font-size:17px">Ticket per requisito</h2><span style="flex:1"></span><label class="row small"><input type="checkbox" id="onlyIssues" ${T.onlyIssues?"checked":""}> Solo con problemi</label>${B("addTicket","Aggiungi a mano")}${B("exportTickets","Esporta CSV",{ro:1,dis:!ts.length})}</div>`;
-  h+=groups.map(({r,ts:gts})=>{const shown=T.onlyIssues?gts.filter(t=>{const i=issuesOf(t);return i.e.length||i.w.length}):gts;if(!shown.length)return"";const bad=gts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;
-   return`<div class="group"><div class="group-h">${r?`<span class="key">${esc(r.code)}</span><h3 style="margin:0">${esc(r.title)}</h3>`:`<h3 style="margin:0">Ticket senza requisito</h3>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")}):""}</div><div class="list">${shown.map(ticketItem).join("")}</div></div>`}).join("")||(ts.length?'<p class="empty">Nessun ticket corrisponde al filtro.</p>':'<p class="empty">Nessun ticket ancora. Scegli la release e premi «Genera ticket».</p>');
+  const groups0=[...inRel.map(r=>({r,ts:ts.filter(t=>t.req===r.code)})),{r:null,ts:ts.filter(t=>!rs.some(r=>r.code===t.req)&&(T.rel==="*"||t.release===T.rel))}].filter(g=>g.ts.length);
+  const groups=T.bReq?groups0.filter(g=>g.r?.code===T.bReq):groups0;
+  h+=`<div class="toolbar list-bar"><h2 style="margin:0;font-size:17px">Ticket per requisito</h2>${T.bReq?`<span class="pill primary">Solo ${esc(T.bReq)}</span><button type="button" class="link" data-act="bReqClear">Mostra tutti</button>`:""}<span style="flex:1"></span><label class="row small"><input type="checkbox" id="onlyIssues" ${T.onlyIssues?"checked":""}> Solo con problemi</label>${B("addTicket","Aggiungi a mano")}${B("exportTickets","Esporta CSV",{ro:1,dis:!ts.length})}</div>`;
+  const ids=[];
+  const bodies=groups.map(({r,ts:gts})=>{const shown=T.onlyIssues?gts.filter(t=>{const i=issuesOf(t);return i.e.length||i.w.length}):gts;if(!shown.length)return"";const bad=gts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;shown.forEach(t=>ids.push(t.id));
+   return`<tbody><tr class="dt-g"><th colspan="6" scope="rowgroup"><div class="dt-gh">${r?`<span class="key">${esc(r.code)}</span><span class="dt-t">${esc(r.title)}</span>`:`<span>Ticket senza requisito</span>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")}):""}</div></th></tr>${shown.map(ticketRow).join("")}</tbody>`}).join("");
+  T.panelIds=ids;
+  h+=bodies?`<div class="dt-wrap"><table class="dt"><colgroup><col style="width:92px"><col style="width:96px"><col><col style="width:180px"><col style="width:150px"><col style="width:160px"></colgroup>
+   <thead><tr><th scope="col">Rif.</th><th scope="col">Tipo</th><th scope="col">Titolo</th><th scope="col">Epica</th><th scope="col">Problemi</th><th scope="col">Stato</th></tr></thead>${bodies}</table></div>`:(ts.length?'<p class="empty">Nessun ticket corrisponde al filtro.</p>':'<p class="empty">Nessun ticket ancora. Scegli la release e premi «Genera ticket».</p>');
+  if(T.panel?.kind==="ticket"){const t=ticketList().find(x=>x.id===T.panel.id);if(t)h+=sidePanel("ticket",t.id,`<span class="key">${esc(t.ref)}</span><span class="pill acc">${esc(t.type)}</span><span>${esc(fullTitle(t))}</span>`,ticketForm(t))}
   return h}
-function ticketItem(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked=t.state==="created";
- const st=t.state==="created"?`${browse(t.key)}${vOf(t)==="ok"?'<span class="pill ok">verificato</span>':vOf(t)?'<span class="pill warn">da verificare</span>':""}`:t.state==="error"?'<span class="pill err">errore Jira</span>':t.state==="unknown"?'<span class="pill warn">esito incerto</span>':'<span class="pill">bozza</span>';
- return det("t-"+t.id,`<span class="key">${esc(t.ref)}</span><span class="pill acc">${esc(t.type)}</span><span class="ttl">${esc(fullTitle(t))}</span>${e.length&&!locked?`<span class="pill err">${e.length} errori</span>`:""}${w.length&&!locked?`<span class="pill warn">${w.length} avvisi</span>`:""}${st}`,
- `${locked?`<div class="msg info">Creato in Jira come ${browse(t.key)}. Le modifiche qui non aggiornano Jira.${vOf(t)&&vOf(t)!=="ok"?" "+esc(vOf(t)):""}</div>`:""}
+const ticketState=t=>t.state==="created"?`${browse(t.key)}${vOf(t)==="ok"?'<span class="pill ok">verificato</span>':vOf(t)?'<span class="pill warn">da verificare</span>':""}`:t.state==="error"?'<span class="pill err">errore Jira</span>':t.state==="unknown"?'<span class="pill warn">esito incerto</span>':'<span class="pill">bozza</span>';
+function ticketRow(t){const{e,w}=issuesOf(t),locked=t.state==="created";
+ return dtRow("ticket",t.id,`<td><span class="key">${esc(t.ref)}</span></td><td><span class="pill acc">${esc(t.type)}</span></td><td class="dt-t" title="${esc(fullTitle(t))}">${esc(fullTitle(t))}</td><td class="dt-t muted" title="${esc(t.epic||"")}">${esc(t.epic||"—")}</td><td>${!locked&&e.length?`<span class="pill err">${e.length===1?"1 errore":e.length+" errori"}</span> `:""}${!locked&&w.length?`<span class="pill warn">${w.length===1?"1 avviso":w.length+" avvisi"}</span>`:""}</td><td class="dt-st">${ticketState(t)}</td>`)}
+function ticketForm(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked=t.state==="created";
+ return`${locked?`<div class="msg info">Creato in Jira come ${browse(t.key)}. Le modifiche qui non aggiornano Jira.${vOf(t)&&vOf(t)!=="ok"?" "+esc(vOf(t)):""}</div>`:""}
  ${t.err?`<div class="msg err">${esc(t.err)}</div>`:""}
  ${(e.length||w.length)&&!locked?`<div class="issues">${e.map(x=>`<span class="pill err">${esc(x)}</span>`).join("")}${w.map(x=>`<span class="pill warn">${esc(x)}</span>`).join("")}</div>`:""}
  <div class="grid">${F("Tipo",sel(b+"type",t.type,TYPES,{empty:false}))}${F("Area (prefisso)",sel(b+"area",t.area,Object.entries(AREAS).map(([k2,a])=>[k2,a.prefix+" "+a.label]),{empty:false}))}
@@ -954,7 +597,7 @@ function ticketItem(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked
   ${F("Collegamenti (es. blocks: T-004, relates: T-002)",`<input data-links="${t.id}" value="${esc(linksText(t))}" ${READONLY?"disabled":""}>`,"wide")}</div>
  <p class="small muted" style="margin:8px 0 0">Requisito: ${esc(t.req||"—")} · Label: ${labelsOf(t).map(esc).join(", ")||"—"}</p>
  ${(t.assumptions||[]).length?`<div class="card note small" style="margin:10px 0 0"><b>Ipotesi dichiarate da Claude</b><ul style="margin:4px 0 0">${t.assumptions.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></div>`:""}
- <div class="toolbar" style="margin-top:10px">${B("applyTemplate",T.arm["tpl"+t.id]?"Conferma: sostituisci la descrizione":"Usa il modello vuoto",{cls:T.arm["tpl"+t.id]?"armed":"",data:{id:t.id},dis:locked})}${B("delTicket",T.arm["t"+t.id]?"Conferma eliminazione":"Elimina ticket",{cls:T.arm["t"+t.id]?"armed":"danger",data:{id:t.id},dis:locked})}</div>`)}
+ <div class="toolbar" style="margin-top:10px">${B("applyTemplate",T.arm["tpl"+t.id]?"Conferma: sostituisci la descrizione":"Usa il modello vuoto",{cls:T.arm["tpl"+t.id]?"armed":"",data:{id:t.id},dis:locked})}${B("delTicket",T.arm["t"+t.id]?"Conferma eliminazione":"Elimina ticket",{cls:T.arm["t"+t.id]?"armed":"danger",data:{id:t.id},dis:locked})}</div>`}
 
 /* ---------- 7. Creazione su Jira ---------- */
 /* Anteprima della struttura per livelli: Project › Fasi › Epiche › Ticket. Si sceglie una Fase e un'epica per vedere cosa contengono. */
@@ -1054,20 +697,19 @@ STEPS.push({id:"log",aux:true,phase:"Sempre a portata",short:"Registro decisioni
  rules:["Il registro si aggiorna nello stesso momento in cui si creano i ticket conseguenti.","Una decisione che ne contraddice un'altra non la cancella: aggiunge una riga e indica quale sostituisce.","I ticket toccati citano la decisione nella sezione Context."],
  checks:()=>[],
  view(){const d=arr("decisions").sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.at||0)-(b.at||0));const p=P();
-  let h=`<div class="toolbar">${T.decForm?"":B("decForm","Aggiungi decisione",{cls:"primary"})}${B("exportDecisions","Esporta CSV",{ro:1,dis:!d.length})}<span class="small muted">${d.length===1?"1 decisione":d.length+" decisioni"}</span></div>`;
+  let h=`<div class="toolbar">${T.decForm?"":B("decForm","Aggiungi decisione",{cls:"primary"})}${B("exportDecisions","Esporta CSV",{ro:1,dis:!d.length})}</div>`;
   if(T.decForm)h+=`<div class="card" id="decForm"><h2>Nuova decisione</h2><div class="grid">${F("Data",`<input type="date" id="dDate" value="${today()}">`)}${F("Chi l'ha presa",`<input id="dWho" placeholder="Cliente, PO, team">`)}${F("Tipo",`<select id="dType">${DECISION_TYPES.map(x=>`<option>${x}</option>`).join("")}</select>`)}
    ${F("Decisione (una frase, al presente: cosa vale da ora)",`<input id="dText">`,"wide")}${F("Fonte",`<input id="dSrc" placeholder="Meeting, messaggio, ticket">`)}${F("Impatto",`<input id="dImp" placeholder="Ticket creati, modificati o riclassificati">`)}${F("Regola del kit",`<input id="dKit" placeholder="Es. K3">`)}
    ${F("Sostituisce",`<select id="dRep"><option value="">—</option>${d.map((x,i)=>`<option value="${x.id}">#${i+1} ${esc(String(x.text).slice(0,60))}</option>`).join("")}</select>`)}</div>
    <div class="toolbar" style="margin-top:10px">${B("addDecision","Aggiungi al registro",{cls:"primary"})}${B("decForm","Annulla")}</div></div>`;
-  h+=`<div class="tw"><table><thead><tr><th>#</th><th>Data</th><th>Decisione</th><th>Chi</th><th>Tipo</th><th>Fonte</th><th>Impatto</th><th>Kit</th><th>Sostituisce</th><th></th></tr></thead><tbody>${d.map((x,i)=>{const rep=x.replaces&&d.findIndex(y=>y.id===x.replaces);const superseded=d.some(y=>y.replaces===x.id);
-   return`<tr${superseded?' style="opacity:.6"':""}><td>${i+1}</td><td class="mono">${esc(x.date)}</td><td>${esc(x.text)}${superseded?' <span class="pill">sostituita</span>':""}</td><td>${esc(x.who)}</td><td>${esc(x.type)}</td><td>${esc(x.source)}</td><td>${esc(x.impact)}</td><td>${esc(x.kit)}</td><td>${rep>=0&&x.replaces?"#"+(rep+1):""}</td><td>${B("delDecision",T.arm["d"+x.id]?"Conferma":"Elimina",{cls:T.arm["d"+x.id]?"armed":"link",data:{id:x.id}})}</td></tr>`}).join("")||'<tr><td colspan="10" class="muted">Il registro è vuoto. Registra le risposte del passo 4 o aggiungi la prima decisione qui sopra.</td></tr>'}</tbody></table></div>`;
+  h+=decTable(d);
   return h},
  ask:["Registra questa decisione: …","Quali ticket toccherebbe questa decisione?","Prepara il verbale del meeting dagli appunti caricati"]});
 
 /* ================= impostazioni del ponte (anche da iPhone) ================= */
 /* Il pannello si apre dall'indicatore «Claude» nella barra in alto: le pagine dei passi restano libere. */
 function bridgePanel(){const st=caps.sample;
-  const head=st==="ok"?`<div class="msg ok small">Claude Code è collegato: le funzioni di Claude sono attive.</div>`:st==="login"?`<div class="msg warn small">Il ponte è attivo ma Claude Code non è autenticato: in un terminale esegui <span class="mono">claude</span> e accedi con il tuo account.</div>`:st==="loading"?`<div class="msg info small">Collegamento al ponte in corso…</div>`:`<div class="msg info small">Claude non è collegato. Avvia il ponte Claude Code sul tuo computer e lascia aperto il terminale: lo strumento si collega da solo entro qualche secondo. <a href="/installazione">Come si fa</a>.${IS_TOUCH?` Da iPhone o iPad il ponte deve avere un indirizzo https raggiungibile dal telefono: impostalo qui sotto.`:""}</div>`;
+  const head=st==="ok"?`<div class="msg ok small">Claude Code è collegato: le funzioni di Claude sono attive.</div>`:st==="login"?`<div class="msg warn small">Il ponte è attivo ma Claude Code non è autenticato: in un terminale esegui <span class="mono">claude</span> e accedi con il tuo account.</div>`:st==="loading"?`<div class="msg info small">Collegamento al ponte in corso…</div>`:`<div class="msg info small">Claude non è collegato. Avvia il ponte Claude Code sul tuo computer e lascia aperto il terminale: lo strumento si collega da solo entro qualche secondo. <a href="/installazione">Come si fa</a>.</div>`;
   const hb=T.health,done=hb&&!hb.running,ko=done?hb.items.filter(i=>!i.ok).length:0;
   const health=`<div class="health"><div class="health-h"><b>Pronto per la demo?</b><button type="button" data-act="healthCheck" ${hb?.running?"disabled":""}>${hb?.running?"Verifica in corso…":done?"Verifica di nuovo":"Verifica tutto"}</button></div>
    ${hb?.running?`<p class="small muted" style="margin:8px 0 0">Controllo ponte, Claude, Jira e dati…</p>`:""}
@@ -1085,14 +727,20 @@ async function healthCheck(){T.health={running:true,at:Date.now(),items:[]};rend
   else add(false,"Jira raggiungibile",`accesso Atlassian non disponibile · <a href="/api/auth/login">Rientra</a>`);
   add(caps.db==="ok"&&!READONLY,"Dati salvati e condivisi",caps.db==="ok"?(READONLY?"sola lettura: puoi consultare ma non modificare":"sincronizzati"):caps.db==="warn"?"sincronizzazione in pausa":"non salvati: ricarica la pagina");
   T.health={running:false,at:Date.now(),items};if(bst!==caps.sample)checkBridge();render()}
-const IS_TOUCH=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
 function bridgeSettings(){const custom=BS.bridgeUrl()!==BS.DEFAULT_BRIDGE;
   return det("bridge-settings",`<span class="ttl">Indirizzo e token del ponte</span><span class="pill ${caps.sample==="ok"?"ok":"warn"}">${caps.sample==="ok"?"collegato":custom?"indirizzo personalizzato":"non collegato"}</span>`,
-  `<p class="small muted" style="margin:10px 0">Sul Mac il ponte risponde a <span class="mono">${esc(BS.DEFAULT_BRIDGE)}</span>. Dal telefono quell'indirizzo non è il tuo Mac: serve l'indirizzo https con cui il Mac è raggiungibile (vedi README › «Usare lo studio da iPhone»).</p>
+  `<p class="small muted" style="margin:10px 0">Sul computer il ponte risponde a <span class="mono">${esc(BS.DEFAULT_BRIDGE)}</span>. Cambia l'indirizzo solo se il ponte gira altrove, per esempio su un altro computer della tua rete privata raggiungibile in https.</p>
    <div class="grid">${F("Indirizzo del ponte",`<input id="brUrl" type="url" inputmode="url" autocapitalize="off" autocorrect="off" placeholder="https://il-tuo-mac.tailnet.ts.net" value="${esc(custom?BS.bridgeUrl():"")}">`)}${F("Token del ponte",`<input id="brTok" type="password" autocomplete="off" placeholder="uguale a BRIDGE_TOKEN nel .env" value="${esc(BS.bridgeToken())}">`)}</div>
    <div class="toolbar" style="margin-top:10px"><button class="primary" data-act="saveBridge">Salva e ricollega</button><button data-act="resetBridge">Ripristina l'indirizzo del Mac</button></div>`)}
 {const sid=ls.get("stepid:"+PID,""),ix=STEPS.findIndex(x=>x.id===sid);cur=ix>=0?ix:0}
 const A={};
+A.decReset=()=>{T.dq={q:"",type:"*",src:"*"};render()};
+const rowOf=p=>p&&document.querySelector(`#main tr[data-k="${p.kind==="req"?"req":"t"}-${p.id}"]`);
+A.openRow=el=>{const kind=el.dataset.kind,id=el.dataset.id;if(T.panel?.kind===kind&&T.panel.id===id)return;T.panel={kind,id};render();rowOf(T.panel)?.scrollIntoView({block:"nearest"});$("#main .sp .sp-t")?.focus({preventScroll:true})};
+A.spClose=()=>{const p=T.panel;T.panel=null;render();rowOf(p)?.focus({preventScroll:true})};
+A.spMove=el=>{const ids=T.panelIds||[],i=ids.indexOf(T.panel?.id),j=i+(+el.dataset.d);if(!T.panel||j<0||j>=ids.length)return;T.panel={...T.panel,id:ids[j]};render();rowOf(T.panel)?.scrollIntoView({block:"nearest"})};
+A.reqTickets=el=>{T.bReq=el.dataset.code;T.bTab="tickets";T.rel="*";T.onlyIssues=false;A.go({dataset:{i:STEPS.findIndex(s=>s.id==="backlog")}})};
+A.bReqClear=()=>{T.bReq=null;render()};
 A.rqReset=()=>{T.rq={q:"",show:"all",rel:"*"};render()};
 A.csPick=el=>{T.cs=T.cs||{};if(el.dataset.ph){T.cs.ph=el.dataset.ph;T.cs.ep=null}if(el.dataset.ep)T.cs.ep=el.dataset.ep;render()};
 A.stopProg=el=>{const p=T.prog[el.dataset.prog];if(p){p.stop=true;progPaint(el.dataset.prog)}};
@@ -1133,7 +781,7 @@ A.saveBridge=()=>{let u=($("#brUrl").value||"").trim();if(u&&!/^https?:\/\//i.te
 A.resetBridge=()=>{BS.setBridge("","");toast("Indirizzo ripristinato.");checkBridge()};
 A.bTab=el=>{T.bTab=el.dataset.tab;ls.set("bTab:"+PID,T.bTab);T.focusTab=true;render()};
 document.addEventListener("keydown",e=>{const tb=e.target.closest&&e.target.closest('[role="tab"]');if(!tb)return;const tl=[...tb.parentElement.querySelectorAll('[role="tab"]')];let i=tl.indexOf(tb);if(e.key==="ArrowRight")i=(i+1)%tl.length;else if(e.key==="ArrowLeft")i=(i-1+tl.length)%tl.length;else if(e.key==="Home")i=0;else if(e.key==="End")i=tl.length-1;else return;e.preventDefault();tl[i].focus();tl[i].click()});
-A.go=el=>{const i=+el.dataset.i;if(i<0||i>=STEPS.length)return;T.rulesOpen=false;if(i!==cur)T.fresh=null;if(i!==cur)markSeen();cur=i;ls.set("stepid:"+PID,STEPS[i].id);$("#main").scrollTop=0;render();
+A.go=el=>{const i=+el.dataset.i;if(i<0||i>=STEPS.length)return;T.rulesOpen=false;T.panel=null;if(STEPS[i].id!=="backlog")T.bReq=null;if(i!==cur)T.fresh=null;if(i!==cur)markSeen();cur=i;ls.set("stepid:"+PID,STEPS[i].id);$("#main").scrollTop=0;render();
   if(STEPS[i].id==="create"&&!T.pre&&MCP&&P().key&&!busy.preflight&&!READONLY)setTimeout(()=>{if(cur===i&&!T.pre&&!busy.preflight)A.preflight()},150)};
 /* Avanzamento delle operazioni lunghe di Claude: barra, tempo trascorso, risultati man mano, «Ferma» tra un'unità e l'altra. */
 T.prog={};let PROG_T=null;
@@ -1460,14 +1108,23 @@ function copyText(t,el){const done=()=>{if(el){const o=el.textContent;el.textCon
   try{navigator.clipboard.writeText(t).then(done,fb)}catch(e){fb()}}
 
 /* ================= eventi ================= */
-document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.disabled)return;e.preventDefault();const f=A[b.dataset.act];if(f)f(b)});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.disabled)return;const ln=e.target.closest("a[href]");if(ln&&ln!==b&&b.contains(ln))return;e.preventDefault();const f=A[b.dataset.act];if(f)f(b)});
 document.addEventListener("toggle",e=>{const d=e.target;if(d.matches?.("details[data-k]")){d.open?openSet.add(d.dataset.k):openSet.delete(d.dataset.k);ls.set("open",[...openSet].slice(-200))}},true);
+// tastiera per tabelle e pannello: Invio apre la riga, ↑ ↓ cambiano riga, Esc chiude
+document.addEventListener("keydown",e=>{const t=e.target,typing=t.closest?.("input,textarea,select,[contenteditable]");
+  if(e.key==="Escape"&&T.panel){if(document.querySelector(".dd-menu:not([hidden])"))return;if(typing&&!t.closest(".sp"))return;if(typing)t.blur();e.preventDefault();A.spClose();return}
+  if(typing||e.altKey||e.metaKey||e.ctrlKey)return;
+  if((e.key==="Enter"||e.key===" ")&&t.matches?.('tr[data-act="openRow"]')){e.preventDefault();A.openRow(t);return}
+  if(T.panel&&(e.key==="ArrowDown"||e.key==="ArrowUp")&&!t.closest?.('[role="tab"],select')){e.preventDefault();A.spMove({dataset:{d:e.key==="ArrowDown"?1:-1}})}});
 // ricerca nei requisiti: filtra le righe senza ridisegnare la pagina, così il cursore resta nel campo
+document.addEventListener("input",e=>{if(e.target.id!=="decSearch")return;T.dq.q=e.target.value;const all=arr("decisions"),vis=new Set(decFilter(all).map(x=>x.id));
+  $$('#main tr[data-dec]').forEach(r=>{r.hidden=!vis.has(r.dataset.dec)});const c=$("#decCount");if(c)c.innerHTML=decCount(vis.size,all.length)});
 document.addEventListener("input",e=>{if(e.target.id!=="rqSearch")return;T.rq.q=e.target.value;const all=reqList(),vis=new Set(reqFilter(all).map(x=>x.id));
-  $$('#main details[data-k^="req-"]').forEach(d=>{d.hidden=!vis.has(d.dataset.k.slice(4))});const c=$("#rqCount");if(c)c.innerHTML=rqCount(vis.size,all.length)});
+  $$('#main tr[data-k^="req-"]').forEach(d=>{d.hidden=!vis.has(d.dataset.k.slice(4))});T.panelIds=reqFilter(all).map(x=>x.id);const c=$("#rqCount");if(c)c.innerHTML=rqCount(vis.size,all.length)});
 document.addEventListener("change",e=>{const el=e.target;
   if(el.id==="stepSelect"){A.go({dataset:{i:el.value}});return}
   if(el.id==="relPick"){T.rel=el.value;render();return}
+  if(el.id==="decType"||el.id==="decSrc"){T.dq[el.id==="decType"?"type":"src"]=el.value;render();return}
   if(el.id==="rqShow"||el.id==="rqRel"){T.rq[el.id==="rqShow"?"show":"rel"]=el.value;render();return}
   if(el.id==="onlyIssues"){T.onlyIssues=el.checked;render();return}
   if(el.id==="ackBox"){T.ack=el.checked;render();return}
@@ -1693,7 +1350,7 @@ $("#chatStop").onclick=()=>chatCtl?.abort();
 $("#chatImg").onchange=e=>{chatImg=e.target.files[0]||null;$("#chatImgName").textContent=chatImg?chatImg.name:"";e.target.value=""};
 document.addEventListener("pointerover",e=>{const el=e.target.closest&&e.target.closest("summary .ttl,summary .q-ans,.sugg button,.st small,.st>span:last-child");if(el&&!el.title&&el.scrollWidth>el.clientWidth+1)el.title=el.textContent.trim()},{passive:true});
 const chatEl=$("#chat"),fabEl=$("#chatFab");
-function setChatOpen(open,focus=true){chatEl.classList.toggle("open",open);document.body.classList.toggle("chat-open",open);fabEl.setAttribute("aria-expanded",String(open));fabEl.setAttribute("aria-label",open?"Chiudi la chat":"Apri la chat con Claude");fabEl.title=open?"Chiudi la chat":"Chat con Claude";
+function setChatOpen(open,focus=true){chatEl.classList.toggle("open",open);document.body.classList.toggle("chat-open",open);fabEl.setAttribute("aria-expanded",String(open));fabEl.setAttribute("aria-label",open?"Chiedi a Claude: chiudi la chat":"Chiedi a Claude: apri la chat");fabEl.title=open?"Chiudi la chat":"Chat con Claude";
   if(open){fabEl.classList.remove("dot","hint");const log=$("#chatLog");log.scrollTop=log.scrollHeight;if(focus)$("#chatIn").focus()}else if(focus)fabEl.focus();
   ls.set("chatOpen",open)}
 fabEl.onclick=()=>setChatOpen(!chatEl.classList.contains("open"));
@@ -1724,7 +1381,7 @@ function showGate(kind,note){GATE=kind;document.body.classList.add("gate");$("#p
   $("#capChips").innerHTML="";
   if(kind==="login"){$("#main").innerHTML=`<div style="padding:8vh 0 0;max-width:560px"><div class="eyebrow">Trama</div><h1>Accedi con il tuo account Atlassian</h1>
     <p class="lead">Lo strumento lavora sul tuo Jira con i tuoi permessi: i ticket risultano creati da te e vedi solo i progetti dei siti a cui hai accesso.</p>
-    ${note?`<div class="msg warn">${esc(note)}</div>`:""}<div class="toolbar"><a class="btn primary" href="/api/auth/login" style="text-decoration:none;background:var(--accent);color:var(--accent-fg);border-color:var(--accent)">Accedi con Atlassian</a><a href="/">Scopri come funziona</a></div><p class="small muted" style="margin-top:18px">Accedendo accetti il trattamento dei dati descritto nell'<a href="/privacy">informativa privacy</a>.</p></div>`;return}
+    ${note?`<div class="msg warn">${esc(note)}</div>`:""}<div class="toolbar"><a class="btn primary" href="/api/auth/login" style="text-decoration:none;background:var(--primary);color:var(--on-primary);border-color:var(--primary)">Accedi con Atlassian</a><a href="/">Scopri come funziona</a></div><p class="small muted" style="margin-top:18px">Accedendo accetti il trattamento dei dati descritto nell'<a href="/privacy">informativa privacy</a>.</p></div>`;return}
   renderPicker(note)}
 function renderPicker(note){const ps=PROJECTS||[];const siteName=id=>(SITES.find(s=>s.id===id)||{}).name||"";
   const day=d=>{const x=new Date(d),t=new Date();const diff=Math.round((new Date(t.toDateString())-new Date(x.toDateString()))/864e5);return diff===0?"oggi":diff===1?"ieri":"il "+x.toLocaleDateString("it-IT")};

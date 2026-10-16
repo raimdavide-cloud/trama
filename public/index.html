@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="/tokens.css">
 <link rel="stylesheet" href="/trama.css">
 <style>
 /* Layout: hero con demo animata, poi una sezione per domanda (come funziona, esempi, regole, per chi, sicurezza, FAQ). Una sola banda scura in chiusura. */
@@ -194,7 +195,7 @@ footer a{color:var(--muted)}
 <body>
 <div class="wrap">
   <nav class="top" aria-label="Principale">
-    <a class="brand" href="/" aria-label="Trama, home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span></a>
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama, home</span></a>
     <div class="links"><a href="#demo">Demo</a><a href="#passi">Come funziona</a><a href="#esempi">Esempi</a><a href="#regole">Regole</a><a href="#sicurezza">Sicurezza</a><a href="#faq">Domande</a></div>
     <a class="btn primary" href="/studio">Apri Trama</a>
   </nav>
@@ -308,7 +309,7 @@ footer a{color:var(--muted)}
       <details><summary>Trama scrive su Jira da solo?</summary><p>No. Prima esegue un controllo, poi mostra le ipotesi da confermare e chiede una doppia conferma. Solo allora crea, nell'ordine Project › Fasi › epiche › ticket, e rilegge Jira per verificare.</p></details>
       <details><summary>Quali documenti posso caricare?</summary><p>Word, PDF, Excel, CSV, testo, Markdown e immagini. Le immagini (frame di design, screenshot, foto di lavagne) vengono trascritte da Claude.</p></details>
       <details><summary>Serve una chiave API di Claude?</summary><p>No. Trama usa Claude Code sul tuo Mac attraverso un piccolo ponte locale, con il tuo abbonamento. Senza ponte acceso tutto funziona tranne le proposte di Claude.</p></details>
-      <details><summary>Posso usarlo da iPhone?</summary><p>Sì, l'interfaccia è pensata anche per Safari su iOS. Per usare Claude dal telefono serve rendere raggiungibile il ponte del Mac, per esempio con Tailscale.</p></details>
+      <details><summary>Posso usarlo da telefono o tablet?</summary><p>No: Trama è pensato per il computer, con una finestra larga almeno 900 pixel. Lavora con tabelle, pannelli e documenti lunghi, che su uno schermo piccolo diventerebbero scomodi. Da telefono lo studio mostra un avviso.</p></details>
       <details><summary>Come elimino un backlog di prova?</summary><p>Trama non cancella nulla in Jira. Ti prepara la query esatta con i soli ticket creati, da eliminare in blocco in Jira, poi si riallinea con «Sincronizza con Jira».</p></details>
       <details><summary>Chi vede i miei progetti?</summary><p>Chi ha accesso allo stesso sito Atlassian. Ogni progetto è legato al sito su cui lavora.</p></details>
     </div>
@@ -321,7 +322,7 @@ footer a{color:var(--muted)}
     <div><p>Accedi con Atlassian, crea il progetto e segui i passi. Il primo backlog può essere in Jira il giorno stesso.</p><div class="cta" style="margin-top:22px"><a class="btn primary" href="/api/auth/login">Accedi con Atlassian</a><a class="btn" href="/brand">Linee guida del marchio</a></div></div>
   </div>
 </section>
-<div class="wrap"><footer><a class="brand" aria-label="Trama" href="/" style="font-size:18px"><svg viewBox="0 0 32 32" aria-hidden="true" style="width:22px;height:22px"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span></a><span>Strumento interno del gruppo · Funziona con Jira Cloud e Claude Code</span><span><a href="/installazione">Installazione</a> · <a href="/privacy">Privacy</a> · <a href="/brand">Marchio e linee guida</a></span></footer></div>
+<div class="wrap"><footer><a class="brand" href="/" style="font-size:18px"><svg viewBox="0 0 32 32" aria-hidden="true" style="width:22px;height:22px"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama</span></a><span>Strumento interno del gruppo · Funziona con Jira Cloud e Claude Code</span><span><a href="/installazione">Installazione</a> · <a href="/privacy">Privacy</a> · <a href="/brand">Marchio e linee guida</a></span></footer></div>
 
 <script>
 /* Demo animate: ogni scena è un elenco di passi. Gli elementi con data-s="n" compaiono dal passo n, quelli con data-x="n" spariscono dal passo n.
@@ -392,7 +393,7 @@ const EX=[
  {in:`<h4>Requisito nel documento</h4><div class="doc"><div class="doc-h">${I("i-file")}Requisiti_OrtoComune_v2.docx · pag. 6</div><p><mark>RF-025 · Sospensione automatica dei turni in caso di allerta meteo</mark> (pioggia intensa, gelo). Se il servizio meteo non risponde, i turni restano confermati.</p></div><p class="ex-note">Componenti: Back-end, Web, Mobile · Release 1.0 · dipende da RF-020 e RF-060.</p>`,
   out:`<h4>Ticket proposti da Trama</h4><div class="tk"><span class="key">T-031</span><span class="t"><em>[BE]</em> Weather alert shift suspension</span><span class="m"><span class="pill">Story</span><span class="pill">Back-End</span><span class="pill">Release1.0</span></span></div>
    <div class="tk"><span class="key">T-032</span><span class="t"><em>[FE - Mobile]</em> Suspended shift banner and push</span><span class="m"><span class="pill">Story</span><span class="pill">UI</span></span></div>
-   <div class="ticket-doc"><b>## Context</b>
+   <div class="ticket-doc" tabindex="0" role="region" aria-label="Esempio di ticket completo"><b>## Context</b>
 RF-025: shifts are suspended automatically on weather alerts.
 
 <b>## User story</b>
@@ -411,16 +412,16 @@ As a gardener, I want my shift to be suspended on a weather alert, so that I don
 * Users receive a push and an email.</div>`},
  {in:`<h4>Domanda aperta</h4><div class="doc"><p><b>RM-01</b> · Il documento lascia aperta la scelta tra app nativa e cross-platform. Qual è la tecnologia decisa?</p></div><p class="ex-note">Senza risposta, ogni ticket FE - Mobile andrebbe scritto due volte.</p>`,
   out:`<h4>Risposta e registro delle decisioni</h4><div class="card" style="padding:16px"><div class="row"><span class="pill ok">Risposta</span><span class="pill">Cliente</span></div><p style="margin:10px 0 0">App cross-platform (Flutter), una base di codice per iOS e Android.</p></div>
-   <div class="ticket-doc" style="max-height:none"><b>Registro · 16/10/2026</b>
+   <div class="ticket-doc" tabindex="0" role="region" aria-label="Esempio di ticket completo" style="max-height:none"><b>Registro · 16/10/2026</b>
 Decisione: l'app mobile è cross-platform (Flutter).
 Chi: Cliente · Fonte: Domande di apertura
 Impatto: un solo ticket FE - Mobile per funzione;
 label Android e iOS solo per i casi di piattaforma.
 Regola del kit: K5 · Label</div><p class="ex-note">Da quel momento Claude scompone i requisiti mobile con un ticket solo.</p>`},
- {in:`<h4>Ticket in bozza</h4><div class="tk"><span class="key">T-016</span><span class="t"><em>[FE - Web]</em> Shifts calendar</span><span class="m"><span class="pill">Story</span></span></div><div class="ticket-doc"><b>## Acceptance criteria</b>
+ {in:`<h4>Ticket in bozza</h4><div class="tk"><span class="key">T-016</span><span class="t"><em>[FE - Web]</em> Shifts calendar</span><span class="m"><span class="pill">Story</span></span></div><div class="ticket-doc" tabindex="0" role="region" aria-label="Esempio di ticket completo"><b>## Acceptance criteria</b>
 * The calendar works well.</div>`,
   out:`<h4>Segnalazione del controllo qualità</h4><div class="card" style="padding:16px"><div class="row"><span class="key">T-016</span><span class="pill err">alta</span><span class="pill primary">Criteri vaghi</span></div><p style="margin:10px 0 4px">«Works well» non è verificabile.</p><p style="margin:0;color:var(--muted);font-size:15px">Cosa fare: indicare viste, larghezza minima e tempi.</p></div>
-   <div class="ticket-doc"><b>## Acceptance criteria</b>
+   <div class="ticket-doc" tabindex="0" role="region" aria-label="Esempio di ticket completo"><b>## Acceptance criteria</b>
 * Week and month views, readable from 360 px.
 * The calendar loads in under 2 s with 200 shifts.
 * Suspended shifts are shown in grey with the reason.

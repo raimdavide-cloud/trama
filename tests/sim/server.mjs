@@ -2,7 +2,7 @@
 // Nessun dato esce dal computer e il database non viene mai toccato.
 // Uso: node tests/sim/server.mjs   (porta: PORT, predefinita 8899)
 import { createServer } from "node:http";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, statSync } from "node:fs";
 import { extname, join } from "node:path";
 
 process.env.TOKEN_KEY ||= Buffer.alloc(32, 7).toString("base64"); // chiave finta: cifra solo il token finto qui sotto
@@ -41,9 +41,10 @@ const send = (res, status, body, type = "application/json; charset=utf-8") => {
   res.writeHead(status, { "content-type": type, "cache-control": "no-store" });
   res.end(typeof body === "string" || Buffer.isBuffer(body) ? body : JSON.stringify(body));
 };
+// date fisse: le immagini dei test non cambiano con il giorno in cui girano
 const projectRow = () => {
   const n = (c) => [...store.values()].filter((v) => v.col === c && !v.deleted).length;
-  return { ...fixture.project, jira_key: store.get("meta/project")?.data?.key || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString(), created_by: user.account_id, created_by_name: user.name, reqs: n("reqs"), tickets: n("tickets") };
+  return { ...fixture.project, jira_key: store.get("meta/project")?.data?.key || "", created_at: "2026-10-16T08:00:00.000Z", updated_at: "2026-10-16T08:00:00.000Z", created_by: user.account_id, created_by_name: user.name, reqs: n("reqs"), tickets: n("tickets") };
 };
 
 createServer(async (req, res) => {
@@ -83,7 +84,8 @@ createServer(async (req, res) => {
 
     // pagine statiche
     let f = join(ROOT, "public", p === "/" ? "index.html" : p);
-    if (!existsSync(f) && existsSync(f + ".html")) f += ".html";
+    if ((!existsSync(f) || statSync(f).isDirectory()) && existsSync(f + ".html")) f += ".html";
+    if (existsSync(f) && statSync(f).isDirectory()) return send(res, 404, "Non trovato", "text/plain");
     if (!existsSync(f)) return send(res, 404, "Non trovato", "text/plain");
     return send(res, 200, readFileSync(f), TYPES[extname(f)] || "application/octet-stream");
   } catch (e) {
