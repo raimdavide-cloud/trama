@@ -10,7 +10,7 @@ test.beforeEach(async ({ request, page }) => {
   await page.clock.setFixedTime(new Date("2026-10-16T10:00:00")); // orari e date sempre uguali
 });
 
-for (const path of ["/", "/brand", "/installazione", "/privacy"]) {
+for (const path of ["/", "/brand", "/installazione", "/privacy", "/componenti"]) {
   test(`pagina ${path}`, async ({ page }) => {
     await page.goto(path);
     await page.evaluate(() => document.fonts.ready);

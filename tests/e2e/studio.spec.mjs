@@ -186,3 +186,12 @@ test("barra in alto: menu del progetto con Apri in Jira e verifica dei collegame
   await expect(list.filter({ hasText: "Jira raggiungibile" })).toHaveClass(/ok/);
   await expect(list.filter({ hasText: "Dati salvati e condivisi" })).toHaveClass(/ok/);
 });
+
+test("solo desktop: sotto i 900 px lo studio mostra l'avviso", async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 900 });
+  await page.goto(PROJECT);
+  await expect(page.getByRole("heading", { name: "Trama è pensato per il computer" })).toBeVisible();
+  await expect(page.locator(".app")).toBeHidden();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(page.locator(".app")).toBeVisible();
+});

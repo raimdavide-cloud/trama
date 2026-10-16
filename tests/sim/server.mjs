@@ -41,9 +41,10 @@ const send = (res, status, body, type = "application/json; charset=utf-8") => {
   res.writeHead(status, { "content-type": type, "cache-control": "no-store" });
   res.end(typeof body === "string" || Buffer.isBuffer(body) ? body : JSON.stringify(body));
 };
+// date fisse: le immagini dei test non cambiano con il giorno in cui girano
 const projectRow = () => {
   const n = (c) => [...store.values()].filter((v) => v.col === c && !v.deleted).length;
-  return { ...fixture.project, jira_key: store.get("meta/project")?.data?.key || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString(), created_by: user.account_id, created_by_name: user.name, reqs: n("reqs"), tickets: n("tickets") };
+  return { ...fixture.project, jira_key: store.get("meta/project")?.data?.key || "", created_at: "2026-10-16T08:00:00.000Z", updated_at: "2026-10-16T08:00:00.000Z", created_by: user.account_id, created_by_name: user.name, reqs: n("reqs"), tickets: n("tickets") };
 };
 
 createServer(async (req, res) => {

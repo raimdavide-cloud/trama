@@ -127,25 +127,9 @@ Per tornare a una versione precedente: Vercel › *Deployments* › la versione 
 
 Prima di ogni rilascio che tocca il ponte esegui `npm run bridge:pack`: il controllo blocca la pubblicazione se il ponte scaricabile non è aggiornato.
 
-## Usare lo studio da iPhone (Safari)
+## Solo da computer
 
-Interfaccia, caricamento documenti, kit, backlog, creazione su Jira e registro funzionano da Safari su iPhone e iPad. L'unica parte che dal telefono non funziona da sola è **Claude**: il ponte gira sul Mac, e l'indirizzo `127.0.0.1` sul telefono è il telefono stesso. Serve un indirizzo **https** con cui il Mac sia raggiungibile.
-
-Il modo più semplice e privato è Tailscale (gratuito per uso personale):
-
-1. Installa Tailscale sul Mac e sull'iPhone e accedi con lo stesso account.
-2. Scegli un token e salvalo nel `.env` del Mac (`BRIDGE_TOKEN=<stringa lunga casuale>`, per esempio l'output di `npm run key`).
-3. Avvia il ponte (`npm run claude`) e, in un altro terminale, esponilo in https dentro la tua rete privata:
-
-```bash
-tailscale serve --bg 8790
-```
-
-4. Sull'iPhone apri lo studio › passo 1 › **Impostazioni del ponte Claude Code**, incolla l'indirizzo `https://<nome-mac>.<rete>.ts.net` e il token, poi **Salva e ricollega**.
-
-Il token impedisce a chiunque conosca l'indirizzo di usare il tuo abbonamento. Non usare tunnel pubblici (per esempio ngrok o Cloudflare) senza `BRIDGE_TOKEN`.
-
-Mac acceso e ponte avviato sono necessari anche quando usi lo studio dal telefono.
+Trama è pensato per il computer: lo studio richiede una finestra larga almeno 900 pixel e sotto quella misura mostra un avviso. Telefono e tablet non sono supportati e non vengono provati.
 
 ## Limiti noti
 
@@ -153,4 +137,4 @@ Mac acceso e ponte avviato sono necessari anche quando usi lo studio dal telefon
 - Due persone che modificano **lo stesso** requisito o ticket nello stesso momento: vince l'ultima modifica salvata.
 - I documenti caricati vengono salvati come testo, fino a 110.000 caratteri ciascuno. Le immagini vengono trascritte da Claude.
 - Claude funziona solo dal Mac su cui gira il ponte e consuma i limiti del tuo piano Claude Code. In modalità ponte la chat risponde e propone, ma non modifica direttamente requisiti e ticket.
-- Safari su Mac può bloccare le richieste dal sito al ponte locale su `127.0.0.1`: usa Chrome o Firefox sul Mac. Da iPhone vedi la sezione dedicata sopra.
+- Safari su Mac può bloccare le richieste dal sito al ponte locale su `127.0.0.1`: usa Chrome o Firefox.

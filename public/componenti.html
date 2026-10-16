@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Componenti · Trama</title>
+<meta name="description" content="Sistema di design di Trama: token, componenti dello studio, regole d'uso, linee guida dei contenuti e accessibilità.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/studio.css">
+<style>
+/* Impaginazione della sola documentazione: i componenti mostrati usano gli stili veri dello studio */
+body{background:var(--bg)}
+.doc-top{display:flex;align-items:center;gap:18px;padding:14px 0;border-bottom:1px solid var(--line)}
+.doc-top nav{margin-left:auto;display:flex;gap:16px;font-size:14px}
+.doc{max-width:1080px;margin:0 auto;padding:34px 0 90px}
+.doc>header h1{font:800 40px/1.05 var(--f-display);letter-spacing:-.025em;margin:8px 0 12px}
+.doc section{margin-top:52px;scroll-margin-top:20px}
+.doc h2{font:750 26px/1.15 var(--f-display);letter-spacing:-.015em;margin:0 0 6px}
+.doc h3{font:700 16px/1.3 var(--f-display);margin:22px 0 8px}
+.doc .intro{color:var(--muted);max-width:72ch;margin:0 0 16px}
+.toc{display:flex;flex-wrap:wrap;gap:6px 16px;margin:18px 0 0;padding:0;list-style:none;font-size:14px}
+.spec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.spec.col{flex-direction:column;align-items:stretch}
+.rules-ok,.rules-no{margin:10px 0 0;padding-left:20px;max-width:80ch}
+.rules-ok li,.rules-no li{margin:5px 0}
+.rules-no li::marker{content:"✕  ";color:var(--err)}
+.rules-ok li::marker{content:"✓  ";color:var(--ok)}
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.sw>div{border:1px solid var(--line);border-radius:var(--r-m);overflow:hidden;background:var(--surface)}
+.sw i{display:block;height:54px}
+.sw p{margin:0;padding:8px 10px;font-size:13px}
+.sw code{font:500 12px var(--f-mono)}
+.doc table.gl{width:100%;border-collapse:collapse;font-size:14px}
+.doc table.gl th,.doc table.gl td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+.doc table.gl thead th{border-top:0}
+.spec .sp{position:static;width:100%;max-width:560px;animation:none;box-shadow:none;border:1px solid var(--line);border-radius:var(--r-m)}
+.spec .dd-menu{position:static;display:block}
+.spec .dt-wrap{width:100%}
+</style>
+</head>
+<body>
+<header class="doc-top">
+  <a class="brand" href="/" style="text-decoration:none;color:inherit"><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama, home</span></a>
+  <nav aria-label="Documentazione"><a href="/brand">Marchio</a><a href="/componenti" aria-current="page">Componenti</a><a href="/studio">Studio</a></nav>
+</header>
+<main class="doc">
+<header>
+  <div class="eyebrow">Sistema di design</div>
+  <h1>Componenti dello studio</h1>
+  <p class="lead">Ogni esempio qui sotto usa gli stessi file dello studio in produzione (<span class="mono">tokens.css</span> e <span class="mono">studio.css</span>): se cambia lo studio, cambia anche questa pagina. Il marchio e le pagine pubbliche sono descritti in <a href="/brand">/brand</a>.</p>
+  <ul class="toc" aria-label="In questa pagina">
+    <li><a href="#token">Token</a></li><li><a href="#tipografia">Tipografia</a></li><li><a href="#pulsanti">Pulsanti</a></li><li><a href="#etichette">Etichette e stati</a></li><li><a href="#messaggi">Messaggi</a></li><li><a href="#campi">Campi</a></li><li><a href="#tabelle">Tabelle e pannello</a></li><li><a href="#menu">Menu</a></li><li><a href="#avanzamento">Avanzamento</a></li><li><a href="#passo">Intestazione del passo</a></li><li><a href="#contenuti">Contenuti</a></li><li><a href="#accessibilita">Accessibilità</a></li><li><a href="#desktop">Solo desktop</a></li>
+  </ul>
+</header>
+
+<section id="token" aria-labelledby="h-token">
+  <h2 id="h-token">Token</h2>
+  <p class="intro">Colori, caratteri, raggi e tempi stanno solo in <span class="mono">/tokens.css</span>, in versione chiara e scura. I componenti usano i <b>ruoli</b>, mai i colori grezzi: <span class="mono">npm run check</span> blocca i colori esadecimali scritti fuori dai token.</p>
+  <div class="sw">
+    <div><i style="background:var(--bg)"></i><p><code>--bg</code><br>sfondo della pagina</p></div>
+    <div><i style="background:var(--surface)"></i><p><code>--surface</code><br>schede, pannelli, menu</p></div>
+    <div><i style="background:var(--sunk)"></i><p><code>--sunk</code><br>zone incassate, passaggio del mouse</p></div>
+    <div><i style="background:var(--line)"></i><p><code>--line</code><br>bordi e separatori</p></div>
+    <div><i style="background:var(--fg)"></i><p><code>--fg</code><br>testo principale</p></div>
+    <div><i style="background:var(--muted)"></i><p><code>--muted</code><br>testo secondario</p></div>
+    <div><i style="background:var(--primary)"></i><p><code>--primary</code><br>indaco: azioni e selezione</p></div>
+    <div><i style="background:var(--primary-soft)"></i><p><code>--primary-soft</code><br>riga selezionata, etichette</p></div>
+    <div><i style="background:var(--accent)"></i><p><code>--accent</code><br>zafferano: il filo, una sola cosa per schermata</p></div>
+    <div><i style="background:var(--ok)"></i><p><code>--ok</code> · <code>--ok-soft</code><br>fatto, verificato</p></div>
+    <div><i style="background:var(--warn)"></i><p><code>--warn</code> · <code>--warn-soft</code><br>da guardare, non blocca</p></div>
+    <div><i style="background:var(--err)"></i><p><code>--err</code> · <code>--err-soft</code><br>blocca, va corretto</p></div>
+  </div>
+  <ul class="rules-ok"><li>Caratteri: <b>Bricolage Grotesque</b> per i titoli, <b>Figtree</b> per il testo, <b>JetBrains Mono</b> per codici e chiavi (<span class="mono">--f-display</span>, <span class="mono">--f-body</span>, <span class="mono">--f-mono</span>).</li><li>Raggi: <span class="mono">--r-s</span> 6px, <span class="mono">--r-m</span> 10px, <span class="mono">--r-l</span> 16px.</li></ul>
+</section>
+
+<section id="tipografia" aria-labelledby="h-tipo">
+  <h2 id="h-tipo">Tipografia</h2>
+  <div class="spec col">
+    <div class="eyebrow">Passo 2 di 6 · Preparazione</div>
+    <div style="font:800 28px/1.15 var(--f-display);letter-spacing:-.02em">Carica i documenti ed estrai i requisiti</div>
+    <p class="lead" style="margin:0">Testo introduttivo: una frase che dice cosa si ottiene, non come funziona lo strumento.</p>
+    <p style="margin:0">Testo normale, 15 px. <span class="muted">Testo secondario per note e dettagli.</span> <span class="small">Testo piccolo, 13 px.</span></p>
+    <p style="margin:0">Codici e chiavi: <span class="key">RF-012</span> <span class="key">COM-904</span></p>
+  </div>
+  <ul class="rules-ok"><li>Un titolo per schermata (h1), poi sezioni (h2): i livelli non si saltano.</li><li>L'etichetta in alto (eyebrow) dice dove sei, non ripete il titolo.</li></ul>
+</section>
+
+<section id="pulsanti" aria-labelledby="h-btn">
+  <h2 id="h-btn">Pulsanti</h2>
+  <div class="spec">
+    <button type="button" class="primary">Estrai i requisiti</button>
+    <button type="button">Esporta CSV</button>
+    <button type="button" class="link">Togli i filtri</button>
+    <button type="button" class="danger">Elimina requisito</button>
+    <button type="button" class="armed">Conferma eliminazione</button>
+    <button type="button" disabled>Crea su Jira</button>
+    <button type="button" class="icon-btn" aria-label="Regole del playbook"><svg class="ic" aria-hidden="true"><use href="/icons.svg#i-shield"/></svg></button>
+  </div>
+  <ul class="rules-ok"><li><b>Un solo pulsante principale per schermata</b>: è il prossimo passo sensato. «Avanti» diventa principale solo quando il passo è completo e la pagina non ne propone un altro.</li><li>Etichette con verbo e oggetto: «Estrai i requisiti», «Crea su Jira».</li><li>Le azioni che non si annullano chiedono un secondo clic: il pulsante diventa rosso con «Conferma…» e torna normale dopo 4 secondi.</li><li>Le icone senza testo hanno sempre un nome per i lettori di schermo.</li></ul>
+  <ul class="rules-no"><li>Due pulsanti principali nella stessa vista.</li><li>«OK», «Invia», «Clicca qui».</li></ul>
+</section>
+
+<section id="etichette" aria-labelledby="h-pill">
+  <h2 id="h-pill">Etichette e stati</h2>
+  <div class="spec">
+    <span class="pill">bozza</span><span class="pill acc">Story</span><span class="pill ok">verificato</span><span class="pill warn">domande</span><span class="pill err">manca</span>
+    <button type="button" class="pill ok pill-btn">3 · in Jira</button>
+    <span class="chip ok">Dati condivisi</span><span class="chip warn">Sola lettura</span><span class="chip err">Claude spento</span>
+  </div>
+  <ul class="rules-ok"><li>Il colore dice lo stato, il testo dice cosa: <span class="pill err">manca</span> invece di un pallino rosso da solo.</li><li>Nella barra in alto compaiono solo gli stati che chiedono attenzione; quando tutto va bene non si mostra nulla.</li><li>Un'etichetta cliccabile (<span class="mono">pill-btn</span>) porta dove si risolve: «3 · in Jira» apre i ticket del requisito.</li></ul>
+</section>
+
+<section id="messaggi" aria-labelledby="h-msg">
+  <h2 id="h-msg">Messaggi</h2>
+  <div class="spec col">
+    <div class="msg info">Stato di Jira riletto. Controlla l'anteprima e le ipotesi.</div>
+    <div class="msg ok">3 requisiti estratti. Controllali uno per uno, poi valida la lista.</div>
+    <div class="msg warn">Puoi procedere: 1 avviso non blocca la creazione.</div>
+    <div class="msg err">2 controlli bloccano la creazione: risolvili prima di procedere.</div>
+  </div>
+  <ul class="rules-ok"><li>Prima cosa è successo, poi cosa fare. Una o due frasi, senza «Errore:» davanti.</li><li>I messaggi restano nel passo in cui servono; le notifiche brevi (toast) solo per conferme veloci.</li></ul>
+</section>
+
+<section id="campi" aria-labelledby="h-campi">
+  <h2 id="h-campi">Campi</h2>
+  <div class="spec col">
+    <div class="grid">
+      <label class="f">Release<input value="MVP (pilota)"></label>
+      <label class="f">Tipo<select><option>Story</option><option>Spike</option><option>Task</option></select></label>
+      <label class="f wide">Descrizione (punto di vista dell'utente)<textarea rows="3">L'ortolano chiede un lotto e, se è pieno, entra in lista d'attesa.</textarea></label>
+    </div>
+    <label class="row small"><input type="checkbox" checked> Design già pronto</label>
+    <input type="search" placeholder="Cerca per ID o titolo" aria-label="Cerca requisiti per ID o titolo">
+  </div>
+  <ul class="rules-ok"><li>Ogni campo ha un'etichetta visibile sopra; nelle tabelle l'etichetta è l'intestazione di colonna e lo studio la passa anche ai lettori di schermo.</li><li>I segnaposto mostrano un esempio reale («Es. Release 1»), non ripetono l'etichetta.</li><li>Si salva da solo mentre scrivi: non serve un pulsante «Salva».</li></ul>
+</section>
+
+<section id="tabelle" aria-labelledby="h-tab">
+  <h2 id="h-tab">Tabelle compatte e pannello</h2>
+  <p class="intro">Requisiti e Backlog sono tabelle: una riga per elemento, le informazioni che servono per decidere, e il dettaglio in un pannello che scorre da destra. Invio apre la riga, ↑ ↓ passano alla vicina, Esc chiude.</p>
+  <div class="spec col">
+    <div class="dt-wrap"><table class="dt"><colgroup><col style="width:96px"><col><col style="width:140px"><col style="width:130px"></colgroup>
+      <thead><tr><th scope="col">ID</th><th scope="col">Titolo</th><th scope="col">Release</th><th scope="col">Ticket</th></tr></thead>
+      <tbody>
+        <tr class="dt-r"><td><span class="key">RF-011</span></td><td class="dt-t">Calendario dei turni</td><td><span class="pill">MVP (pilota)</span></td><td><span class="pill ok">3 · in Jira</span></td></tr>
+        <tr class="dt-r sel"><td><span class="key">RF-012</span></td><td class="dt-t">Richiesta lotto con lista d'attesa</td><td><span class="pill err">manca</span></td><td><span class="pill">2 bozze</span></td></tr>
+        <tr class="dt-r"><td><span class="key">RF-013</span></td><td class="dt-t">Gestione richieste del referente</td><td><span class="pill">MVP (pilota)</span></td><td><span class="pill warn">nessuno</span></td></tr>
+      </tbody></table></div>
+    <aside class="sp" aria-label="Esempio di pannello"><div class="sp-h"><div class="sp-t"><span class="key">RF-012</span><span>Richiesta lotto con lista d'attesa</span></div><div class="sp-nav"><button type="button" class="icon-btn" aria-label="Riga precedente">↑</button><button type="button" class="icon-btn" aria-label="Riga successiva">↓</button><button type="button" class="icon-btn" aria-label="Chiudi il pannello">×</button></div></div><div class="sp-b"><div class="grid"><label class="f">Release<input placeholder="Es. Release 1"></label><label class="f">ID requisito<input value="RF-012"></label></div><div class="sp-sec"><h3>Ticket di questo requisito</h3><ul class="trace"><li><span class="key">T-021</span><span class="tt">[BE] Lot request and waiting list API</span><span class="pill">bozza</span></li></ul></div></div></aside>
+  </div>
+  <ul class="rules-ok"><li>Le colonne mostrano ciò che serve per scegliere la riga; tutto il resto sta nel pannello.</li><li>I titoli lunghi si tagliano con i tre puntini e compaiono interi passando sopra.</li><li>Filtri sopra la tabella: ricerca e menu con i conteggi, «Togli i filtri» quando ce n'è uno attivo.</li></ul>
+</section>
+
+<section id="menu" aria-labelledby="h-menu">
+  <h2 id="h-menu">Menu</h2>
+  <div class="spec">
+    <div class="dd-menu" role="menu" aria-label="Esempio di menu"><div class="dd-head"><b>Test Prova</b><span>Progetto Jira COM</span></div><a role="menuitem" href="#menu">Apri in Jira <span aria-hidden="true">↗</span></a><div class="dd-sep"></div><button type="button" role="menuitem" class="danger-item">Elimina progetto</button></div>
+  </div>
+  <ul class="rules-ok"><li>Le azioni rare o distruttive stanno in un menu («⋯»), non accanto all'azione principale.</li><li>Si chiude con Esc o con un clic fuori; aprirne uno chiude gli altri.</li></ul>
+</section>
+
+<section id="avanzamento" aria-labelledby="h-prog">
+  <h2 id="h-prog">Avanzamento</h2>
+  <div class="spec col">
+    <div class="prog" style="margin:0"><div class="prog-h"><svg class="ic" aria-hidden="true"><use href="/icons.svg#i-sparkle"/></svg><span class="prog-t">Claude scompone RF-031, RF-032, RF-033</span><span class="prog-e">1:12</span></div><div class="track" role="progressbar" aria-label="Avanzamento" aria-valuemin="0" aria-valuemax="47" aria-valuenow="12"><i style="width:26%"></i></div><div class="prog-f"><span class="small muted">Requisiti 12 di 47 · 31 ticket finora</span><button type="button" class="link">Ferma</button></div></div>
+  </div>
+  <ul class="rules-ok"><li>Ogni attesa oltre pochi secondi mostra cosa sta succedendo, quanto manca (se si sa) e il tempo trascorso.</li><li>«Ferma» chiude l'unità in corso e poi interrompe: niente lavoro perso a metà.</li></ul>
+</section>
+
+<section id="passo" aria-labelledby="h-passo">
+  <h2 id="h-passo">Intestazione del passo</h2>
+  <div class="spec col">
+    <div class="eyebrow">Passo 2 di 6 · Preparazione</div>
+    <div style="font:800 24px/1.15 var(--f-display)">Carica i documenti ed estrai i requisiti</div>
+    <details class="checks-c" open><summary><span class="cc-n">1 di 2</span><span class="cc-t">Manca: Ogni requisito ha una release</span></summary><ul class="checks"><li class="ok"><span class="dot"></span><span>Requisiti presenti</span></li><li><span class="dot"></span><span>Ogni requisito ha una release</span></li></ul></details>
+  </div>
+  <ul class="rules-ok"><li>Alla prima visita obiettivo e controlli sono per esteso; dalla seconda si riducono a una riga che si apre al clic.</li><li>I riferimenti al playbook stanno nella pagina Regole, non nei titoli.</li></ul>
+</section>
+
+<section id="contenuti" aria-labelledby="h-cont">
+  <h2 id="h-cont">Linee guida dei contenuti</h2>
+  <p class="intro">Trama parla come un collega esperto: chiaro, concreto, senza gergo inutile. Dice cosa succede e cosa fare.</p>
+  <h3>Regole</h3>
+  <ul class="rules-ok">
+    <li><b>Italiano</b> nello studio; <b>inglese</b> nei ticket (titoli e descrizioni), come nei team di sviluppo. I codici restano come sono: <span class="key">RF-012</span>, <span class="key">COM-904</span>.</li>
+    <li>Maiuscola solo all'inizio della frase e nei nomi propri: «Crea su Jira», non «Crea Su Jira».</li>
+    <li>Pulsanti: verbo + oggetto, senza punto finale. Messaggi e testi d'aiuto: frasi complete con il punto.</li>
+    <li>Errori: cosa è successo, poi cosa fare. «Il tipo «Spike» non esiste nel progetto: scegli un tipo valido nel kit.»</li>
+    <li>Stati vuoti: un invito, non una scusa. «Nessun requisito ancora. Estraili con Claude o aggiungili a mano.»</li>
+    <li>Numeri e singolari: «1 requisito», «3 requisiti»; date come «16/10/2026», orari «10:42».</li>
+    <li>Lo strumento non dice «io»: parla Claude solo nella chat.</li>
+  </ul>
+  <ul class="rules-no"><li>Numeri di sezione del playbook nei titoli, come «(0.2)» o «(1.4)».</li><li>«Per favore», «semplicemente», «con successo», punti esclamativi.</li><li>Nomi tecnici interni: «data-bind», «sync», «payload».</li></ul>
+  <h3>Glossario</h3>
+  <table class="gl"><thead><tr><th scope="col">Termine</th><th scope="col">Significato</th><th scope="col">Da non usare</th></tr></thead><tbody>
+    <tr><td>Requisito</td><td>Una cosa che il prodotto deve fare, dal punto di vista dell'utente, con un ID stabile</td><td>Requirement, user story</td></tr>
+    <tr><td>Ticket</td><td>Un elemento di lavoro in Jira (Story, Spike, Task, Bug)</td><td>Issue, card</td></tr>
+    <tr><td>Kit di progetto</td><td>Le regole e gli identificativi comuni a tutti i ticket (K1–K9)</td><td>Configurazione, settings</td></tr>
+    <tr><td>Fase, Epica, Project</td><td>I livelli della struttura Jira: Project › Fase › Epica › ticket</td><td>Milestone, gruppo</td></tr>
+    <tr><td>Spike</td><td>Ticket di analisi o design che precede le storie</td><td>Ricerca, task UX</td></tr>
+    <tr><td>Ipotesi</td><td>Una scelta fatta al posto del PO, da confermare</td><td>Assunzione, default</td></tr>
+    <tr><td>Registro delle decisioni</td><td>L'elenco delle decisioni con fonte e impatto</td><td>Log, storico</td></tr>
+    <tr><td>Ponte</td><td>Il programma sul computer che collega lo studio a Claude Code</td><td>Bridge, connettore</td></tr>
+  </tbody></table>
+</section>
+
+<section id="accessibilita" aria-labelledby="h-a11y">
+  <h2 id="h-a11y">Accessibilità</h2>
+  <p class="intro">Obiettivo: WCAG 2.2 livello AA. Ogni pagina e ogni passo dello studio sono controllati in automatico con axe a ogni modifica (<span class="mono">tests/e2e/accessibilita.spec.mjs</span>).</p>
+  <ul class="rules-ok">
+    <li>Contrasto almeno 4,5:1 per il testo e 3:1 per bordi e icone: i ruoli dei token lo rispettano già in chiaro e in scuro.</li>
+    <li>Tutto si usa da tastiera: Tab per spostarsi, Invio per aprire, frecce nelle tabelle e nelle schede, Esc per chiudere. Il focus è sempre visibile.</li>
+    <li>Il nome per i lettori di schermo contiene il testo visibile («Chiedi a Claude: apri la chat»).</li>
+    <li>Le animazioni si spengono per chi ha chiesto movimento ridotto nel sistema.</li>
+  </ul>
+</section>
+
+<section id="desktop" aria-labelledby="h-desk">
+  <h2 id="h-desk">Solo desktop</h2>
+  <p class="intro">Lo studio è pensato per il computer, da 900 pixel di larghezza in su. Sotto quella misura mostra un avviso al posto dell'interfaccia; telefono e tablet non sono supportati né provati. Le pagine pubbliche (home, guida, marchio, privacy) restano leggibili ovunque.</p>
+</section>
+</main>
+</body>
+</html>

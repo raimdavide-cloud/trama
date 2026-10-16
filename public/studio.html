@@ -25,6 +25,7 @@
 </head>
 <body>
 
+<div class="desk-only" role="alert"><div class="card"><div class="eyebrow">Trama</div><h1>Trama è pensato per il computer</h1><p class="lead" style="margin:0 0 16px">Lo studio lavora con tabelle, pannelli e documenti lunghi: aprilo da un computer, con una finestra larga almeno 900 pixel.</p><a href="/">Torna alla home</a></div></div>
 <div class="app">
   <header class="top">
     <a class="brand" href="/" style="text-decoration:none;color:inherit"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama, home</span></a>
@@ -708,7 +709,7 @@ STEPS.push({id:"log",aux:true,phase:"Sempre a portata",short:"Registro decisioni
 /* ================= impostazioni del ponte (anche da iPhone) ================= */
 /* Il pannello si apre dall'indicatore «Claude» nella barra in alto: le pagine dei passi restano libere. */
 function bridgePanel(){const st=caps.sample;
-  const head=st==="ok"?`<div class="msg ok small">Claude Code è collegato: le funzioni di Claude sono attive.</div>`:st==="login"?`<div class="msg warn small">Il ponte è attivo ma Claude Code non è autenticato: in un terminale esegui <span class="mono">claude</span> e accedi con il tuo account.</div>`:st==="loading"?`<div class="msg info small">Collegamento al ponte in corso…</div>`:`<div class="msg info small">Claude non è collegato. Avvia il ponte Claude Code sul tuo computer e lascia aperto il terminale: lo strumento si collega da solo entro qualche secondo. <a href="/installazione">Come si fa</a>.${IS_TOUCH?` Da iPhone o iPad il ponte deve avere un indirizzo https raggiungibile dal telefono: impostalo qui sotto.`:""}</div>`;
+  const head=st==="ok"?`<div class="msg ok small">Claude Code è collegato: le funzioni di Claude sono attive.</div>`:st==="login"?`<div class="msg warn small">Il ponte è attivo ma Claude Code non è autenticato: in un terminale esegui <span class="mono">claude</span> e accedi con il tuo account.</div>`:st==="loading"?`<div class="msg info small">Collegamento al ponte in corso…</div>`:`<div class="msg info small">Claude non è collegato. Avvia il ponte Claude Code sul tuo computer e lascia aperto il terminale: lo strumento si collega da solo entro qualche secondo. <a href="/installazione">Come si fa</a>.</div>`;
   const hb=T.health,done=hb&&!hb.running,ko=done?hb.items.filter(i=>!i.ok).length:0;
   const health=`<div class="health"><div class="health-h"><b>Pronto per la demo?</b><button type="button" data-act="healthCheck" ${hb?.running?"disabled":""}>${hb?.running?"Verifica in corso…":done?"Verifica di nuovo":"Verifica tutto"}</button></div>
    ${hb?.running?`<p class="small muted" style="margin:8px 0 0">Controllo ponte, Claude, Jira e dati…</p>`:""}
@@ -726,10 +727,9 @@ async function healthCheck(){T.health={running:true,at:Date.now(),items:[]};rend
   else add(false,"Jira raggiungibile",`accesso Atlassian non disponibile · <a href="/api/auth/login">Rientra</a>`);
   add(caps.db==="ok"&&!READONLY,"Dati salvati e condivisi",caps.db==="ok"?(READONLY?"sola lettura: puoi consultare ma non modificare":"sincronizzati"):caps.db==="warn"?"sincronizzazione in pausa":"non salvati: ricarica la pagina");
   T.health={running:false,at:Date.now(),items};if(bst!==caps.sample)checkBridge();render()}
-const IS_TOUCH=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
 function bridgeSettings(){const custom=BS.bridgeUrl()!==BS.DEFAULT_BRIDGE;
   return det("bridge-settings",`<span class="ttl">Indirizzo e token del ponte</span><span class="pill ${caps.sample==="ok"?"ok":"warn"}">${caps.sample==="ok"?"collegato":custom?"indirizzo personalizzato":"non collegato"}</span>`,
-  `<p class="small muted" style="margin:10px 0">Sul Mac il ponte risponde a <span class="mono">${esc(BS.DEFAULT_BRIDGE)}</span>. Dal telefono quell'indirizzo non è il tuo Mac: serve l'indirizzo https con cui il Mac è raggiungibile (vedi README › «Usare lo studio da iPhone»).</p>
+  `<p class="small muted" style="margin:10px 0">Sul computer il ponte risponde a <span class="mono">${esc(BS.DEFAULT_BRIDGE)}</span>. Cambia l'indirizzo solo se il ponte gira altrove, per esempio su un altro computer della tua rete privata raggiungibile in https.</p>
    <div class="grid">${F("Indirizzo del ponte",`<input id="brUrl" type="url" inputmode="url" autocapitalize="off" autocorrect="off" placeholder="https://il-tuo-mac.tailnet.ts.net" value="${esc(custom?BS.bridgeUrl():"")}">`)}${F("Token del ponte",`<input id="brTok" type="password" autocomplete="off" placeholder="uguale a BRIDGE_TOKEN nel .env" value="${esc(BS.bridgeToken())}">`)}</div>
    <div class="toolbar" style="margin-top:10px"><button class="primary" data-act="saveBridge">Salva e ricollega</button><button data-act="resetBridge">Ripristina l'indirizzo del Mac</button></div>`)}
 {const sid=ls.get("stepid:"+PID,""),ix=STEPS.findIndex(x=>x.id===sid);cur=ix>=0?ix:0}
