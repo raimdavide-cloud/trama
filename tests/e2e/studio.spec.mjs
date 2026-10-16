@@ -76,6 +76,33 @@ test("tabelle compatte: il pannello si apre, scorre con le frecce, si chiude con
   await expect(page.locator(".sp .sp-t")).toContainText(next);
 });
 
+test("le modifiche fatte nel pannello restano salvate sulla riga giusta", async ({ page }) => {
+  await openStudio(page);
+  await goToStep(page, "Requisiti");
+  await page.locator("#rqShow").selectOption("norel");
+  const row = page.locator('#main tr[data-k^="req-"]').first();
+  const code = (await row.locator(".key").textContent()).trim();
+  await row.click();
+  const release = page.locator('.sp input[data-bind$=":release"]');
+  await expect(release).toHaveAttribute("data-bind", /^reqs:[^:]+:release$/);
+  await expect(release).not.toHaveAttribute("data-bind", /undefined/);
+  await release.fill("Release di prova");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Escape");
+  await page.locator("[data-act=rqReset]").click();
+  await expect(page.locator(`#main tr[data-k^="req-"]`, { hasText: code })).toContainText("Release di prova");
+
+  await goToStep(page, "Backlog");
+  const trow = page.locator('#main tr[data-k^="t-"]').first();
+  await trow.click();
+  const title = page.locator('.sp input[data-bind$=":title"]');
+  await expect(title).not.toHaveAttribute("data-bind", /undefined/);
+  await title.fill("Edited title from the side panel");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Escape");
+  await expect(page.locator('#main tr[data-k^="t-"]').first()).toContainText("Edited title from the side panel");
+});
+
 test("tracciabilità: dal requisito ai suoi ticket nel Backlog", async ({ page }) => {
   await openStudio(page);
   await goToStep(page, "Requisiti");

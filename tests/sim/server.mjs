@@ -2,7 +2,7 @@
 // Nessun dato esce dal computer e il database non viene mai toccato.
 // Uso: node tests/sim/server.mjs   (porta: PORT, predefinita 8899)
 import { createServer } from "node:http";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, statSync } from "node:fs";
 import { extname, join } from "node:path";
 
 process.env.TOKEN_KEY ||= Buffer.alloc(32, 7).toString("base64"); // chiave finta: cifra solo il token finto qui sotto
@@ -83,7 +83,8 @@ createServer(async (req, res) => {
 
     // pagine statiche
     let f = join(ROOT, "public", p === "/" ? "index.html" : p);
-    if (!existsSync(f) && existsSync(f + ".html")) f += ".html";
+    if ((!existsSync(f) || statSync(f).isDirectory()) && existsSync(f + ".html")) f += ".html";
+    if (existsSync(f) && statSync(f).isDirectory()) return send(res, 404, "Non trovato", "text/plain");
     if (!existsSync(f)) return send(res, 404, "Non trovato", "text/plain");
     return send(res, 200, readFileSync(f), TYPES[extname(f)] || "application/octet-stream");
   } catch (e) {

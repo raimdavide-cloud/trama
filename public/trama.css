@@ -48,3 +48,4 @@ a{color:var(--primary)}
 .brand .wm-t{width:auto;height:.64em;flex:none;fill:var(--tx-blue);margin-right:.045em}
 
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}

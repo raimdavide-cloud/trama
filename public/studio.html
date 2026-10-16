@@ -27,7 +27,7 @@
 
 <div class="app">
   <header class="top">
-    <a class="brand" href="/" style="text-decoration:none;color:inherit" aria-label="Trama, home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span></a>
+    <a class="brand" href="/" style="text-decoration:none;color:inherit"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama, home</span></a>
     <div class="dd pmenu" id="pmenu" hidden>
       <button type="button" class="dd-btn proj" id="projBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="projMenu"><span class="proj-n" id="projName"></span><span class="proj-k" id="projKey"></span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="dd-menu" id="projMenu" role="menu" hidden></div>
@@ -35,7 +35,7 @@
     <div class="chips" id="capChips"></div>
     <button type="button" class="icon-btn" id="rulesBtn" data-act="openRules" aria-label="Regole del playbook" title="Regole del playbook" hidden><svg class="ic"><use href="/icons.svg#i-shield"/></svg></button>
     <div class="dd who" id="who" hidden>
-      <button type="button" class="dd-btn av-btn" id="userBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="userMenu" aria-label="Il tuo account"><img id="whoPic" alt=""><span class="av" id="whoIni" hidden></span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button type="button" class="dd-btn av-btn" id="userBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="userMenu"><img id="whoPic" alt=""><span class="av" id="whoIni" hidden></span><span class="sr-only">Il tuo account</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="dd-menu right" id="userMenu" role="menu" hidden>
         <div class="dd-head"><b id="whoName"></b><span id="whoMail"></span></div>
         <a role="menuitem" href="/studio">Tutti i progetti</a>
@@ -67,7 +67,7 @@
     </aside>
   </div>
 </div>
-<button id="chatFab" type="button" aria-label="Apri la chat con Claude" aria-expanded="false" aria-controls="chat" title="Chat con Claude"><span class="fab-lb">Chiedi a Claude</span><span class="fab-ic"><svg class="fab-bub" viewBox="0 0 32 32" aria-hidden="true"><path class="bubble" d="M10 4.5h12a6.5 6.5 0 0 1 6.5 6.5v6.5a6.5 6.5 0 0 1-6.5 6.5h-6.4l-5.6 4.2V24A6.5 6.5 0 0 1 3.5 17.5V11A6.5 6.5 0 0 1 10 4.5z"/><rect class="wf wf1" x="8" y="8.9" width="16" height="2.6" rx="1.3"/><rect class="wf wf3" x="8" y="17.1" width="16" height="2.6" rx="1.3"/><rect class="wp" x="14.7" y="7.1" width="2.6" height="14.4" rx="1.3"/><rect class="wf wf2" x="8" y="13" width="16" height="2.6" rx="1.3"/></svg><svg class="fab-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></span></button>
+<button id="chatFab" type="button" aria-label="Chiedi a Claude: apri la chat" aria-expanded="false" aria-controls="chat" title="Chat con Claude"><span class="fab-lb">Chiedi a Claude</span><span class="fab-ic"><svg class="fab-bub" viewBox="0 0 32 32" aria-hidden="true"><path class="bubble" d="M10 4.5h12a6.5 6.5 0 0 1 6.5 6.5v6.5a6.5 6.5 0 0 1-6.5 6.5h-6.4l-5.6 4.2V24A6.5 6.5 0 0 1 3.5 17.5V11A6.5 6.5 0 0 1 10 4.5z"/><rect class="wf wf1" x="8" y="8.9" width="16" height="2.6" rx="1.3"/><rect class="wf wf3" x="8" y="17.1" width="16" height="2.6" rx="1.3"/><rect class="wp" x="14.7" y="7.1" width="2.6" height="14.4" rx="1.3"/><rect class="wf wf2" x="8" y="13" width="16" height="2.6" rx="1.3"/></svg><svg class="fab-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></span></button>
 <div id="toast" hidden role="status"></div>
 
 <script src="/studio-runtime.js"></script>
@@ -300,7 +300,7 @@ function renderStepper(){
     return g+`<button class="st ${i===cur&&!T.rulesOpen?"cur":""} ${st[i]?"done":""}" data-act="go" data-i="${i}" ${i===cur&&!T.rulesOpen?'aria-current="step"':""}><span class="n" title="${s.aux?s.short:"Passo "+(i+1)}">${ICO(st[i]?"i-check":STEP_ICONS[s.id]||"i-list")}</span><span>${s.short}<small>${s.sub}</small></span></button>`}).join("")}</div>`;
   $("#chatCtx").textContent=STEPS[cur].aux?"Registro":"Passo "+(cur+1);
 }
-function render(){renderChrome();const s=STEPS[cur];const main=$("#main");const top=main.scrollTop,spk=main.querySelector(".sp")?.dataset.panel,spt=main.querySelector(".sp-b")?.scrollTop||0;main.innerHTML=T.rulesOpen?rulesPage():shell(cur,s.view());main.scrollTop=top;{const sp=main.querySelector(".sp");document.body.classList.toggle("panel-open",!!sp);if(sp){document.documentElement.style.setProperty("--top-h",($(".app > header")?.offsetHeight||64)+"px");if(sp.dataset.panel===spk)sp.querySelector(".sp-b").scrollTop=spt}}if(T.fresh?.size)T.fresh.forEach(id=>main.querySelector(`[data-k="req-${id}"],[data-k="t-${id}"]`)?.classList.add("fresh"));
+function render(){renderChrome();const s=STEPS[cur];const main=$("#main");const top=main.scrollTop,spk=main.querySelector(".sp")?.dataset.panel,spt=main.querySelector(".sp-b")?.scrollTop||0;main.innerHTML=T.rulesOpen?rulesPage():shell(cur,s.view());main.scrollTop=top;{const sp=main.querySelector(".sp");document.body.classList.toggle("panel-open",!!sp);if(sp){document.documentElement.style.setProperty("--top-h",($(".app > header")?.offsetHeight||64)+"px");if(sp.dataset.panel===spk)sp.querySelector(".sp-b").scrollTop=spt}}labelTableFields(main);if(T.fresh?.size)T.fresh.forEach(id=>main.querySelector(`[data-k="req-${id}"],[data-k="t-${id}"]`)?.classList.add("fresh"));
   $$("details[data-k]",main).forEach(d=>{if(openSet.has(d.dataset.k))d.open=true});if(document.querySelector("#chatLog .act:not(.done)"))renderChat();else renderSugg();if(T.focusTab){T.focusTab=false;$('.tab[aria-selected="true"]')?.focus()}}
 function msgHtml(id){const m=msgs[id];return m?`<div class="msg ${m.t}" role="status">${m.html??esc(m.text)}</div>`:""}
 function setMsg(id,t,text,html){msgs[id]={t,text,html};scheduleRender()}
@@ -310,7 +310,7 @@ function stepHead(s,cs){const seen=SEEN.has(s.id);
   if(!seen)return`<p class="lead">${s.goal}</p>${cs.length?list:""}`;
   const req=cs.filter(c=>!c.opt),okN=req.filter(c=>c.ok).length,miss=req.find(c=>!c.ok),opt=cs.find(c=>c.opt&&!c.ok);
   const sum=miss?`<span class="cc-n">${okN} di ${req.length}</span><span class="cc-t">Manca: ${miss.t}</span>`:`<span class="cc-n ok">✓ Passo completato</span>${opt?`<span class="cc-t">Facoltativo: ${opt.t}</span>`:""}`;
-  return`<details class="lead-c" data-k="lead-${s.id}"><summary><span class="lead">${s.goal}</span><span class="more more-c">Leggi tutto</span><span class="more more-o">Riduci</span></summary></details>${cs.length?`<details class="checks-c" data-k="checks-${s.id}"><summary aria-label="Controlli del passo">${sum}</summary>${list}</details>`:""}`}
+  return`<details class="lead-c" data-k="lead-${s.id}"><summary><span class="lead">${s.goal}</span><span class="more more-c">Leggi tutto</span><span class="more more-o">Riduci</span></summary></details>${cs.length?`<details class="checks-c" data-k="checks-${s.id}"><summary>${sum}</summary>${list}</details>`:""}`}
 /* Regole del playbook: pagina a sé, aperta dalla barra in alto o dal collegamento in fondo a ogni passo. Non è un passo. */
 function rulesPage(){const back=STEPS[cur],list=STEPS.filter(x=>x.rules?.length);
   return`<div class="eyebrow">Playbook PO+AI</div><h1><span class="h1-ic">${ICO("i-shield")}</span>Regole del playbook</h1>
@@ -438,6 +438,11 @@ function decTable(d){if(!d.length)return'<p class="empty">Nessuna decisione anco
     <td>${READONLY?"":`<div class="dd row-dd"><button type="button" class="dd-btn icon-btn" aria-haspopup="menu" aria-expanded="${!!armed}" aria-label="Azioni per la decisione ${n}"><span aria-hidden="true">⋯</span></button><div class="dd-menu right" role="menu" ${armed?"":"hidden"}><button type="button" role="menuitem" class="danger-item" data-act="delDecision" data-id="${x.id}">${armed?"Conferma: elimina la decisione":"Elimina decisione"}</button></div></div>`}</td></tr>`}).join("");
   return bar+`<div class="dt-wrap dt-menus"><table class="dt dt-dec"><colgroup><col style="width:52px"><col style="width:112px"><col>${cols.map(([,,w])=>`<col style="width:${w}px">`).join("")}<col style="width:56px"></colgroup>
    <thead><tr><th scope="col">#</th><th scope="col">Data</th><th scope="col">Decisione</th>${cols.map(([,l])=>`<th scope="col">${l}</th>`).join("")}<th scope="col"><span class="sr-only">Azioni</span></th></tr></thead><tbody>${rows||`<tr><td colspan="${4+cols.length}" class="muted">Nessuna decisione corrisponde ai filtri.</td></tr>`}</tbody></table></div>`}
+/* Accessibilità: i campi dentro le tabelle (kit, struttura…) non hanno un'etichetta propria, la loro etichetta visiva
+   è l'intestazione di colonna. Qui la diamo anche ai lettori di schermo: «Colonna, riga N». */
+function labelTableFields(root){root.querySelectorAll("table").forEach(tb=>{const hs=[...tb.querySelectorAll("thead th")].map(th=>th.textContent.trim());if(!hs.length)return;
+  tb.querySelectorAll("tbody tr").forEach((tr,ri)=>{[...tr.children].forEach((td,ci)=>{td.querySelectorAll("input:not([type=hidden]),select,textarea").forEach(el=>{if(el.getAttribute("aria-label")||el.labels?.length)return;
+   const h=hs[ci]||(el.type==="checkbox"?"Seleziona":"Valore");el.setAttribute("aria-label",`${h}, riga ${ri+1}`)})})})})}
 function docsView(){const d=arr("docs").sort((a,b)=>(a.at||0)-(b.at||0));
   let h=`<label class="drop" id="drop"><input type="file" id="fileIn" multiple accept=".docx,.pdf,.xlsx,.xls,.csv,.txt,.md,.markdown,.json,image/png,image/jpeg,image/webp,image/gif" ${READONLY?"disabled":""}><b>Trascina qui i file o scegli dal computer</b><span class="small muted">Word (.docx), PDF, Excel (.xlsx, .xls), CSV, testo, Markdown, immagini</span></label>`;
   if(T.uploads.length)h+=`<div class="list" style="margin-top:10px">${T.uploads.map(u=>`<div class="row small"><span class="pill ${u.s==="ok"?"ok":u.s==="err"?"err":"acc"}">${u.s==="ok"?"Caricato":u.s==="err"?"Errore":"In lavorazione"}</span><b>${esc(u.name)}</b><span class="muted">${esc(u.note||"")}</span></div>`).join("")}</div>`;
@@ -464,7 +469,7 @@ STEPS.push({id:"reqs",phase:"Preparazione",short:"Requisiti",sub:"Carica, estrai
   h+=reqBar(r,rf);
   h+=reqTable(r,rf)+`
   <div class="card warn small" style="margin-top:14px">Controlla che ogni nota UI/UX sia sulla riga giusta: nei fogli del cliente le colonne sfalsate sono un errore frequente.</div>`;
-  if(T.panel?.kind==="req"){const x=S.reqs[T.panel.id];if(x)h+=sidePanel("req",x.id,`<span class="key">${esc(x.code)}</span><span>${esc(x.title)}</span>`,reqForm(x))}
+  if(T.panel?.kind==="req"){const x=S.reqs[T.panel.id]&&{...S.reqs[T.panel.id],id:T.panel.id};if(x)h+=sidePanel("req",x.id,`<span class="key">${esc(x.code)}</span><span>${esc(x.title)}</span>`,reqForm(x))}
   return h},
  ask:["Riassumi i documenti caricati in 5 punti","Quali requisiti hanno dipendenze esterne?","Ci sono requisiti duplicati o sovrapposti?","Proponi l'ordine dei requisiti in base alle dipendenze"]});
 
@@ -574,7 +579,7 @@ function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.rele
   T.panelIds=ids;
   h+=bodies?`<div class="dt-wrap"><table class="dt"><colgroup><col style="width:92px"><col style="width:96px"><col><col style="width:180px"><col style="width:150px"><col style="width:160px"></colgroup>
    <thead><tr><th scope="col">Rif.</th><th scope="col">Tipo</th><th scope="col">Titolo</th><th scope="col">Epica</th><th scope="col">Problemi</th><th scope="col">Stato</th></tr></thead>${bodies}</table></div>`:(ts.length?'<p class="empty">Nessun ticket corrisponde al filtro.</p>':'<p class="empty">Nessun ticket ancora. Scegli la release e premi «Genera ticket».</p>');
-  if(T.panel?.kind==="ticket"){const t=S.tickets[T.panel.id];if(t)h+=sidePanel("ticket",t.id,`<span class="key">${esc(t.ref)}</span><span class="pill acc">${esc(t.type)}</span><span>${esc(fullTitle(t))}</span>`,ticketForm(t))}
+  if(T.panel?.kind==="ticket"){const t=ticketList().find(x=>x.id===T.panel.id);if(t)h+=sidePanel("ticket",t.id,`<span class="key">${esc(t.ref)}</span><span class="pill acc">${esc(t.type)}</span><span>${esc(fullTitle(t))}</span>`,ticketForm(t))}
   return h}
 const ticketState=t=>t.state==="created"?`${browse(t.key)}${vOf(t)==="ok"?'<span class="pill ok">verificato</span>':vOf(t)?'<span class="pill warn">da verificare</span>':""}`:t.state==="error"?'<span class="pill err">errore Jira</span>':t.state==="unknown"?'<span class="pill warn">esito incerto</span>':'<span class="pill">bozza</span>';
 function ticketRow(t){const{e,w}=issuesOf(t),locked=t.state==="created";
@@ -1345,7 +1350,7 @@ $("#chatStop").onclick=()=>chatCtl?.abort();
 $("#chatImg").onchange=e=>{chatImg=e.target.files[0]||null;$("#chatImgName").textContent=chatImg?chatImg.name:"";e.target.value=""};
 document.addEventListener("pointerover",e=>{const el=e.target.closest&&e.target.closest("summary .ttl,summary .q-ans,.sugg button,.st small,.st>span:last-child");if(el&&!el.title&&el.scrollWidth>el.clientWidth+1)el.title=el.textContent.trim()},{passive:true});
 const chatEl=$("#chat"),fabEl=$("#chatFab");
-function setChatOpen(open,focus=true){chatEl.classList.toggle("open",open);document.body.classList.toggle("chat-open",open);fabEl.setAttribute("aria-expanded",String(open));fabEl.setAttribute("aria-label",open?"Chiudi la chat":"Apri la chat con Claude");fabEl.title=open?"Chiudi la chat":"Chat con Claude";
+function setChatOpen(open,focus=true){chatEl.classList.toggle("open",open);document.body.classList.toggle("chat-open",open);fabEl.setAttribute("aria-expanded",String(open));fabEl.setAttribute("aria-label",open?"Chiedi a Claude: chiudi la chat":"Chiedi a Claude: apri la chat");fabEl.title=open?"Chiudi la chat":"Chat con Claude";
   if(open){fabEl.classList.remove("dot","hint");const log=$("#chatLog");log.scrollTop=log.scrollHeight;if(focus)$("#chatIn").focus()}else if(focus)fabEl.focus();
   ls.set("chatOpen",open)}
 fabEl.onclick=()=>setChatOpen(!chatEl.classList.contains("open"));
