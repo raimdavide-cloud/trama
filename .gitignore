@@ -1,0 +1,16 @@
+# dipendenze e strumenti locali
+node_modules/
+.netlify/
+.vercel
+.claude/
+.DS_Store
+
+# segreti: mai nel repository (il modello senza valori resta)
+.env
+.env.*
+!.env.example
+
+# risultati dei test
+test-results/
+playwright-report/
+tests/.cache/

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Trama · Linee guida del marchio</title>
+<meta name="description" content="Nome, tono di voce, logo, colori, tipografia, icone, componenti e regole di scrittura di Trama.">
+<meta name="theme-color" content="#23307A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="/trama.css">
+<style>
+/* Layout: indice fisso a sinistra, contenuto a destra; ogni sezione è una regola con esempi visivi. */
+.top{display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap;padding-block:18px;border-bottom:1px solid var(--line)}
+@media(max-width:640px){.top .pill{order:3;width:auto}}
+.top a.back{margin-left:auto;font-size:15px;color:var(--muted);text-decoration:none}
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px;padding-block:40px 80px}
+.toc{position:sticky;top:calc(20px + env(safe-area-inset-top,0px));align-self:start;display:grid;gap:2px}
+.toc a{color:var(--muted);text-decoration:none;font-size:14.5px;padding:6px 10px;border-radius:8px}
+.toc a:hover{background:var(--sunk);color:var(--fg)}
+.toc .eyebrow{margin:0 0 8px 10px}
+main{min-width:0}
+.intro{padding-bottom:28px;border-bottom:1px solid var(--line)}
+.intro .lede{max-width:60ch;margin-top:16px}
+section{padding-block:48px;border-bottom:1px solid var(--line);scroll-margin-top:20px}
+section>h2{font:750 32px/1.1 var(--f-display);letter-spacing:-.02em;margin:8px 0 12px}
+section>p{color:var(--muted);max-width:68ch;margin:0 0 20px}
+h3{font:700 18px/1.3 var(--f-display);margin:28px 0 10px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.do,.dont{border-radius:var(--r-l);padding:18px 20px;border:1px solid var(--line);background:var(--surface)}
+.do h4,.dont h4{margin:0 0 8px;display:flex;align-items:center;gap:8px;font:700 15px var(--f-body)}
+.do h4{color:var(--ok)}.dont h4{color:var(--err)}
+.do ul,.dont ul{margin:0;padding-left:18px;color:var(--muted);font-size:15px}
+.do li,.dont li{margin:5px 0}
+.say{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border:1px solid var(--line);border-radius:var(--r-l);overflow:hidden}
+.say div{padding:12px 16px;border-bottom:1px solid var(--line);font-size:15px;background:var(--surface)}
+.say div:nth-last-child(-n+2){border-bottom:0}
+.say div:nth-child(odd){border-right:1px solid var(--line)}
+.say .h{font:600 12px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;background:var(--sunk)}
+.logo-box{display:grid;place-items:center;min-height:180px;border-radius:var(--r-l);border:1px solid var(--line)}
+.logo-box.light{background:#FFFFFF}.logo-box.dark{background:#141B47;border-color:#141B47}.logo-box.paper{background:#F5F6FA}
+.logo-box svg{max-width:80%}
+.cap{font-size:13.5px;color:var(--muted);margin-top:8px}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.sw{border:1px solid var(--line);border-radius:var(--r-m);overflow:hidden;background:var(--surface)}
+.sw .c{height:76px;display:flex;align-items:flex-end;padding:8px 10px;font:600 12px var(--f-mono)}
+.sw .m{padding:10px 12px;font-size:13px}
+.sw .m b{display:block;font-size:14px}
+.sw .m span{color:var(--muted);font-family:var(--f-mono);font-size:12px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-l);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12px var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--sunk);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.icons div{display:grid;justify-items:center;gap:8px;padding:16px 8px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);font:500 11.5px var(--f-mono);color:var(--muted)}
+.icons .ic{width:26px;height:26px;color:var(--fg)}
+.specimen{display:grid;gap:14px}
+.specimen>div{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:baseline;padding-bottom:14px;border-bottom:1px dashed var(--line)}
+.specimen span{font:500 12px var(--f-mono);color:var(--muted)}
+.comp{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:20px;border:1px solid var(--line);border-radius:var(--r-l);background:var(--surface)}
+.dl{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+@media(max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}.toc{position:static;display:flex;flex-wrap:wrap}.toc .eyebrow{width:100%}.grid3{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:640px){.grid2{grid-template-columns:minmax(0,1fr)}.say{grid-template-columns:minmax(0,1fr)}.say div:nth-child(odd){border-right:0}.specimen>div{grid-template-columns:minmax(0,1fr);gap:4px}}
+</style>
+<!-- seo:start (generato da scripts/seo/build.mjs: non modificare a mano) -->
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="canonical" href="https://trama-backlog.vercel.app/brand">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Trama">
+<meta property="og:locale" content="it_IT">
+<meta property="og:title" content="Trama · Linee guida del marchio">
+<meta property="og:description" content="Nome, tono di voce, logo, colori, tipografia, icone, componenti e regole di scrittura di Trama.">
+<meta property="og:url" content="https://trama-backlog.vercel.app/brand">
+<meta property="og:image" content="https://trama-backlog.vercel.app/og/trama-og-brand.png?v=2">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Il marchio Trama: nome, logo, colori e tipografia.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Trama · Linee guida del marchio">
+<meta name="twitter:description" content="Nome, tono di voce, logo, colori, tipografia, icone, componenti e regole di scrittura di Trama.">
+<meta name="twitter:image" content="https://trama-backlog.vercel.app/og/trama-og-brand.png?v=2">
+<meta name="twitter:image:alt" content="Il marchio Trama: nome, logo, colori e tipografia.">
+<!-- seo:end -->
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="brand" aria-label="Trama" href="/"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span></a><span class="pill">Linee guida del marchio · v1.0</span><a class="back" href="/privacy">Privacy</a><a class="back" style="margin-left:0" href="/">← Torna al sito</a></div>
+  <div class="layout">
+    <nav class="toc" aria-label="Indice"><span class="eyebrow">Indice</span><a href="#nome">Nome</a><a href="#tono">Tono di voce</a><a href="#logo">Logo</a><a href="#colori">Colori</a><a href="#tipo">Tipografia</a><a href="#icone">Icone</a><a href="#componenti">Componenti</a><a href="#movimento">Movimento</a><a href="#accessibilita">Accessibilità</a><a href="#scrittura">Scrittura</a><a href="#uso">Uso nel gruppo</a></nav>
+    <main>
+      <div class="intro"><div class="eyebrow">Brand book</div><h1 class="h-display" style="font-size:clamp(36px,5vw,60px)">Trama, come si presenta.</h1><p class="lede">Regole per usare nome, logo, colori, caratteri, icone e parole di Trama in modo coerente: nel prodotto, nelle presentazioni e nelle comunicazioni interne del gruppo.</p></div>
+
+      <section id="nome"><div class="eyebrow">01 · Nome</div><h2>Trama</h2>
+        <p>La trama è l'insieme dei fili che, intrecciati all'ordito, tengono insieme il tessuto. Trama fa lo stesso con un progetto: intreccia requisiti, regole e decisioni in un backlog che regge.</p>
+        <div class="tw"><table><tbody>
+          <tr><th>Payoff</th><td>Dal documento al backlog, con le regole.</td></tr>
+          <tr><th>In una frase</th><td>Trama trasforma il documento di requisiti in un backlog Jira strutturato, con Claude e le regole del playbook del gruppo.</td></tr>
+          <tr><th>Categoria</th><td>Strumento interno per Product Owner, delivery e team di sviluppo.</td></tr>
+          <tr><th>Le parti</th><td><b>lo studio</b> (l'interfaccia), <b>il ponte</b> (il collegamento a Claude Code sul Mac), <b>il kit</b> (le regole K1–K9), <b>il registro</b> (le decisioni).</td></tr>
+        </tbody></table></div>
+        <div class="grid2" style="margin-top:16px">
+          <div class="do"><h4><svg class="ic"><use href="/icons.svg#i-check"/></svg>Sì</h4><ul><li>«Trama» con l'iniziale maiuscola nel testo.</li><li>«trama» minuscolo solo dentro il logo.</li><li>«Apri Trama», «in Trama», «lo studio di Trama».</li></ul></div>
+          <div class="dont"><h4><svg class="ic"><use href="/icons.svg#i-x"/></svg>No</h4><ul><li>«TRAMA», «Trama AI», «Trama App», «TramaStudio».</li><li>Traduzioni («Weft») o abbreviazioni.</li><li>Il vecchio nome «Backlog Studio».</li></ul></div>
+        </div>
+      </section>
+
+      <section id="tono"><div class="eyebrow">02 · Tono di voce</div><h2>Preciso, chiaro, affidabile.</h2>
+        <p>Trama parla come un collega esperto che ti risparmia lavoro: dice cosa è successo, cosa fare e perché, senza enfasi. Non promette magie e non nasconde i limiti.</p>
+        <div class="grid3">
+          <div class="card"><h3 style="margin-top:0">Preciso</h3><p class="cap" style="font-size:15px">Numeri veri, nomi esatti dei campi Jira, chiavi dei ticket. Mai «alcuni», se puoi dire «9 epiche».</p></div>
+          <div class="card"><h3 style="margin-top:0">Chiaro</h3><p class="cap" style="font-size:15px">Frasi brevi, voce attiva, la cosa più importante all'inizio. Un'azione per pulsante.</p></div>
+          <div class="card"><h3 style="margin-top:0">Affidabile</h3><p class="cap" style="font-size:15px">Dichiara ipotesi e limiti. Chiede conferma prima di azioni che non si possono annullare.</p></div>
+        </div>
+        <h3>Esempi</h3>
+        <div class="say"><div class="h">Scriviamo</div><div class="h">Evitiamo</div>
+          <div>«3 ticket hanno l'epica mancante: correggili al passo 6.»</div><div>«Oops! Qualcosa non va con alcuni ticket 😕»</div>
+          <div>«Crea su Jira» → «Creati 48 ticket e 6 epiche.»</div><div>«Procedi» → «Operazione completata con successo!»</div>
+          <div>«Jira ha rifiutato il ticket: manca il campo Area Manager (K1).»</div><div>«Errore 400. Riprova più tardi.»</div>
+          <div>«Claude propone, tu confermi.»</div><div>«L'intelligenza artificiale fa tutto per te.»</div>
+        </div>
+      </section>
+
+      <section id="logo"><div class="eyebrow">03 · Logo</div><h2>Tre fili di trama, uno di ordito.</h2>
+        <p>Il simbolo è un piccolo tessuto: tre fili bianchi orizzontali e un filo zafferano verticale che passa sopra il primo e il terzo e sotto il secondo. Il logotipo «trama» è in Bricolage Grotesque ExtraBold, minuscolo, e la t iniziale è quella del logotipo Tinexta, a ricordare l'azienda che usa lo strumento: resta nel suo blu e non si ridisegna.</p>
+        <div class="grid3">
+          <div><div class="logo-box light"><svg viewBox="0 0 230 64" width="240" aria-label="Logo su chiaro"><g transform="translate(0 12) scale(1.25)"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></g><g transform="translate(52.5 19.1) scale(0.566)"><path fill="#0072CE" d="M11.9965 22.2955L20.9933 20.5916V11.3622L11.9965 12.9239V0.5L0 2.55932V33.2999C0 44.2332 5.78374 47.57 13.2098 47.4989C15.6386 47.4989 18.1378 47.0735 20.7084 46.4348L18.9947 37.2043C17.7802 37.6308 16.5659 37.773 15.6386 37.773C13.3528 37.7019 11.9965 36.3523 11.9965 33.371V22.2955Z"/></g><text x="65.5" y="46" font-family="Bricolage Grotesque, Segoe UI, sans-serif" font-weight="800" font-size="42" letter-spacing="-1" fill="#141B47">rama</text></svg></div><p class="cap">Versione principale, su bianco o carta.</p></div>
+          <div><div class="logo-box dark"><svg viewBox="0 0 230 64" width="240" aria-label="Logo su scuro"><g transform="translate(0 12) scale(1.25)"><rect width="32" height="32" rx="8" fill="#3448C5"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#3448C5" stroke-width="1.6"/></g><g transform="translate(52.5 19.1) scale(0.566)"><path fill="#5AAEF5" d="M11.9965 22.2955L20.9933 20.5916V11.3622L11.9965 12.9239V0.5L0 2.55932V33.2999C0 44.2332 5.78374 47.57 13.2098 47.4989C15.6386 47.4989 18.1378 47.0735 20.7084 46.4348L18.9947 37.2043C17.7802 37.6308 16.5659 37.773 15.6386 37.773C13.3528 37.7019 11.9965 36.3523 11.9965 33.371V22.2955Z"/></g><text x="65.5" y="46" font-family="Bricolage Grotesque, Segoe UI, sans-serif" font-weight="800" font-size="42" letter-spacing="-1" fill="#F2F3FB">rama</text></svg></div><p class="cap">Su indaco scuro: simbolo in indaco 500, logotipo chiaro.</p></div>
+          <div><div class="logo-box paper"><svg viewBox="0 0 32 32" width="72" aria-label="Simbolo"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg></div><p class="cap">Simbolo da solo: icona dell'app, favicon, avatar.</p></div>
+        </div>
+        <div class="tw" style="margin-top:16px"><table><tbody>
+          <tr><th>Area di rispetto</th><td>Intorno al logo lascia uno spazio pari a metà altezza del simbolo. Nessun testo o elemento dentro quest'area.</td></tr>
+          <tr><th>Dimensioni minime</th><td>Simbolo 16 px (favicon); logo completo 96 px di larghezza.</td></tr>
+          <tr><th>Colori ammessi</th><td>Solo le due versioni qui sopra. La t è blu Tinexta (#0072CE su chiaro, #5AAEF5 su scuro). Su foto o sfondi colorati usa il simbolo su riquadro bianco.</td></tr>
+        </tbody></table></div>
+        <div class="grid2" style="margin-top:16px"><div class="dont" style="grid-column:1/-1"><h4><svg class="ic"><use href="/icons.svg#i-x"/></svg>Non fare</h4><ul><li>Ruotare, inclinare o deformare il simbolo.</li><li>Cambiare i colori dei fili o invertirne l'intreccio.</li><li>Aggiungere ombre, contorni, sfumature o effetti.</li><li>Comporre il logotipo con un altro carattere, o ridisegnare e ricolorare la t di Tinexta.</li><li>Affiancarlo a un altro logo senza separatore e area di rispetto.</li></ul></div></div>
+        <div class="dl"><a class="btn" href="/brand/trama-logo.svg" download>Logo (SVG)</a><a class="btn" href="/brand/trama-logo-dark.svg" download>Logo su scuro (SVG)</a><a class="btn" href="/brand/trama-symbol.svg" download>Simbolo (SVG)</a><a class="btn" href="/brand/trama-symbol-512.png" download>Simbolo (PNG 512)</a></div>
+      </section>
+
+      <section id="colori"><div class="eyebrow">04 · Colori</div><h2>Indaco per la struttura, zafferano per il filo.</h2>
+        <p>L'indaco porta il marchio e le azioni principali. Lo zafferano è il filo che attraversa: si usa poco, per una sola cosa per schermata. I neutri sono leggermente tinti di indaco. Nei componenti usa sempre i token di ruolo, mai i valori grezzi.</p>
+        <div class="swatches">
+          <div class="sw"><div class="c" style="background:#141B47;color:#F2F3FB">#141B47</div><div class="m"><b>Indaco 900</b><span>--indaco-900 · bande scure</span></div></div>
+          <div class="sw"><div class="c" style="background:#23307A;color:#fff">#23307A</div><div class="m"><b>Indaco 700</b><span>--indaco-700 · simbolo, hover</span></div></div>
+          <div class="sw"><div class="c" style="background:#3448C5;color:#fff">#3448C5</div><div class="m"><b>Indaco 500</b><span>--primary · azioni, link</span></div></div>
+          <div class="sw"><div class="c" style="background:#E6E9FA;color:#23307A">#E6E9FA</div><div class="m"><b>Indaco 100</b><span>--primary-soft · selezioni</span></div></div>
+          <div class="sw"><div class="c" style="background:#F2A541;color:#141B47">#F2A541</div><div class="m"><b>Zafferano 500</b><span>--accent · solo forme</span></div></div>
+          <div class="sw"><div class="c" style="background:#FCEFD9;color:#9A5B06">#FCEFD9</div><div class="m"><b>Zafferano 100</b><span>testo in #9A5B06</span></div></div>
+          <div class="sw"><div class="c" style="background:#E1F2E9;color:#1F6B4A">#1F6B4A</div><div class="m"><b>Salvia</b><span>--ok · esito positivo</span></div></div>
+          <div class="sw"><div class="c" style="background:#FBE6E1;color:#B33A24">#B33A24</div><div class="m"><b>Corallo</b><span>--err · blocchi, errori</span></div></div>
+          <div class="sw"><div class="c" style="background:#151A33;color:#F5F6FA">#151A33</div><div class="m"><b>Inchiostro</b><span>--fg · testo</span></div></div>
+          <div class="sw"><div class="c" style="background:#5A6180;color:#fff">#5A6180</div><div class="m"><b>Ardesia</b><span>--muted · testo secondario</span></div></div>
+          <div class="sw"><div class="c" style="background:#DADDEA;color:#151A33">#DADDEA</div><div class="m"><b>Linea</b><span>--line · bordi</span></div></div>
+          <div class="sw"><div class="c" style="background:#F5F6FA;color:#151A33">#F5F6FA</div><div class="m"><b>Carta</b><span>--bg · sfondo</span></div></div>
+        </div>
+        <h3>Contrasti (WCAG 2.2)</h3>
+        <div class="tw"><table><thead><tr><th>Coppia</th><th>Rapporto</th><th>Uso</th></tr></thead><tbody>
+          <tr><td>Inchiostro su Carta</td><td>15,8 : 1</td><td>Testo principale</td></tr>
+          <tr><td>Ardesia su Carta</td><td>5,6 : 1</td><td>Testo secondario (AA)</td></tr>
+          <tr><td>Bianco su Indaco 500</td><td>7,3 : 1</td><td>Pulsante principale (AAA)</td></tr>
+          <tr><td>Zafferano 700 su Zafferano 100</td><td>4,8 : 1</td><td>Avvisi (AA)</td></tr>
+          <tr><td>Zafferano 500 su bianco</td><td>2,1 : 1</td><td><b>Mai per il testo</b>: solo per forme e accenti</td></tr>
+        </tbody></table></div>
+        <p class="cap" style="margin-top:10px">Il tema scuro ha una palette dedicata (sfondo #0D1129, primario #8C9BFF, accento #F4B45A) definita in <span class="mono">trama.css</span> con gli stessi nomi di ruolo.</p>
+      </section>
+
+      <section id="tipo"><div class="eyebrow">05 · Tipografia</div><h2>Tre caratteri, tre ruoli.</h2>
+        <div class="specimen">
+          <div><span>Display · 800 · 64/60</span><div style="font:800 clamp(34px,5vw,56px)/1 var(--f-display);letter-spacing:-.035em">Dal documento al backlog</div></div>
+          <div><span>Titolo · 750 · 32/36</span><div style="font:750 30px/1.15 var(--f-display);letter-spacing:-.02em">Otto passi, sempre nello stesso ordine</div></div>
+          <div><span>Testo · Figtree 400 · 17/27</span><div>Trama legge il documento e propone un requisito per riga, con componenti, release e dipendenze.</div></div>
+          <div><span>Etichette · Mono 600 · 12</span><div class="eyebrow">Passo 5 di 6 · Backlog</div></div>
+          <div><span>Codici · Mono 500 · 13</span><div class="key" style="font-size:15px">COM-904 · T-017 · K4</div></div>
+        </div>
+        <div class="tw" style="margin-top:16px"><table><tbody>
+          <tr><th>Bricolage Grotesque</th><td>Titoli, numeri grandi, logotipo. Peso 700–800, interlinea stretta, spaziatura leggermente negativa.</td></tr>
+          <tr><th>Figtree</th><td>Testo, pulsanti, moduli. 16–17 px; mai sotto 13 px. Campi dei moduli a 16 px su mobile.</td></tr>
+          <tr><th>JetBrains Mono</th><td>Chiavi dei ticket, codici dei requisiti, etichette in maiuscolo con spaziatura +0,06em.</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="icone"><div class="eyebrow">06 · Icone</div><h2>Un solo set, a tratto.</h2>
+        <p>Griglia 24 px, tratto 1,8 px, estremità arrotondate, colore ereditato dal testo (<span class="mono">currentColor</span>). Le icone accompagnano un'etichetta, non la sostituiscono. Niente emoji nell'interfaccia.</p>
+        <div class="icons" id="iconGrid"></div>
+        <p class="cap" style="margin-top:10px">Uso: <span class="mono">&lt;svg class="ic"&gt;&lt;use href="/icons.svg#i-check"/&gt;&lt;/svg&gt;</span>. Ogni passo dello studio ha un'icona fissa: non cambiarla.</p>
+      </section>
+
+      <section id="componenti"><div class="eyebrow">07 · Componenti</div><h2>Pochi elementi, sempre uguali.</h2>
+        <h3>Pulsanti</h3><div class="comp"><a class="btn primary" href="#componenti"><svg class="ic"><use href="/icons.svg#i-send"/></svg>Crea su Jira</a><a class="btn" href="#componenti">Esegui il controllo</a><a class="btn ghost" href="#componenti">Annulla</a></div>
+        <p class="cap">Un solo pulsante principale per schermata. Etichetta = verbo + oggetto. Altezza minima 44 px.</p>
+        <h3>Stati</h3><div class="comp"><span class="pill ok"><svg class="ic" style="width:14px;height:14px"><use href="/icons.svg#i-check"/></svg>collegato</span><span class="pill accent">attenzione</span><span class="pill err">blocca</span><span class="pill primary">Story</span><span class="pill">bozza</span><span class="key">COM-904</span></div>
+        <p class="cap">Lo stato si legge anche senza colore: sempre testo, spesso un'icona.</p>
+        <h3>Riquadri e icone</h3><div class="comp" style="align-items:stretch"><div class="card" style="max-width:300px"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-tree"/></svg></div><h4 class="h-card" style="margin:12px 0 6px">La struttura si rispetta</h4><p class="cap" style="margin:0">Riquadro con icona, titolo e una frase.</p></div></div>
+        <h3>Raggi e ombre</h3><div class="tw"><table><tbody><tr><th>Raggi</th><td>6 px (pillole piccole), 10 px (campi, pulsanti), 16 px (riquadri)</td></tr><tr><th>Ombra</th><td>Solo per elementi sollevati (demo, menu): <span class="mono">--shadow</span>. I riquadri normali usano il bordo.</td></tr></tbody></table></div>
+      </section>
+
+      <section id="movimento"><div class="eyebrow">08 · Movimento</div><h2>Il movimento spiega, non decora.</h2>
+        <div class="tw"><table><tbody>
+          <tr><th>Durate</th><td>150 ms (hover), 250 ms (apertura), 400 ms (comparsa nelle demo). Curva <span class="mono">cubic-bezier(.2,.7,.2,1)</span>.</td></tr>
+          <tr><th>Demo animate</th><td>Mostrano un'azione reale dello studio, passo per passo, con una didascalia per passo. Partono solo quando sono visibili, si mettono in pausa e si rivedono.</td></tr>
+          <tr><th>Movimento ridotto</th><td>Con «riduci movimento» attivo le demo non partono da sole e mostrano lo stato finale completo.</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="accessibilita"><div class="eyebrow">09 · Accessibilità</div><h2>Per tutti, su ogni schermo.</h2>
+        <div class="grid2">
+          <div class="do"><h4><svg class="ic"><use href="/icons.svg#i-check"/></svg>Regole</h4><ul><li>Contrasto AA per tutto il testo (vedi Colori).</li><li>Focus sempre visibile, contorno indaco di 2 px.</li><li>Aree toccabili di almeno 44 px su mobile.</li><li>Campi a 16 px: Safari su iPhone non ingrandisce.</li><li>Tema chiaro e scuro, entrambi curati.</li></ul></div>
+          <div class="do"><h4><svg class="ic"><use href="/icons.svg#i-check"/></svg>Contenuti</h4><ul><li>Ogni icona da sola ha un'etichetta per gli screen reader.</li><li>Messaggi di stato annunciati (<span class="mono">aria-live</span>).</li><li>Nessuna informazione affidata solo al colore.</li><li>Lingua della pagina dichiarata (<span class="mono">lang="it"</span>).</li></ul></div>
+        </div>
+      </section>
+
+      <section id="scrittura"><div class="eyebrow">10 · Scrittura nell'interfaccia</div><h2>Le parole di Trama.</h2>
+        <div class="tw"><table><thead><tr><th>Termine</th><th>Uso</th></tr></thead><tbody>
+          <tr><td>Passo</td><td>I 6 passi dello studio: «Passo 5 di 6 · Backlog».</td></tr>
+          <tr><td>Kit, K1–K9</td><td>Le regole del progetto. Cita sempre il codice: «manca la release (K2)».</td></tr>
+          <tr><td>Project, Fase, Feature Epic</td><td>I livelli della struttura Jira del gruppo, con la maiuscola come in Jira.</td></tr>
+          <tr><td>ticket, epica, storia, spike</td><td>Minuscolo nel testo; «Story», «Spike», «Task», «Bug» quando sono il tipo Jira.</td></tr>
+          <tr><td>Registro</td><td>Il registro delle decisioni.</td></tr>
+          <tr><td>Ponte</td><td>Il collegamento locale a Claude Code («avvia il ponte»).</td></tr>
+        </tbody></table></div>
+        <div class="tw" style="margin-top:16px"><table><tbody>
+          <tr><th>Errori</th><td>Cosa è successo + cosa fare: «Jira non risponde. Riprova tra poco.» Niente codici tecnici da soli, niente scuse.</td></tr>
+          <tr><th>Conferme</th><td>Il pulsante dice cosa farà; il messaggio dopo dice cosa è stato fatto, con i numeri.</td></tr>
+          <tr><th>Date e numeri</th><td>16 ottobre 2026 nel testo, 16/10/2026 nelle tabelle; separatore delle migliaia con il punto (1.250).</td></tr>
+          <tr><th>Lingua</th><td>Interfaccia in italiano; ticket in inglese secondo il kit (K9).</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="uso" style="border-bottom:0"><div class="eyebrow">11 · Uso nel gruppo</div><h2>Un prodotto interno, con un'identità propria.</h2>
+        <p>Trama è uno strumento interno e si presenta con il proprio marchio, che porta la t del logotipo Tinexta. Quella t non va usata da sola né fuori dal logo Trama; per ogni altro uso del marchio Tinexta valgono le linee guida dell'azienda. Quando Trama compare in una presentazione di un'altra società, va affiancato al logo di quella società con un separatore verticale e l'area di rispetto.</p>
+        <div class="tw"><table><tbody>
+          <tr><th>Firma</th><td>«Trama · strumento interno del gruppo»</td></tr>
+          <tr><th>Slide</th><td>Sfondo Carta o Indaco 900; titoli in Bricolage Grotesque; un solo accento zafferano per slide.</td></tr>
+          <tr><th>Screenshot</th><td>Solo con dati di esempio inventati, mai con dati di clienti reali.</td></tr>
+          <tr><th>Modifiche al marchio</th><td>Proposte al Product Owner di Trama; aggiornare insieme <span class="mono">trama.css</span>, lo studio e questa pagina.</td></tr>
+        </tbody></table></div>
+      </section>
+    </main>
+  </div>
+</div>
+<script>
+const names=["i-link","i-file","i-list","i-help","i-kit","i-layers","i-send","i-book","i-tree","i-sprint","i-check","i-alert","i-x","i-sync","i-shield","i-lock","i-users","i-chat","i-sparkle","i-image","i-arrow","i-play","i-pause","i-replay"];
+document.getElementById("iconGrid").innerHTML=names.map(n=>`<div><svg class="ic" aria-hidden="true"><use href="/icons.svg#${n}"/></svg>${n.slice(2)}</div>`).join("");
+</script>
+</body>
+</html>

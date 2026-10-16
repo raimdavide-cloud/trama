@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Trama · Dal documento di requisiti al backlog Jira</title>
+<meta name="description" content="Trama trasforma il documento di requisiti in un backlog Jira strutturato, passo dopo passo, con Claude e le regole del playbook del gruppo.">
+<meta name="theme-color" content="#23307A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Trama">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="/trama.css">
+<style>
+/* Layout: hero con demo animata, poi una sezione per domanda (come funziona, esempi, regole, per chi, sicurezza, FAQ). Una sola banda scura in chiusura. */
+nav.top{display:flex;align-items:center;gap:28px;padding-block:18px}
+nav.top .links{display:flex;gap:24px;margin-left:auto}
+nav.top .links a{color:var(--muted);text-decoration:none;font-weight:500;font-size:15px}
+nav.top .links a:hover{color:var(--fg)}
+nav.top .btn{min-height:42px;padding:0 16px;font-size:15px}
+.hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:56px;align-items:center;padding-block:40px 72px}
+.hero .h-display span{color:var(--primary)}
+.hero .lede{margin:22px 0 30px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.hero-note{display:flex;gap:16px;flex-wrap:wrap;margin-top:22px;font-size:14px;color:var(--muted)}
+.hero-note span{display:inline-flex;align-items:center;gap:6px}
+.hero-note .ic{color:var(--ok);width:16px;height:16px}
+/* player delle demo */
+.player{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);box-shadow:var(--shadow);overflow:hidden;min-width:0}
+.p-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--sunk)}
+.p-dots{display:flex;gap:6px}.p-dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.p-title{font:500 12.5px var(--f-mono);color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen{position:relative;padding:18px;min-height:340px;font-size:14px}
+.p-ctrl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line)}
+.p-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);display:grid;place-items:center;cursor:pointer;flex:none}
+.p-btn:hover{border-color:var(--primary);color:var(--primary)}
+.p-btn .ic{width:16px;height:16px}
+.p-track{flex:1;height:4px;border-radius:2px;background:var(--sunk);overflow:hidden;min-width:40px}
+.p-track i{display:block;height:100%;width:0;background:var(--primary)}
+.p-cap{font-size:13.5px;color:var(--fg);flex:2 1 220px;min-width:0}
+.p-cap b{color:var(--primary);font:600 12px var(--f-mono);margin-right:6px}
+.player.playing [data-s]{transition:opacity var(--t-slow) var(--ease),transform var(--t-slow) var(--ease)}
+.player.playing [data-s]:not(.on){opacity:0;transform:translateY(8px)}
+.player [data-x].off{display:none}
+/* elementi delle demo */
+.doc{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-m);padding:14px}
+.doc-h{display:flex;align-items:center;gap:8px;font:500 12px var(--f-mono);color:var(--muted);margin-bottom:8px}
+.doc-h .ic{width:16px;height:16px;color:var(--primary)}
+.doc p{margin:5px 0;color:var(--muted);font-size:13px;line-height:1.5}
+.doc mark{background:var(--accent-soft);color:var(--fg);border-radius:3px;padding:0 2px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.req{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface)}
+.req b{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:var(--r-m);background:var(--surface)}
+.tk.ux{border-left-color:var(--accent)}
+.tk .t{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk .t em{font:500 12px var(--f-mono);color:var(--muted);font-style:normal}
+.tk .m{grid-column:2;display:flex;gap:5px;flex-wrap:wrap}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px}
+.chk .ic{width:16px;height:16px;color:var(--ok)}
+.chk.bad .ic{color:var(--err)}
+.label-s{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.d-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
+.stack{display:grid;gap:8px}
+.tree{display:grid;gap:8px}
+.node{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface)}
+.node .lv{font:600 11px var(--f-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);width:92px;flex:none}
+.node b{font-size:13.5px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.n1{margin-left:22px}.n2{margin-left:44px}.n3{margin-left:66px}
+.bub{max-width:88%;padding:9px 12px;border-radius:12px;font-size:13.5px;line-height:1.45}
+.bub.u{margin-left:auto;background:var(--primary);color:var(--on-primary)}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.col{background:var(--sunk);border-radius:var(--r-m);padding:8px;display:grid;gap:6px;align-content:start;min-height:120px}
+.col h5{margin:0 0 2px;font:600 12px var(--f-body)}
+.mini{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.done-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:var(--ok-soft);color:var(--ok);font-weight:600;font-size:13px}
+.done-badge .ic{width:16px;height:16px}
+/* sezioni */
+section{padding-block:96px;border-top:1px solid var(--line)}
+.sec-h{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:48px;align-items:end;margin-bottom:44px}
+.sec-h p{color:var(--muted);font-size:18px;margin:0;max-width:54ch}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.fact{display:flex;gap:14px;align-items:flex-start}
+.fact b{display:block;font:700 17px/1.3 var(--f-display)}
+.fact span{font-size:14.5px;color:var(--muted)}
+.demo-layout{display:grid;grid-template-columns:minmax(0,.62fr) minmax(0,1.38fr);gap:28px;align-items:start}
+.chapters{display:grid;gap:8px}
+.chapter{display:flex;gap:14px;align-items:flex-start;text-align:left;width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);cursor:pointer;color:var(--fg);font:inherit}
+.chapter:hover{border-color:var(--primary)}
+.chapter[aria-selected="true"]{border-color:var(--primary);box-shadow:inset 3px 0 0 var(--primary)}
+.chapter .icon-tile{width:38px;height:38px}
+.chapter b{display:block;font:700 16px/1.3 var(--f-display)}
+.chapter span span{font-size:14px;color:var(--muted)}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-l);overflow:hidden;list-style:none;padding:0;margin:0;counter-reset:s}
+.steps li{background:var(--surface);padding:22px;counter-increment:s;display:grid;gap:10px;align-content:start;min-width:0}
+.steps .top{display:flex;align-items:center;justify-content:space-between}
+.steps .top .ic{color:var(--primary)}
+.steps .num{font:700 30px/1 var(--f-display);color:var(--primary);letter-spacing:-.03em}
+.steps .num::before{content:counter(s,decimal-leading-zero)}
+.steps .ph{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.steps h3{margin:0;font:700 18px/1.25 var(--f-display)}
+.steps p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.5}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.tab{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 14.5px var(--f-body);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.example{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1.3fr);gap:20px;align-items:start}
+.example .arrow{align-self:center;color:var(--primary)}
+.example .arrow .ic{width:28px;height:28px}
+.ex-in,.ex-out{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:20px;min-width:0}
+.ex-in h4,.ex-out h4{margin:0 0 12px;font:600 12px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ticket-doc{font:13px/1.6 var(--f-mono);background:var(--sunk);border-radius:var(--r-m);padding:14px;white-space:pre-wrap;word-break:break-word;margin:10px 0 0;max-height:300px;overflow:auto}
+.ticket-doc b{color:var(--primary);font-weight:600}
+.ex-out .tk+.tk{margin-top:8px}
+.ex-note{margin:14px 0 0;font-size:14px;color:var(--muted)}
+.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.rule{display:grid;gap:12px;align-content:start}
+.rule p{margin:0;color:var(--muted);font-size:15px;line-height:1.55}
+.rule .without{padding-top:12px;border-top:1px dashed var(--line);font-size:13.5px;color:var(--muted)}
+.rule .without b{color:var(--accent-text)}
+.who{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.who ul{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:15px}
+.who li{margin:4px 0}
+.trust{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px}
+.trust h3{font:700 18px/1.25 var(--f-display);margin:14px 0 6px}
+.trust p{margin:0;color:var(--muted);font-size:15px;line-height:1.55}
+.faq{display:grid;gap:10px;max-width:860px}
+.faq details{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m)}
+.faq summary{cursor:pointer;list-style:none;padding:16px 18px;font-weight:600;display:flex;justify-content:space-between;gap:12px;min-height:44px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font:600 20px/1 var(--f-mono);color:var(--primary)}
+.faq details[open] summary::after{content:"–"}
+.faq p{margin:0;padding:0 18px 18px;color:var(--muted)}
+.band{background:var(--band);color:var(--band-fg);border-top:0}
+.band .eyebrow{color:var(--band-muted)}
+.band .h-section{color:var(--band-fg);max-width:18ch}
+.band p{color:var(--band-muted);font-size:18px;max-width:46ch}
+.band .btn{border-color:rgba(242,243,251,.4);color:var(--band-fg);background:transparent}
+.band .btn.primary{background:var(--band-fg);color:var(--band);border-color:var(--band-fg)}
+.band-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:40px;align-items:end}
+footer{padding-block:28px 40px;color:var(--muted);font-size:14px;display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+footer a{color:var(--muted)}
+@media(max-width:1020px){
+  .hero,.sec-h,.demo-layout,.band-grid{grid-template-columns:minmax(0,1fr)}
+  .hero{gap:36px;padding-block:20px 56px}
+  .steps,.facts,.trust{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rules,.who{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .example{grid-template-columns:minmax(0,1fr)}
+  .example .arrow{transform:rotate(90deg);justify-self:center}
+  nav.top .links{display:none}
+  nav.top .btn{margin-left:auto}
+  .chapters{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:640px){
+  body{font-size:16px}
+  section{padding-block:64px}
+  .steps,.facts,.trust,.rules,.who,.chapters{grid-template-columns:minmax(0,1fr)}
+  .d-grid{grid-template-columns:minmax(0,1fr)}
+  .screen{min-height:0;padding:14px}
+  .n1{margin-left:12px}.n2{margin-left:24px}.n3{margin-left:36px}
+  .node .lv{width:auto}
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .lede{font-size:17px}
+  .p-cap{flex-basis:100%;order:3}
+}
+</style>
+<!-- seo:start (generato da scripts/seo/build.mjs: non modificare a mano) -->
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="canonical" href="https://trama-backlog.vercel.app/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Trama">
+<meta property="og:locale" content="it_IT">
+<meta property="og:title" content="Trama · Dal documento di requisiti al backlog Jira">
+<meta property="og:description" content="Trama trasforma il documento di requisiti in un backlog Jira strutturato, passo dopo passo, con Claude e le regole del playbook del gruppo.">
+<meta property="og:url" content="https://trama-backlog.vercel.app/">
+<meta property="og:image" content="https://trama-backlog.vercel.app/og/trama-og.png?v=2">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Trama: dal documento al backlog, con le regole.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Trama · Dal documento di requisiti al backlog Jira">
+<meta name="twitter:description" content="Trama trasforma il documento di requisiti in un backlog Jira strutturato, passo dopo passo, con Claude e le regole del playbook del gruppo.">
+<meta name="twitter:image" content="https://trama-backlog.vercel.app/og/trama-og.png?v=2">
+<meta name="twitter:image:alt" content="Trama: dal documento al backlog, con le regole.">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://trama-backlog.vercel.app/#site","url":"https://trama-backlog.vercel.app/","name":"Trama","inLanguage":"it"},{"@type":"SoftwareApplication","@id":"https://trama-backlog.vercel.app/#app","name":"Trama","url":"https://trama-backlog.vercel.app/","description":"Trama trasforma il documento di requisiti in un backlog Jira strutturato, passo dopo passo, con Claude e le regole del playbook del gruppo.","applicationCategory":"BusinessApplication","operatingSystem":"Web","inLanguage":"it","image":"https://trama-backlog.vercel.app/og/trama-og.png"}]}</script>
+<!-- seo:end -->
+</head>
+<body>
+<div class="wrap">
+  <nav class="top" aria-label="Principale">
+    <a class="brand" href="/" aria-label="Trama, home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span></a>
+    <div class="links"><a href="#demo">Demo</a><a href="#passi">Come funziona</a><a href="#esempi">Esempi</a><a href="#regole">Regole</a><a href="#sicurezza">Sicurezza</a><a href="#faq">Domande</a></div>
+    <a class="btn primary" href="/studio">Apri Trama</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <div class="eyebrow">Product Owner + AI · uso interno</div>
+      <h1 class="h-display" style="margin-top:16px">Dal documento al backlog, <span>con le regole.</span></h1>
+      <p class="lede">Carichi i requisiti. Trama li scompone in Project, Fasi, epiche e storie con i metadati giusti, e li porta in Jira solo dopo la tua conferma.</p>
+      <div class="cta">
+        <a class="btn primary" href="/api/auth/login"><svg class="ic"><use href="/icons.svg#i-link"/></svg>Accedi con Atlassian</a>
+        <a class="btn" href="#demo"><svg class="ic"><use href="/icons.svg#i-play"/></svg>Guarda la demo</a>
+      </div>
+      <div class="hero-note"><span><svg class="ic"><use href="/icons.svg#i-check"/></svg>Con il tuo account Jira</span><span><svg class="ic"><use href="/icons.svg#i-check"/></svg>Nessuna scrittura senza conferma</span><span><svg class="ic"><use href="/icons.svg#i-check"/></svg>Claude Code del tuo piano</span></div>
+    </div>
+    <div id="heroPlayer"></div>
+  </header>
+</div>
+
+<section style="padding-block:40px">
+  <div class="wrap facts">
+    <div class="fact"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-list"/></svg></div><div><b>6 passi guidati</b><span>Dal documento alla verifica in Jira, sempre nello stesso ordine.</span></div></div>
+    <div class="fact"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-kit"/></svg></div><div><b>Un kit di regole</b><span>Release, epiche, label, prefissi e collegamenti, già impostati.</span></div></div>
+    <div class="fact"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-tree"/></svg></div><div><b>La vostra struttura</b><span>Cliente › Project › Fase › Feature Epic › ticket.</span></div></div>
+    <div class="fact"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-shield"/></svg></div><div><b>Controllo prima di scrivere</b><span>Tipi, campi obbligatori e duplicati verificati prima.</span></div></div>
+  </div>
+</section>
+
+<section id="demo">
+  <div class="wrap">
+    <div class="sec-h"><div><div class="eyebrow">Guarda come funziona</div><h2 class="h-section">Quattro momenti, in meno di un minuto.</h2></div><p>Brevi animazioni dello studio con dati di esempio. Scegli un capitolo: parte da solo, puoi metterlo in pausa o rivederlo.</p></div>
+    <div class="demo-layout">
+      <div class="chapters" role="tablist" aria-label="Capitoli della demo">
+        <button class="chapter" role="tab" aria-selected="false" data-demo="extract"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-file"/></svg></span><span><b>Dal documento ai requisiti</b><span>Claude legge Word, PDF, Excel e immagini.</span></span></button>
+        <button class="chapter" role="tab" aria-selected="true" data-demo="split"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-layers"/></svg></span><span><b>Scomposizione con le regole</b><span>Spike UX, storie BE e FE, metadati completi.</span></span></button>
+        <button class="chapter" role="tab" aria-selected="false" data-demo="jira"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-tree"/></svg></span><span><b>Struttura su Jira</b><span>Project, Fasi, epiche e ticket, collegati e verificati.</span></span></button>
+        <button class="chapter" role="tab" aria-selected="false" data-demo="plan"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-shield"/></svg></span><span><b>Qualità del backlog</b><span>Segnalazioni in ordine di gravità, con la correzione.</span></span></button>
+      </div>
+      <div id="mainPlayer"></div>
+    </div>
+  </div>
+</section>
+
+<section id="passi">
+  <div class="wrap">
+    <div class="sec-h"><div><div class="eyebrow">Come funziona</div><h2 class="h-section">Sei passi, sempre nello stesso ordine.</h2></div><p>Ogni passo dice cosa serve per completarlo e quali regole applica. Il registro delle decisioni è sempre a portata, fuori dai passi. Lo stato è condiviso: chi lavora sullo stesso sito Atlassian vede lo stesso progetto.</p></div>
+    <ol class="steps">
+      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-link"/></svg></div><span class="ph">Avvio</span><h3>Progetto Jira</h3><p>Legge tipi di ticket, campi obbligatori e nomi esatti dei collegamenti.</p></li>
+      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-file"/></svg></div><span class="ph">Preparazione</span><h3>Requisiti</h3><p>Carichi Word, PDF, Excel o immagini; Claude estrae una riga per requisito, con ID, release e dipendenze. La valida il PO.</p></li>
+      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-help"/></svg></div><span class="ph">Preparazione</span><h3>Domande di apertura</h3><p>Ogni domanda si chiude con una risposta o un'ipotesi, che entra da sola nel registro.</p></li>
+      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-kit"/></svg></div><span class="ph">Preparazione</span><h3>Kit di progetto</h3><p>Release, epiche, label e struttura Project › Fase › Epica.</p></li>
+      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-layers"/></svg></div><span class="ph">Creazione</span><h3>Backlog</h3><p>Spike UX, storie BE e FE, con il controllo di qualità in una scheda a parte.</p></li>
+      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-send"/></svg></div><span class="ph">Creazione</span><h3>Crea su Jira</h3><p>Controllo, conferma, creazione in ordine, verifica e sincronizzazione.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section id="esempi">
+  <div class="wrap">
+    <div class="sec-h"><div><div class="eyebrow">Esempi pratici</div><h2 class="h-section">Cosa entra, cosa esce.</h2></div><p>Tre casi del lavoro quotidiano di un PO, con dati inventati. Trama propone, tu confermi.</p></div>
+    <div class="tabs" role="tablist" aria-label="Esempi">
+      <button class="tab" role="tab" aria-selected="true" data-ex="0">Un requisito diventa ticket</button>
+      <button class="tab" role="tab" aria-selected="false" data-ex="1">Una domanda diventa decisione</button>
+      <button class="tab" role="tab" aria-selected="false" data-ex="2">Un ticket vago viene corretto</button>
+    </div>
+    <div id="exBox"></div>
+  </div>
+</section>
+
+<section id="regole">
+  <div class="wrap">
+    <div class="sec-h"><div><div class="eyebrow">Regole applicate</div><h2 class="h-section">Ogni regola evita un errore che prima o poi capita.</h2></div><p>Il playbook non è un documento da ricordare: Trama lo controlla prima di scrivere su Jira e lo raccoglie in una pagina sempre a portata.</p></div>
+    <div class="rules">
+      <div class="card rule"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-check"/></svg></div><h3 class="h-card">Metadati essenziali, sempre</h3><p>Epica, label di release e di lavoro, prefisso e campi obbligatori di Jira: un ticket incompleto non parte. Componente, fixVersion e assegnatario si aggiungono quando servono.</p><div class="without"><b>Senza:</b> giri di correzione a fine sprint.</div></div>
+      <div class="card rule"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-link"/></svg></div><h3 class="h-card">Nomi esatti dei collegamenti</h3><p>Se in Jira il blocco si chiama «3. Blocking», si usa quel nome, letto dal progetto.</p><div class="without"><b>Senza:</b> collegamenti rifiutati e mai creati.</div></div>
+      <div class="card rule"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-sync"/></svg></div><h3 class="h-card">Prima si legge, poi si scrive</h3><p>Tipi, campi, versioni e ticket esistenti vengono riletti subito prima della creazione.</p><div class="without"><b>Senza:</b> duplicati e versioni sbagliate.</div></div>
+      <div class="card rule"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-help"/></svg></div><h3 class="h-card">Le ipotesi si dichiarano</h3><p>Ogni scelta fatta al posto del PO compare in un elenco da confermare.</p><div class="without"><b>Senza:</b> scelte sbagliate scoperte a sprint avviato.</div></div>
+      <div class="card rule"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-tree"/></svg></div><h3 class="h-card">La struttura si rispetta</h3><p>Project, Fasi, epiche e ticket nell'ordine giusto, ciascuno con il proprio Principale.</p><div class="without"><b>Senza:</b> epiche orfane e report che non tornano.</div></div>
+      <div class="card rule"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-book"/></svg></div><h3 class="h-card">Le decisioni restano scritte</h3><p>Risposte, ipotesi e cambi di rotta finiscono nel registro, con la riga che sostituiscono.</p><div class="without"><b>Senza:</b> decisioni sparse tra chat e commenti.</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h"><div><div class="eyebrow">Per chi</div><h2 class="h-section">Un lavoro, tre ruoli.</h2></div><p>Trama nasce per il Product Owner, ma lo usa chiunque nel gruppo prepari o legga un backlog.</p></div>
+    <div class="who">
+      <div class="card"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-users"/></svg></div><h3 class="h-card" style="margin-top:14px">Product Owner</h3><ul><li>Requisiti estratti e messi in ordine in un pomeriggio.</li><li>Domande aperte e ipotesi sempre in vista.</li><li>Backlog creato in Jira con un comando.</li></ul></div>
+      <div class="card"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-book"/></svg></div><h3 class="h-card" style="margin-top:14px">Delivery e PMO</h3><ul><li>Stessa struttura Project › Fase › Epica in tutti i progetti.</li><li>Registro delle decisioni con fonte e impatto.</li><li>Backlog controllato prima di arrivare in Jira.</li></ul></div>
+      <div class="card"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-layers"/></svg></div><h3 class="h-card" style="margin-top:14px">Team di sviluppo</h3><ul><li>Ticket con lo stesso modello e criteri verificabili.</li><li>Dipendenze esplicite tra BE, FE e firmware.</li><li>Punti da chiarire scritti nel ticket.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="sicurezza">
+  <div class="wrap">
+    <div class="sec-h"><div><div class="eyebrow">Sicurezza e dati</div><h2 class="h-section">I tuoi permessi, i tuoi dati.</h2></div><p>Trama non ha un account Jira suo: agisce come te, solo sui siti che puoi già vedere.</p></div>
+    <div class="trust">
+      <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-users"/></svg></div><h3>Accesso Atlassian</h3><p>Entri con il tuo account. I ticket risultano creati da te, con i tuoi permessi di progetto.</p></div>
+      <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-lock"/></svg></div><h3>Token cifrati</h3><p>I token di accesso sono cifrati nel database e non arrivano mai al browser.</p></div>
+      <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-chat"/></svg></div><h3>Claude sul tuo Mac</h3><p>Claude lavora attraverso il tuo Claude Code, senza chiavi API sul server.</p></div>
+      <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-shield"/></svg></div><h3>Conferma esplicita</h3><p>Nulla viene scritto su Jira senza controllo, elenco delle ipotesi e doppia conferma.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="sec-h"><div><div class="eyebrow">Domande frequenti</div><h2 class="h-section">Prima di iniziare.</h2></div><p>Quello che chiedono tutti al primo utilizzo.</p></div>
+    <div class="faq">
+      <details><summary>Trama scrive su Jira da solo?</summary><p>No. Prima esegue un controllo, poi mostra le ipotesi da confermare e chiede una doppia conferma. Solo allora crea, nell'ordine Project › Fasi › epiche › ticket, e rilegge Jira per verificare.</p></details>
+      <details><summary>Quali documenti posso caricare?</summary><p>Word, PDF, Excel, CSV, testo, Markdown e immagini. Le immagini (frame di design, screenshot, foto di lavagne) vengono trascritte da Claude.</p></details>
+      <details><summary>Serve una chiave API di Claude?</summary><p>No. Trama usa Claude Code sul tuo Mac attraverso un piccolo ponte locale, con il tuo abbonamento. Senza ponte acceso tutto funziona tranne le proposte di Claude.</p></details>
+      <details><summary>Posso usarlo da iPhone?</summary><p>Sì, l'interfaccia è pensata anche per Safari su iOS. Per usare Claude dal telefono serve rendere raggiungibile il ponte del Mac, per esempio con Tailscale.</p></details>
+      <details><summary>Come elimino un backlog di prova?</summary><p>Trama non cancella nulla in Jira. Ti prepara la query esatta con i soli ticket creati, da eliminare in blocco in Jira, poi si riallinea con «Sincronizza con Jira».</p></details>
+      <details><summary>Chi vede i miei progetti?</summary><p>Chi ha accesso allo stesso sito Atlassian. Ogni progetto è legato al sito su cui lavora.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap band-grid">
+    <div><div class="eyebrow">Pronto quando lo sei tu</div><h2 class="h-section">Porta il prossimo documento di requisiti.</h2></div>
+    <div><p>Accedi con Atlassian, crea il progetto e segui i passi. Il primo backlog può essere in Jira il giorno stesso.</p><div class="cta" style="margin-top:22px"><a class="btn primary" href="/api/auth/login">Accedi con Atlassian</a><a class="btn" href="/brand">Linee guida del marchio</a></div></div>
+  </div>
+</section>
+<div class="wrap"><footer><a class="brand" aria-label="Trama" href="/" style="font-size:18px"><svg viewBox="0 0 32 32" aria-hidden="true" style="width:22px;height:22px"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span></a><span>Strumento interno del gruppo · Funziona con Jira Cloud e Claude Code</span><span><a href="/installazione">Installazione</a> · <a href="/privacy">Privacy</a> · <a href="/brand">Marchio e linee guida</a></span></footer></div>
+
+<script>
+/* Demo animate: ogni scena è un elenco di passi. Gli elementi con data-s="n" compaiono dal passo n, quelli con data-x="n" spariscono dal passo n.
+   A riposo (senza JavaScript o con movimento ridotto) la scena mostra lo stato finale completo. */
+const I=n=>`<svg class="ic"><use href="/icons.svg#${n}"/></svg>`;
+const DEMOS={
+ extract:{title:"trama · Passo 2 di 6 · Requisiti",steps:["Carichi il documento: Word, PDF, Excel o immagini.","Claude lo legge e propone un requisito per riga.","Ogni riga ha componenti, release e dipendenze.","Le ambiguità diventano domande aperte.","Il PO controlla e valida la lista."],
+  html:`<div class="d-grid"><div data-s="0"><p class="label-s">Documento</p><div class="doc"><div class="doc-h">${I("i-file")}Requisiti_OrtoComune_v2.docx</div>
+   <p><mark>RF-013 · Richiesta di un lotto con lista d'attesa</mark> ordinata per data.</p><p>RF-020 · Calendario dei turni di irrigazione.</p><p>RF-025 · Sospensione turni per allerta meteo.</p><p>RM-01 · App per iOS e Android: <mark>nativa o cross-platform?</mark></p></div></div>
+   <div class="stack"><p class="label-s" data-s="1">Requisiti estratti</p>
+   <div class="req" data-s="1"><span class="key">RF-013</span><b>Richiesta lotto con lista d'attesa</b><span class="pill primary">MVP</span></div>
+   <div class="req" data-s="2"><span class="key">RF-020</span><b>Calendario dei turni</b><span class="pill primary">MVP</span></div>
+   <div class="req" data-s="2"><span class="key">RF-025</span><b>Sospensione per allerta meteo</b><span class="pill">Release 1.0</span></div>
+   <div class="row" data-s="2"><span class="pill">Web App</span><span class="pill">Mobile App</span><span class="pill">Back-end</span><span class="pill accent">dipende da RF-060</span></div>
+   <div class="req" data-s="3"><span class="key">RM-01</span><b>Tecnologia dell'app mobile</b><span class="pill err">domanda aperta</span></div>
+   <div data-s="4"><span class="done-badge">${I("i-check")}75 requisiti · 12 domande aperte · lista validata</span></div></div></div>`},
+ split:{title:"trama · Passo 5 di 6 · Backlog",steps:["Un requisito con interfaccia e design non pronto.","Trama propone la spike UX per il design.","Poi le storie BE, FE Web e FE Mobile, collegate.","Il controllo trova un metadato mancante.","Corretto: tutti i metadati del kit sono a posto."],
+  html:`<div class="stack"><div class="req" data-s="0"><span class="key">RF-020</span><b>Calendario dei turni di irrigazione</b><span class="pill">Web · Mobile · BE</span></div>
+   <div class="d-grid" style="margin-top:6px"><div class="stack">
+   <div class="tk ux" data-s="1"><span class="key">T-014</span><span class="t"><em>[UX - Web/Mobile]</em> Watering shifts calendar design</span><span class="m"><span class="pill accent">Spike</span><span class="pill">UX-UI</span></span></div>
+   <div class="tk" data-s="2"><span class="key">T-015</span><span class="t"><em>[BE]</em> Shifts API and rotation rules</span><span class="m"><span class="pill">Story</span><span class="pill">Back-End</span><span class="pill primary">blocca T-016, T-017</span></span></div>
+   <div class="tk" data-s="2"><span class="key">T-016</span><span class="t"><em>[FE - Web]</em> Shifts calendar</span><span class="m"><span class="pill">Story</span><span class="pill">UI</span></span></div>
+   <div class="tk" data-s="2"><span class="key">T-017</span><span class="t"><em>[FE - Mobile]</em> Shifts calendar</span><span class="m"><span class="pill">Story</span><span class="pill">UI</span></span></div></div>
+   <div class="card" style="padding:14px" data-s="3"><p class="label-s">Controllo metadati · T-017</p><div class="stack">
+   <div class="chk">${I("i-check")}Label di release: MVP</div><div class="chk">${I("i-check")}Label di tipo lavoro: UI</div><div class="chk">${I("i-check")}Prefisso nel titolo: [FE - Mobile]</div>
+   <div class="chk bad" data-x="4">${I("i-alert")}Epica mancante (K3)</div><div class="chk" data-s="4">${I("i-check")}Epica: Turni e presenze</div>
+   <div data-s="4" style="margin-top:6px"><span class="pill ok">pronto per Jira</span></div></div></div></div></div>`},
+ jira:{title:"trama · Passo 6 di 6 · Crea su Jira",steps:["Il controllo è verde: si conferma e si crea.","Prima il Project, sotto il cliente COM.","Poi le Fasi, con il Project come Principale.","Le epiche sotto la Fase, le storie sotto l'epica.","Trama rilegge Jira: ogni livello è collegato."],
+  html:`<div class="tree"><div class="row" data-s="0" style="margin-bottom:6px"><span class="pill ok">${I("i-check")}9 controlli superati</span><span class="pill">1 Project · 2 Fasi · 6 epiche · 48 ticket</span></div>
+   <div class="node" data-s="1"><span class="lv">Project</span><b>OrtoComune</b><span class="key">COM-901</span></div>
+   <div class="node n1" data-s="2"><span class="lv">Fase</span><b>Analisi</b><span class="key">COM-902</span></div>
+   <div class="node n1" data-s="2"><span class="lv">Fase</span><b>Sviluppo MVP</b><span class="key">COM-903</span></div>
+   <div class="node n2" data-s="3"><span class="lv">Feature Epic</span><b>Turni e presenze</b><span class="key">COM-904</span></div>
+   <div class="node n3" data-s="3"><span class="lv">Story</span><b>[BE] Shifts API and rotation rules</b><span class="key">COM-905</span></div>
+   <div class="node n3" data-s="3"><span class="lv">Story</span><b>[FE - Web] Shifts calendar</b><span class="key">COM-906</span></div>
+   <div data-s="4" style="margin-top:6px"><span class="done-badge">${I("i-check")}Struttura verificata: 57 di 57 livelli collegati</span></div></div>`},
+ plan:{title:"trama · Passo 5 di 6 · Qualità del backlog",steps:["Chiedi a Claude un controllo del backlog.","Segnala un criterio vago, con la correzione.","Le altre segnalazioni, in ordine di gravità.","Correggi e ricontrolla: il backlog è pronto."],
+  html:`<div class="d-grid"><div class="stack"><div class="bub u" data-s="0">Controlla la qualità del backlog dell'MVP</div>
+   <div class="card" style="padding:12px" data-s="1"><div class="row"><span class="key">T-016</span><span class="pill err">alta</span><span class="pill primary">Criteri vaghi</span></div><p style="margin:8px 0 4px;font-size:13.5px">«Funziona bene su mobile» non è verificabile.</p><p style="margin:0;font-size:13px;color:var(--muted)">Cosa fare: calendario leggibile da 360 px, caricamento sotto 2 s.</p></div></div>
+   <div class="stack" data-s="2"><p class="label-s">Altre segnalazioni</p>
+   <div class="req"><span class="key">T-021</span><b>Storia senza criteri di accettazione</b><span class="pill accent">media</span></div>
+   <div class="req"><span class="key">T-033</span><b>Dipendenza dal firmware non indicata</b><span class="pill accent">media</span></div>
+   <div class="req"><span class="key">T-040</span><b>Titolo troppo generico</b><span class="pill">bassa</span></div>
+   <div data-s="3" style="margin-top:6px"><span class="done-badge">${I("i-check")}Nessuna segnalazione alta · backlog pronto per Jira</span></div></div></div>`}};
+
+function makePlayer(host,key){
+  const d=DEMOS[key],reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  host.innerHTML=`<div class="player" role="group" aria-label="Demo animata: ${d.title}"><div class="p-bar"><span class="p-dots"><i></i><i></i><i></i></span><span class="p-title">${d.title}</span><span class="pill">demo</span></div><div class="screen">${d.html}</div><div class="p-ctrl"><button class="p-btn" type="button">${I("i-pause")}</button><div class="p-track"><i></i></div><div class="p-cap" aria-live="polite"></div></div></div>`;
+  const pl=host.querySelector(".player"),btn=pl.querySelector(".p-btn"),bar=pl.querySelector(".p-track i"),cap=pl.querySelector(".p-cap");
+  const STEP=2700,N=d.steps.length;let step=N-1,timer=null,playing=false,t0=0,raf=null,userPaused=false,io=null;
+  const show=s=>{step=s;pl.querySelectorAll("[data-s]").forEach(e=>e.classList.toggle("on",+e.dataset.s<=s));pl.querySelectorAll("[data-x]").forEach(e=>e.classList.toggle("off",+e.dataset.x<=s));cap.innerHTML=`<b>${s+1}/${N}</b>${d.steps[s]}`};
+  const setBtn=()=>{btn.innerHTML=playing?I("i-pause"):(step>=N-1?I("i-replay"):I("i-play"));btn.setAttribute("aria-label",playing?"Metti in pausa la demo":"Riproduci la demo")};
+  const tick=()=>{if(!playing)return;bar.style.width=Math.min(100,((step+(performance.now()-t0)/STEP)/N)*100)+"%";raf=requestAnimationFrame(tick)};
+  const next=()=>{if(step<N-1){show(step+1);t0=performance.now();timer=setTimeout(next,STEP)}else{timer=setTimeout(()=>{show(0);t0=performance.now();timer=setTimeout(next,STEP)},STEP+1400)}};
+  function play(){if(playing)return;pl.classList.add("playing");if(step>=N-1)show(0);playing=true;t0=performance.now();timer=setTimeout(next,STEP);setBtn();tick()}
+  function stop(){playing=false;clearTimeout(timer);cancelAnimationFrame(raf);setBtn()}
+  btn.onclick=()=>{if(playing){userPaused=true;stop()}else{userPaused=false;play()}};
+  show(N-1);bar.style.width="100%";setBtn();
+  if(!reduce){io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!playing&&!userPaused)play();else if(!e.isIntersecting&&playing)stop()}),{threshold:.35});io.observe(pl)}
+  return{destroy(){stop();io&&io.disconnect()}}}
+
+makePlayer(document.getElementById("heroPlayer"),"extract");
+let current=makePlayer(document.getElementById("mainPlayer"),"split");
+document.querySelector(".chapters").addEventListener("click",e=>{const b=e.target.closest(".chapter");if(!b)return;document.querySelectorAll(".chapter").forEach(x=>x.setAttribute("aria-selected",x===b?"true":"false"));current.destroy();current=makePlayer(document.getElementById("mainPlayer"),b.dataset.demo)});
+
+/* Esempi pratici */
+const EX=[
+ {in:`<h4>Requisito nel documento</h4><div class="doc"><div class="doc-h">${I("i-file")}Requisiti_OrtoComune_v2.docx · pag. 6</div><p><mark>RF-025 · Sospensione automatica dei turni in caso di allerta meteo</mark> (pioggia intensa, gelo). Se il servizio meteo non risponde, i turni restano confermati.</p></div><p class="ex-note">Componenti: Back-end, Web, Mobile · Release 1.0 · dipende da RF-020 e RF-060.</p>`,
+  out:`<h4>Ticket proposti da Trama</h4><div class="tk"><span class="key">T-031</span><span class="t"><em>[BE]</em> Weather alert shift suspension</span><span class="m"><span class="pill">Story</span><span class="pill">Back-End</span><span class="pill">Release1.0</span></span></div>
+   <div class="tk"><span class="key">T-032</span><span class="t"><em>[FE - Mobile]</em> Suspended shift banner and push</span><span class="m"><span class="pill">Story</span><span class="pill">UI</span></span></div>
+   <div class="ticket-doc"><b>## Context</b>
+RF-025: shifts are suspended automatically on weather alerts.
+
+<b>## User story</b>
+As a gardener, I want my shift to be suspended on a weather alert, so that I don't go to the garden for nothing.
+
+<b>## Scope / Action</b>
+* Poll the weather service every 30 min for the garden area.
+* Suspend shifts on heavy rain or frost; notify enrolled users (RF-060).
+* If the weather service is down, keep shifts confirmed (RNF-12).
+
+<b>## Points to clarify</b>
+* Threshold for "heavy rain": mm/h or official alert level?
+
+<b>## Acceptance criteria</b>
+* An alert suspends all shifts of that garden within 30 min.
+* Users receive a push and an email.</div>`},
+ {in:`<h4>Domanda aperta</h4><div class="doc"><p><b>RM-01</b> · Il documento lascia aperta la scelta tra app nativa e cross-platform. Qual è la tecnologia decisa?</p></div><p class="ex-note">Senza risposta, ogni ticket FE - Mobile andrebbe scritto due volte.</p>`,
+  out:`<h4>Risposta e registro delle decisioni</h4><div class="card" style="padding:16px"><div class="row"><span class="pill ok">Risposta</span><span class="pill">Cliente</span></div><p style="margin:10px 0 0">App cross-platform (Flutter), una base di codice per iOS e Android.</p></div>
+   <div class="ticket-doc" style="max-height:none"><b>Registro · 16/10/2026</b>
+Decisione: l'app mobile è cross-platform (Flutter).
+Chi: Cliente · Fonte: Domande di apertura
+Impatto: un solo ticket FE - Mobile per funzione;
+label Android e iOS solo per i casi di piattaforma.
+Regola del kit: K5 · Label</div><p class="ex-note">Da quel momento Claude scompone i requisiti mobile con un ticket solo.</p>`},
+ {in:`<h4>Ticket in bozza</h4><div class="tk"><span class="key">T-016</span><span class="t"><em>[FE - Web]</em> Shifts calendar</span><span class="m"><span class="pill">Story</span></span></div><div class="ticket-doc"><b>## Acceptance criteria</b>
+* The calendar works well.</div>`,
+  out:`<h4>Segnalazione del controllo qualità</h4><div class="card" style="padding:16px"><div class="row"><span class="key">T-016</span><span class="pill err">alta</span><span class="pill primary">Criteri vaghi</span></div><p style="margin:10px 0 4px">«Works well» non è verificabile.</p><p style="margin:0;color:var(--muted);font-size:15px">Cosa fare: indicare viste, larghezza minima e tempi.</p></div>
+   <div class="ticket-doc"><b>## Acceptance criteria</b>
+* Week and month views, readable from 360 px.
+* The calendar loads in under 2 s with 200 shifts.
+* Suspended shifts are shown in grey with the reason.
+
+<b>## Points to clarify</b>
+* Do referents see all gardens or only theirs?</div><p class="ex-note">Il punto da chiarire viene aggiunto con un clic; la scelta resta tua.</p>`}];
+const exBox=document.getElementById("exBox");
+function showEx(i){exBox.innerHTML=`<div class="example" role="tabpanel"><div class="ex-in">${EX[i].in}</div><div class="arrow" aria-hidden="true">${I("i-arrow")}</div><div class="ex-out">${EX[i].out}</div></div>`;document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",+t.dataset.ex===i?"true":"false"))}
+document.querySelector(".tabs").addEventListener("click",e=>{const t=e.target.closest(".tab");if(t)showEx(+t.dataset.ex)});showEx(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "trama",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Trama · dal documento al backlog, con le regole.",
+  "type": "module",
+  "scripts": {
+    "dev": "netlify dev",
+    "db:setup": "node scripts/db-setup.mjs",
+    "key": "node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
+    "claude": "node scripts/claude-bridge.mjs",
+    "seo": "node scripts/seo/build.mjs",
+    "bridge:pack": "node scripts/pack-bridge.mjs"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "27.10.2"
+  }
+}

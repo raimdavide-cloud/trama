@@ -1,0 +1,9 @@
+{
+  "base": "https://trama-backlog.vercel.app",
+  "name": "Trama",
+  "locale": "it_IT",
+  "themeColor": "#23307A",
+  "backgroundColor": "#F5F6FA",
+  "ogVersion": "2",
+  "lastmod": "2026-10-16"
+}

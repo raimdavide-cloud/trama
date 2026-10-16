@@ -1,0 +1,29 @@
+[build]
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[dev]
+  port = 8888
+  publish = "public"
+
+# Pagine statiche: nessuna cache aggressiva per lo strumento, che cambia spesso
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
+
+# La pagina e il runtime cambiano spesso: il browser deve sempre ricontrollare la versione
+[[headers]]
+  for = "/studio*"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+[[headers]]
+  for = "/studio-runtime.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"

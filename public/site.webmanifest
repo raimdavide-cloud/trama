@@ -1,0 +1,30 @@
+{
+  "name": "Trama",
+  "short_name": "Trama",
+  "description": "Dal documento di requisiti al backlog Jira, con le regole.",
+  "lang": "it",
+  "dir": "ltr",
+  "start_url": "/studio",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#23307A",
+  "background_color": "#F5F6FA",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
