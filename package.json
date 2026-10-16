@@ -10,13 +10,14 @@
     "check": "node scripts/check.mjs",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node --test \"tests/unit/*.test.mjs\"",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --project=e2e",
     "sim": "node tests/sim/server.mjs",
     "fixture": "node --env-file=.env tests/fixtures/make-fixture.mjs",
     "db:setup": "node scripts/db-setup.mjs",
     "key": "node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
     "seo": "node scripts/seo/build.mjs",
-    "bridge:pack": "node scripts/pack-bridge.mjs"
+    "bridge:pack": "node scripts/pack-bridge.mjs",
+    "test:visual": "playwright test --project=visual"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0"
