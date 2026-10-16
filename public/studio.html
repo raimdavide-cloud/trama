@@ -420,6 +420,24 @@ function reqForm(x){const b="reqs:"+x.id+":";
     ${F("Note UI/UX",bind(b+"ui",x.ui,{area:1,rows:2}),"wide")}${F("Dipendenze esterne",bind(b+"extDeps",x.extDeps))}${F("Dipendenze interne",bind(b+"intDeps",x.intDeps,{ph:"Es. REQ-004"}))}${F("Domande aperte",bind(b+"questions",x.questions,{area:1,rows:2}),"wide")}</div>
     ${reqTrace(x)}
     <div class="toolbar" style="margin-top:12px">${x.source?`<span class="small muted">Fonte: ${esc(x.source)}</span><span style="flex:1"></span>`:""}${B("delReq",T.arm["req"+x.id]?"Conferma eliminazione":"Elimina requisito",{cls:T.arm["req"+x.id]?"armed":"danger",data:{id:x.id}})}</div>`}
+/* Registro: filtri (testo, tipo, fonte), colonne vuote nascoste, azioni nel menu «⋯» della riga. */
+function decFilter(d){const f=T.dq||(T.dq={q:"",type:"*",src:"*"}),q=f.q.trim().toLowerCase();
+  return d.filter(x=>(f.type==="*"||x.type===f.type)&&(f.src==="*"||(x.source||"")===f.src)&&(!q||[x.text,x.who,x.source,x.impact].join(" ").toLowerCase().includes(q)))}
+const decCount=(n,t)=>n<t?`${n} di ${t} decisioni · <button type="button" class="link" data-act="decReset">Togli i filtri</button>`:(t===1?"1 decisione":t+" decisioni");
+function decTable(d){if(!d.length)return'<p class="empty">Nessuna decisione ancora. Le risposte alle domande di apertura entrano da sole; le altre si aggiungono qui o dalla chat.</p>';
+  const f=T.dq||(T.dq={q:"",type:"*",src:"*"}),df=decFilter(d),num=new Map(d.map((x,i)=>[x.id,i+1]));
+  const cnt=(k,v)=>d.filter(x=>(x[k]||"")===v).length,types=[...new Set(d.map(x=>x.type).filter(Boolean))],srcs=[...new Set(d.map(x=>x.source||""))].filter(Boolean);
+  const has=k=>d.some(x=>String(x[k]||"").trim()),cols=[["who","Chi",150],["type","Tipo",180],["source","Fonte",180],["impact","Impatto",180],["kit","Kit",70],["replaces","Sostituisce",110]].filter(([k])=>has(k));
+  const bar=`<div class="rq-bar"><input type="search" id="decSearch" placeholder="Cerca nelle decisioni" aria-label="Cerca nelle decisioni" value="${esc(f.q)}" autocomplete="off">
+   <label class="rq-f">Tipo<select id="decType"><option value="*">Tutti</option>${types.map(v=>`<option value="${esc(v)}" ${v===f.type?"selected":""}>${esc(v)} (${cnt("type",v)})</option>`).join("")}</select></label>
+   <label class="rq-f">Fonte<select id="decSrc"><option value="*">Tutte</option>${srcs.map(v=>`<option value="${esc(v)}" ${v===f.src?"selected":""}>${esc(v)} (${cnt("source",v)})</option>`).join("")}</select></label></div>
+   <p class="small muted rq-count" id="decCount">${decCount(df.length,d.length)}</p>`;
+  const cell=(x,k)=>k==="replaces"?(x.replaces&&num.get(x.replaces)?"#"+num.get(x.replaces):""):k==="type"||k==="source"?`<span class="dt-t" title="${esc(x[k]||"")}">${esc(x[k]||"")}</span>`:esc(x[k]||"");
+  const rows=df.map(x=>{const n=num.get(x.id),sup=d.some(y=>y.replaces===x.id),armed=T.arm["d"+x.id];
+   return`<tr data-dec="${x.id}"${sup?' class="superseded"':""}><td class="muted">${n}</td><td class="mono small">${esc(x.date)}</td><td>${esc(x.text)}${sup?' <span class="pill">sostituita</span>':""}</td>${cols.map(([k])=>`<td>${cell(x,k)}</td>`).join("")}
+    <td>${READONLY?"":`<div class="dd row-dd"><button type="button" class="dd-btn icon-btn" aria-haspopup="menu" aria-expanded="${!!armed}" aria-label="Azioni per la decisione ${n}"><span aria-hidden="true">⋯</span></button><div class="dd-menu right" role="menu" ${armed?"":"hidden"}><button type="button" role="menuitem" class="danger-item" data-act="delDecision" data-id="${x.id}">${armed?"Conferma: elimina la decisione":"Elimina decisione"}</button></div></div>`}</td></tr>`}).join("");
+  return bar+`<div class="dt-wrap dt-menus"><table class="dt dt-dec"><colgroup><col style="width:52px"><col style="width:112px"><col>${cols.map(([,,w])=>`<col style="width:${w}px">`).join("")}<col style="width:56px"></colgroup>
+   <thead><tr><th scope="col">#</th><th scope="col">Data</th><th scope="col">Decisione</th>${cols.map(([,l])=>`<th scope="col">${l}</th>`).join("")}<th scope="col"><span class="sr-only">Azioni</span></th></tr></thead><tbody>${rows||`<tr><td colspan="${4+cols.length}" class="muted">Nessuna decisione corrisponde ai filtri.</td></tr>`}</tbody></table></div>`}
 function docsView(){const d=arr("docs").sort((a,b)=>(a.at||0)-(b.at||0));
   let h=`<label class="drop" id="drop"><input type="file" id="fileIn" multiple accept=".docx,.pdf,.xlsx,.xls,.csv,.txt,.md,.markdown,.json,image/png,image/jpeg,image/webp,image/gif" ${READONLY?"disabled":""}><b>Trascina qui i file o scegli dal computer</b><span class="small muted">Word (.docx), PDF, Excel (.xlsx, .xls), CSV, testo, Markdown, immagini</span></label>`;
   if(T.uploads.length)h+=`<div class="list" style="margin-top:10px">${T.uploads.map(u=>`<div class="row small"><span class="pill ${u.s==="ok"?"ok":u.s==="err"?"err":"acc"}">${u.s==="ok"?"Caricato":u.s==="err"?"Errore":"In lavorazione"}</span><b>${esc(u.name)}</b><span class="muted">${esc(u.note||"")}</span></div>`).join("")}</div>`;
@@ -673,13 +691,12 @@ STEPS.push({id:"log",aux:true,phase:"Sempre a portata",short:"Registro decisioni
  rules:["Il registro si aggiorna nello stesso momento in cui si creano i ticket conseguenti.","Una decisione che ne contraddice un'altra non la cancella: aggiunge una riga e indica quale sostituisce.","I ticket toccati citano la decisione nella sezione Context."],
  checks:()=>[],
  view(){const d=arr("decisions").sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.at||0)-(b.at||0));const p=P();
-  let h=`<div class="toolbar">${T.decForm?"":B("decForm","Aggiungi decisione",{cls:"primary"})}${B("exportDecisions","Esporta CSV",{ro:1,dis:!d.length})}<span class="small muted">${d.length===1?"1 decisione":d.length+" decisioni"}</span></div>`;
+  let h=`<div class="toolbar">${T.decForm?"":B("decForm","Aggiungi decisione",{cls:"primary"})}${B("exportDecisions","Esporta CSV",{ro:1,dis:!d.length})}</div>`;
   if(T.decForm)h+=`<div class="card" id="decForm"><h2>Nuova decisione</h2><div class="grid">${F("Data",`<input type="date" id="dDate" value="${today()}">`)}${F("Chi l'ha presa",`<input id="dWho" placeholder="Cliente, PO, team">`)}${F("Tipo",`<select id="dType">${DECISION_TYPES.map(x=>`<option>${x}</option>`).join("")}</select>`)}
    ${F("Decisione (una frase, al presente: cosa vale da ora)",`<input id="dText">`,"wide")}${F("Fonte",`<input id="dSrc" placeholder="Meeting, messaggio, ticket">`)}${F("Impatto",`<input id="dImp" placeholder="Ticket creati, modificati o riclassificati">`)}${F("Regola del kit",`<input id="dKit" placeholder="Es. K3">`)}
    ${F("Sostituisce",`<select id="dRep"><option value="">—</option>${d.map((x,i)=>`<option value="${x.id}">#${i+1} ${esc(String(x.text).slice(0,60))}</option>`).join("")}</select>`)}</div>
    <div class="toolbar" style="margin-top:10px">${B("addDecision","Aggiungi al registro",{cls:"primary"})}${B("decForm","Annulla")}</div></div>`;
-  h+=`<div class="tw"><table><thead><tr><th>#</th><th>Data</th><th>Decisione</th><th>Chi</th><th>Tipo</th><th>Fonte</th><th>Impatto</th><th>Kit</th><th>Sostituisce</th><th></th></tr></thead><tbody>${d.map((x,i)=>{const rep=x.replaces&&d.findIndex(y=>y.id===x.replaces);const superseded=d.some(y=>y.replaces===x.id);
-   return`<tr${superseded?' style="opacity:.6"':""}><td>${i+1}</td><td class="mono">${esc(x.date)}</td><td>${esc(x.text)}${superseded?' <span class="pill">sostituita</span>':""}</td><td>${esc(x.who)}</td><td>${esc(x.type)}</td><td>${esc(x.source)}</td><td>${esc(x.impact)}</td><td>${esc(x.kit)}</td><td>${rep>=0&&x.replaces?"#"+(rep+1):""}</td><td>${B("delDecision",T.arm["d"+x.id]?"Conferma":"Elimina",{cls:T.arm["d"+x.id]?"armed":"link",data:{id:x.id}})}</td></tr>`}).join("")||'<tr><td colspan="10" class="muted">Il registro è vuoto. Registra le risposte del passo 4 o aggiungi la prima decisione qui sopra.</td></tr>'}</tbody></table></div>`;
+  h+=decTable(d);
   return h},
  ask:["Registra questa decisione: …","Quali ticket toccherebbe questa decisione?","Prepara il verbale del meeting dagli appunti caricati"]});
 
@@ -712,6 +729,7 @@ function bridgeSettings(){const custom=BS.bridgeUrl()!==BS.DEFAULT_BRIDGE;
    <div class="toolbar" style="margin-top:10px"><button class="primary" data-act="saveBridge">Salva e ricollega</button><button data-act="resetBridge">Ripristina l'indirizzo del Mac</button></div>`)}
 {const sid=ls.get("stepid:"+PID,""),ix=STEPS.findIndex(x=>x.id===sid);cur=ix>=0?ix:0}
 const A={};
+A.decReset=()=>{T.dq={q:"",type:"*",src:"*"};render()};
 const rowOf=p=>p&&document.querySelector(`#main tr[data-k="${p.kind==="req"?"req":"t"}-${p.id}"]`);
 A.openRow=el=>{const kind=el.dataset.kind,id=el.dataset.id;if(T.panel?.kind===kind&&T.panel.id===id)return;T.panel={kind,id};render();rowOf(T.panel)?.scrollIntoView({block:"nearest"});$("#main .sp .sp-t")?.focus({preventScroll:true})};
 A.spClose=()=>{const p=T.panel;T.panel=null;render();rowOf(p)?.focus({preventScroll:true})};
@@ -1094,11 +1112,14 @@ document.addEventListener("keydown",e=>{const t=e.target,typing=t.closest?.("inp
   if((e.key==="Enter"||e.key===" ")&&t.matches?.('tr[data-act="openRow"]')){e.preventDefault();A.openRow(t);return}
   if(T.panel&&(e.key==="ArrowDown"||e.key==="ArrowUp")&&!t.closest?.('[role="tab"],select')){e.preventDefault();A.spMove({dataset:{d:e.key==="ArrowDown"?1:-1}})}});
 // ricerca nei requisiti: filtra le righe senza ridisegnare la pagina, così il cursore resta nel campo
+document.addEventListener("input",e=>{if(e.target.id!=="decSearch")return;T.dq.q=e.target.value;const all=arr("decisions"),vis=new Set(decFilter(all).map(x=>x.id));
+  $$('#main tr[data-dec]').forEach(r=>{r.hidden=!vis.has(r.dataset.dec)});const c=$("#decCount");if(c)c.innerHTML=decCount(vis.size,all.length)});
 document.addEventListener("input",e=>{if(e.target.id!=="rqSearch")return;T.rq.q=e.target.value;const all=reqList(),vis=new Set(reqFilter(all).map(x=>x.id));
   $$('#main tr[data-k^="req-"]').forEach(d=>{d.hidden=!vis.has(d.dataset.k.slice(4))});T.panelIds=reqFilter(all).map(x=>x.id);const c=$("#rqCount");if(c)c.innerHTML=rqCount(vis.size,all.length)});
 document.addEventListener("change",e=>{const el=e.target;
   if(el.id==="stepSelect"){A.go({dataset:{i:el.value}});return}
   if(el.id==="relPick"){T.rel=el.value;render();return}
+  if(el.id==="decType"||el.id==="decSrc"){T.dq[el.id==="decType"?"type":"src"]=el.value;render();return}
   if(el.id==="rqShow"||el.id==="rqRel"){T.rq[el.id==="rqShow"?"show":"rel"]=el.value;render();return}
   if(el.id==="onlyIssues"){T.onlyIssues=el.checked;render();return}
   if(el.id==="ackBox"){T.ack=el.checked;render();return}

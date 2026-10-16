@@ -431,3 +431,11 @@ button,.btn,summary,select{touch-action:manipulation}
 body.panel-open #chatFab{right:calc(min(580px,46vw) + 20px)}
 @keyframes sp-in{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
 @media(prefers-reduced-motion:reduce){.sp{animation:none}}
+
+/* Registro: tabella con menu «⋯» per riga (i menu escono dalla tabella, quindi niente overflow nascosto) */
+.dt-wrap.dt-menus{overflow:visible}
+.dt-menus thead th:first-child{border-top-left-radius:var(--r-m)}.dt-menus thead th:last-child{border-top-right-radius:var(--r-m)}
+.dt-dec td{vertical-align:top;overflow:visible}
+.dt-dec tr.superseded td{color:var(--muted)}
+.row-dd .dd-btn{width:30px;height:30px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
