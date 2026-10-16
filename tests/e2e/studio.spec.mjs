@@ -57,6 +57,7 @@ test("i requisiti si filtrano per stato e si cercano per titolo", async ({ page 
 });
 
 test("Crea su Jira: anteprima a colonne, poi struttura completa e collegata", async ({ page, request }) => {
+  test.setTimeout(180_000); // crea circa 90 elementi e 100 collegamenti: sulla CI è più lento che in locale
   await openStudio(page);
   await goToStep(page, "Crea su Jira");
   await expect(page.locator("#ackBox")).toBeVisible({ timeout: 20_000 }); // il controllo parte da solo
@@ -72,7 +73,7 @@ test("Crea su Jira: anteprima a colonne, poi struttura completa e collegata", as
   await run.click(); // primo clic: chiede conferma
   await expect(run).toContainText("Conferma");
   await run.click();
-  await expect(page.locator("#main")).toContainText(/Verifica: \d+ di \d+ ticket con tutti i campi salvati/, { timeout: 45_000 });
+  await expect(page.locator("#main")).toContainText(/Verifica: \d+ di \d+ ticket con tutti i campi salvati/, { timeout: 150_000 });
 
   const state = await (await request.get("/__sim/state")).json();
   const byType = state.issues.reduce((m, i) => ((m[i.type] = (m[i.type] || 0) + 1), m), {});
