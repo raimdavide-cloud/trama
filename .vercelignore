@@ -4,3 +4,9 @@
 .netlify
 node_modules
 .DS_Store
+# test e CI: non servono al sito
+tests
+.github
+playwright.config.mjs
+test-results
+playwright-report

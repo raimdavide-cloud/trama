@@ -1,0 +1,89 @@
+# Controlli a ogni modifica; pubblicazione in produzione solo da main e solo se i test passano.
+# Vercel non pubblica da solo (vercel.json › git.deploymentEnabled = false): pubblica questo flusso.
+#
+# Per attivare le pubblicazioni, in GitHub › Settings › Secrets and variables › Actions:
+#   segreti:   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+#   variabile: DEPLOY_ENABLED = true
+name: Controlli e pubblicazione
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Controlli e test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Controlli (sintassi, JSON, ponte, segreti)
+        run: npm run check
+      - name: Test unitari
+        run: npm run test:unit
+      - name: Browser per i test
+        run: npx playwright install --with-deps chromium
+      - name: Test end-to-end sul simulatore
+        run: npm run test:e2e
+        env:
+          CI: "true"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: rapporto-playwright
+          path: playwright-report
+          retention-days: 7
+
+  preview:
+    name: Anteprima
+    needs: test
+    if: github.event_name == 'pull_request' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: npx vercel@64.3.1 pull --yes --environment=preview --token="$VERCEL_TOKEN"
+      - run: npx vercel@64.3.1 build --token="$VERCEL_TOKEN"
+      - name: Pubblica l'anteprima
+        run: |
+          url=$(npx vercel@64.3.1 deploy --prebuilt --token="$VERCEL_TOKEN")
+          echo "Anteprima: $url" >> "$GITHUB_STEP_SUMMARY"
+
+  production:
+    name: Produzione
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: npx vercel@64.3.1 pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - run: npx vercel@64.3.1 build --prod --token="$VERCEL_TOKEN"
+      - name: Pubblica in produzione
+        run: |
+          url=$(npx vercel@64.3.1 deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          echo "Produzione: $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Controllo degli indirizzi
+        run: |
+          for path in / /studio /installazione /privacy /ponte/trama-ponte.mjs; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://trama-backlog.vercel.app$path")
+            echo "$path $code"; [ "$code" = 200 ] || exit 1
+          done
+          [ "$(curl -s -o /dev/null -w '%{http_code}' https://trama-backlog.vercel.app/api/me)" = 401 ]

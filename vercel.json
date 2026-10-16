@@ -98,5 +98,8 @@
       "source": "/api/:path*",
       "destination": "/api/router"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": false
+  }
 }

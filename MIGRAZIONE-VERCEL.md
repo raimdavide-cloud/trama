@@ -1,6 +1,6 @@
 # Migrazione di Trama su Vercel
 
-Stato: **codice pronto, nessun deploy fatto**. Il sito su Netlify continua a funzionare identico: i file aggiunti (`api/`, `vercel.json`, `.vercelignore`) sono ignorati da Netlify, e le funzioni in `netlify/` sono le stesse usate da Vercel.
+Stato: **completata il 16 ottobre 2026**. Trama è in produzione su https://trama-backlog.vercel.app. Questo documento resta come storia della migrazione: da allora le funzioni sono passate da `netlify/` a `server/` e la configurazione di Netlify è stata tolta (si recupera dalla storia di git).
 
 ## Cosa è stato aggiunto
 

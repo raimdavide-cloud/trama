@@ -1,14 +1,14 @@
-// Adattatore per Vercel: un'unica funzione che instrada /api/* verso gli stessi gestori usati su Netlify.
-// I percorsi si leggono da `config.path` di ogni funzione in netlify/functions, così le due piattaforme restano allineate.
-import authCallback, * as authCallbackMod from "../netlify/functions/auth-callback.mjs";
-import authLogin, * as authLoginMod from "../netlify/functions/auth-login.mjs";
-import authLogout, * as authLogoutMod from "../netlify/functions/auth-logout.mjs";
-import jira, * as jiraMod from "../netlify/functions/jira.mjs";
-import me, * as meMod from "../netlify/functions/me.mjs";
-import project, * as projectMod from "../netlify/functions/project.mjs";
-import projects, * as projectsMod from "../netlify/functions/projects.mjs";
-import { fail } from "../netlify/lib/core.mjs";
-import { runPrivacyReport } from "../netlify/lib/privacy.mjs";
+// Un'unica funzione Vercel che instrada /api/* verso i gestori in server/functions.
+// I percorsi si leggono da `config.path` di ogni gestore, così aggiungere un'API non richiede di toccare questo file.
+import authCallback, * as authCallbackMod from "../server/functions/auth-callback.mjs";
+import authLogin, * as authLoginMod from "../server/functions/auth-login.mjs";
+import authLogout, * as authLogoutMod from "../server/functions/auth-logout.mjs";
+import jira, * as jiraMod from "../server/functions/jira.mjs";
+import me, * as meMod from "../server/functions/me.mjs";
+import project, * as projectMod from "../server/functions/project.mjs";
+import projects, * as projectsMod from "../server/functions/projects.mjs";
+import { fail } from "../server/lib/core.mjs";
+import { runPrivacyReport } from "../server/lib/privacy.mjs";
 
 const MODULES = [
   [authCallback, authCallbackMod], [authLogin, authLoginMod], [authLogout, authLogoutMod],
@@ -26,7 +26,7 @@ const ROUTES = MODULES.flatMap(([handler, mod]) =>
 
 const text = (status, body) => new Response(body, { status, headers: { "content-type": "text/plain; charset=utf-8" } });
 
-// Equivalente della funzione pianificata di Netlify: Vercel la chiama una volta al giorno (vedi vercel.json),
+// Segnalazione privacy giornaliera: Vercel la chiama una volta al giorno (vedi vercel.json),
 // inviando `Authorization: Bearer <CRON_SECRET>`.
 async function cron(req) {
   const secret = process.env.CRON_SECRET;

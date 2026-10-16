@@ -1,8 +1,7 @@
-// Utilità condivise da Functions (Node) ed Edge Functions (Deno): solo Web API.
+// Utilità condivise dalle funzioni del server (Node su Vercel): solo Web API.
 import { neon } from "@neondatabase/serverless";
 
-export const env = (k) =>
-  globalThis.Netlify?.env?.get?.(k) ?? (typeof process !== "undefined" ? process.env[k] : undefined);
+export const env = (k) => process.env[k];
 
 let _sql;
 export const sql = (...args) => (_sql ??= neon(env("DATABASE_URL")))(...args);
