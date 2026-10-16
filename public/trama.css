@@ -1,46 +1,5 @@
-/* Trama · design system condiviso (homepage, brand, documentazione).
-   Lo studio usa gli stessi valori nei propri token: se cambi un colore qui, aggiornalo anche in studio.html. */
-
-:root{--tx-blue:#0072CE;
-  /* Indaco: il colore del marchio */
-  --indaco-900:#141B47; --indaco-700:#23307A; --indaco-500:#3448C5; --indaco-300:#8A98E8; --indaco-100:#E6E9FA; --indaco-50:#F2F4FD;
-  /* Zafferano: il filo, l'accento. Usalo poco: evidenzia una sola cosa per schermata */
-  --zafferano-700:#9A5B06; --zafferano-500:#F2A541; --zafferano-100:#FCEFD9;
-  /* Stati */
-  --salvia-700:#1F6B4A; --salvia-100:#E1F2E9; --corallo-700:#B33A24; --corallo-100:#FBE6E1;
-  /* Neutri, leggermente tinti di indaco */
-  --carta:#F5F6FA; --bianco:#FFFFFF; --nebbia:#ECEEF5; --linea:#DADDEA; --ardesia:#5A6180; --inchiostro:#151A33;
-
-  /* Ruoli (usare questi nei componenti, mai i colori grezzi) */
-  --bg:var(--carta); --surface:var(--bianco); --sunk:var(--nebbia); --line:var(--linea);
-  --fg:var(--inchiostro); --muted:var(--ardesia);
-  --primary:var(--indaco-500); --primary-strong:var(--indaco-700); --primary-soft:var(--indaco-100); --on-primary:#FFFFFF;
-  --accent:var(--zafferano-500); --accent-soft:var(--zafferano-100); --accent-text:var(--zafferano-700);
-  --ok:var(--salvia-700); --ok-soft:var(--salvia-100); --err:var(--corallo-700); --err-soft:var(--corallo-100);
-  --band:var(--indaco-900); --band-fg:#F2F3FB; --band-muted:#AEB5DD;
-  --shadow:0 1px 2px rgba(20,27,71,.06),0 8px 24px rgba(20,27,71,.07);
-
-  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
-  --f-body:"Figtree","Segoe UI",system-ui,sans-serif;
-  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
-  --r-s:6px; --r-m:10px; --r-l:16px;
-  --t-fast:150ms; --t-base:250ms; --t-slow:400ms; --ease:cubic-bezier(.2,.7,.2,1);
-  color-scheme:light;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --tx-blue:#5AAEF5; --bg:#0D1129; --surface:#151A3A; --sunk:#1C2248; --line:#2A3160; --fg:#E8EAF6; --muted:#9BA2C7;
-  --primary:#8C9BFF; --primary-strong:#B3BDFF; --primary-soft:#1F2757; --on-primary:#0D1129;
-  --accent:#F4B45A; --accent-soft:#3A2C12; --accent-text:#F4B45A;
-  --ok:#5FCB97; --ok-soft:#133126; --err:#FF8E7A; --err-soft:#3B1A16;
-  --band:#18205A; --band-fg:#F2F3FB; --band-muted:#AEB5DD; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
-  color-scheme:dark}}
-:root[data-theme="dark"]{
-  --tx-blue:#5AAEF5; --bg:#0D1129; --surface:#151A3A; --sunk:#1C2248; --line:#2A3160; --fg:#E8EAF6; --muted:#9BA2C7;
-  --primary:#8C9BFF; --primary-strong:#B3BDFF; --primary-soft:#1F2757; --on-primary:#0D1129;
-  --accent:#F4B45A; --accent-soft:#3A2C12; --accent-text:#F4B45A;
-  --ok:#5FCB97; --ok-soft:#133126; --err:#FF8E7A; --err-soft:#3B1A16;
-  --band:#18205A; --band-fg:#F2F3FB; --band-muted:#AEB5DD; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
-  color-scheme:dark}
+/* Trama · stili delle pagine pubbliche (homepage, marchio, guida, privacy).
+   I token (colori, caratteri, raggi) stanno in /tokens.css: caricalo sempre prima di questo file. */
 
 *{box-sizing:border-box}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}

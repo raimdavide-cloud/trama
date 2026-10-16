@@ -61,7 +61,19 @@ const bridge = readFileSync(join(ROOT, "scripts/claude-bridge.mjs"), "utf8");
 const packed = readFileSync(join(ROOT, "public/ponte/trama-ponte.mjs"), "utf8");
 bridge === packed ? ok("ponte scaricabile allineato al sorgente") : ko("public/ponte/trama-ponte.mjs è vecchio: esegui npm run bridge:pack");
 
-// 5. nessun segreto nei file versionati
+// 5. colori solo dai token: niente esadecimali nei fogli di stile, nei blocchi <style> e negli attributi style
+//    (i loghi SVG con colori fissi del marchio sono esclusi: usano fill="#…", non gli stili)
+const HEX = /#[0-9A-Fa-f]{3,8}\b/g;
+const rawColors = [];
+for (const f of walk("public").filter((f) => /\.(css|html)$/.test(f) && !f.endsWith("tokens.css"))) {
+  const src = readFileSync(join(ROOT, f), "utf8");
+  const styles = f.endsWith(".css") ? [src] : [...src.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g), ...src.matchAll(/style="([^"]*)"/g)].map((m) => m[1]);
+  const found = [...new Set(styles.join("\n").replace(/\/\*[\s\S]*?\*\//g, "").match(HEX) || [])];
+  if (found.length) rawColors.push(`${f}: ${found.join(" ")}`);
+}
+rawColors.length ? ko(`colori scritti a mano fuori da tokens.css (usa i token):\n    ${rawColors.join("\n    ")}`) : ok("colori solo dai token");
+
+// 6. nessun segreto nei file versionati
 const SECRET = /sk-ant-[\w-]{20,}|ATATT[\w-]{20,}|postgres(?:ql)?:\/\/(?!utente:password@host|user:password@host)[^\s"'`]+:[^\s"'`@]+@|-----BEGIN [A-Z ]*PRIVATE KEY-----/;
 let tracked = [];
 try { tracked = execFileSync("git", ["ls-files", "-co", "--exclude-standard"], { cwd: ROOT, encoding: "utf8" }).split("\n").filter(Boolean); } catch {}
