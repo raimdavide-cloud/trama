@@ -83,14 +83,16 @@ test("le modifiche fatte nel pannello restano salvate sulla riga giusta", async 
   const row = page.locator('#main tr[data-k^="req-"]').first();
   const code = (await row.locator(".key").textContent()).trim();
   await row.click();
-  const release = page.locator('.sp input[data-bind$=":release"]');
+  const release = page.locator('.sp select[data-bind$=":release"]');
   await expect(release).toHaveAttribute("data-bind", /^reqs:[^:]+:release$/);
   await expect(release).not.toHaveAttribute("data-bind", /undefined/);
-  await release.fill("Release di prova");
-  await page.keyboard.press("Tab");
+  const options = await release.locator("option").allTextContents();
+  expect(options.length, "il menu deve offrire tutte le release, non solo quella attuale").toBeGreaterThan(2);
+  const chosen = options[options.length - 1];
+  await release.selectOption({ label: chosen });
   await page.keyboard.press("Escape");
   await page.locator("[data-act=rqReset]").click();
-  await expect(page.locator(`#main tr[data-k^="req-"]`, { hasText: code })).toContainText("Release di prova");
+  await expect(page.locator(`#main tr[data-k^="req-"]`, { hasText: code })).toContainText(chosen);
 
   await goToStep(page, "Backlog");
   const trow = page.locator('#main tr[data-k^="t-"]').first();
