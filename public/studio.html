@@ -428,7 +428,7 @@ const decCount=(n,t)=>n<t?`${n} di ${t} decisioni · <button type="button" class
 function decTable(d){if(!d.length)return'<p class="empty">Nessuna decisione ancora. Le risposte alle domande di apertura entrano da sole; le altre si aggiungono qui o dalla chat.</p>';
   const f=T.dq||(T.dq={q:"",type:"*",src:"*"}),df=decFilter(d),num=new Map(d.map((x,i)=>[x.id,i+1]));
   const cnt=(k,v)=>d.filter(x=>(x[k]||"")===v).length,types=[...new Set(d.map(x=>x.type).filter(Boolean))],srcs=[...new Set(d.map(x=>x.source||""))].filter(Boolean);
-  const has=k=>d.some(x=>String(x[k]||"").trim()),cols=[["who","Chi",150],["type","Tipo",180],["source","Fonte",180],["impact","Impatto",180],["kit","Kit",70],["replaces","Sostituisce",110]].filter(([k])=>has(k));
+  const has=k=>d.some(x=>String(x[k]||"").trim()),cols=[["who","Chi",120],["type","Tipo",150],["source","Fonte",140],["impact","Impatto",160],["kit","Kit",64],["replaces","Sostituisce",104]].filter(([k])=>has(k));
   const bar=`<div class="rq-bar"><input type="search" id="decSearch" placeholder="Cerca nelle decisioni" aria-label="Cerca nelle decisioni" value="${esc(f.q)}" autocomplete="off">
    <label class="rq-f">Tipo<select id="decType"><option value="*">Tutti</option>${types.map(v=>`<option value="${esc(v)}" ${v===f.type?"selected":""}>${esc(v)} (${cnt("type",v)})</option>`).join("")}</select></label>
    <label class="rq-f">Fonte<select id="decSrc"><option value="*">Tutte</option>${srcs.map(v=>`<option value="${esc(v)}" ${v===f.src?"selected":""}>${esc(v)} (${cnt("source",v)})</option>`).join("")}</select></label></div>
@@ -437,7 +437,7 @@ function decTable(d){if(!d.length)return'<p class="empty">Nessuna decisione anco
   const rows=df.map(x=>{const n=num.get(x.id),sup=d.some(y=>y.replaces===x.id),armed=T.arm["d"+x.id];
    return`<tr data-dec="${x.id}"${sup?' class="superseded"':""}><td class="muted">${n}</td><td class="mono small">${esc(x.date)}</td><td>${esc(x.text)}${sup?' <span class="pill">sostituita</span>':""}</td>${cols.map(([k])=>`<td>${cell(x,k)}</td>`).join("")}
     <td>${READONLY?"":`<div class="dd row-dd"><button type="button" class="dd-btn icon-btn" aria-haspopup="menu" aria-expanded="${!!armed}" aria-label="Azioni per la decisione ${n}"><span aria-hidden="true">⋯</span></button><div class="dd-menu right" role="menu" ${armed?"":"hidden"}><button type="button" role="menuitem" class="danger-item" data-act="delDecision" data-id="${x.id}">${armed?"Conferma: elimina la decisione":"Elimina decisione"}</button></div></div>`}</td></tr>`}).join("");
-  return bar+`<div class="dt-wrap dt-menus"><table class="dt dt-dec"><colgroup><col style="width:52px"><col style="width:112px"><col>${cols.map(([,,w])=>`<col style="width:${w}px">`).join("")}<col style="width:56px"></colgroup>
+  return bar+`<div class="dt-wrap dt-menus"><table class="dt dt-dec"><colgroup><col style="width:44px"><col style="width:100px"><col>${cols.map(([,,w])=>`<col style="width:${w}px">`).join("")}<col style="width:56px"></colgroup>
    <thead><tr><th scope="col">#</th><th scope="col">Data</th><th scope="col">Decisione</th>${cols.map(([,l])=>`<th scope="col">${l}</th>`).join("")}<th scope="col"><span class="sr-only">Azioni</span></th></tr></thead><tbody>${rows||`<tr><td colspan="${4+cols.length}" class="muted">Nessuna decisione corrisponde ai filtri.</td></tr>`}</tbody></table></div>`}
 /* Accessibilità: i campi dentro le tabelle (kit, struttura…) non hanno un'etichetta propria, la loro etichetta visiva
    è l'intestazione di colonna. Qui la diamo anche ai lettori di schermo: «Colonna, riga N». */
