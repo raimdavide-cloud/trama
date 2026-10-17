@@ -97,6 +97,12 @@ Test end-to-end dello studio con Playwright contro un **simulatore** (`tests/sim
 
 Il simulatore accetta guasti su richiesta (`POST /__sim/fault`), per provare cosa succede quando Jira risponde con un errore o perde la risposta.
 
+```bash
+npm run perf
+```
+
+Misure di prestazione dello studio sul simulatore (avvia da solo un simulatore sulla porta 8896): ridisegno dei passi con 67, 134 e 268 ticket, una modifica nel Backlog a CPU normale e rallentata, richieste dei salvataggi in blocco. Con `-- --idle` aggiunge 3 minuti da fermo per la sincronizzazione. Da rifare prima e dopo ogni intervento che tocca liste, controlli o salvataggi.
+
 Per guardare il simulatore nel browser: `npm run sim`, poi http://127.0.0.1:8899/studio?p=progetto-prova.
 
 I dati di prova (`tests/fixtures/progetto-prova.json`) vengono da «Test Prova» con le identità sostituite da valori finti. Per rigenerarli: `npm run fixture`, poi controlla il riepilogo prima del commit.

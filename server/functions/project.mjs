@@ -2,12 +2,17 @@
 // DELETE /api/projects/:id             elimina il progetto (solo chi l'ha creato)
 // PUT    /api/projects/:id/items/:col/:item   salva un documento
 // DELETE /api/projects/:id/items/:col/:item   elimina un documento
+// POST   /api/projects/:id/batch  {ops:[{col,id,data|null}]}  salva o elimina più documenti in una volta (al massimo 500)
 import { json, fail, getUser, sql, siteIds, sameOrigin } from "../lib/core.mjs";
 
 const COLS = new Set(["meta", "docs", "reqs", "questions", "tickets", "decisions"]);
 const META = new Set(["project", "kit", "jira", "chat", "runlog", "quality", "sprints"]);
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
 const MAX_BYTES = 1_000_000;
+const MAX_BATCH_BYTES = 4_000_000; // sotto il limite di 4,5 MB del corpo di una richiesta su Vercel
+const MAX_OPS = 500;
+
+const validPath = (col, item) => COLS.has(col) && ID.test(item || "") && (col !== "meta" || META.has(item));
 
 async function loadProject(user, id) {
   if (!ID.test(id)) return null;
@@ -22,6 +27,8 @@ export default async (req, context) => {
   const { id, col, item } = context.params || {};
   const project = await loadProject(user, id);
   if (!project) return fail("not_found", "Progetto inesistente o non accessibile con il tuo account.", 404);
+
+  if (new URL(req.url).pathname.endsWith("/batch")) return batch(req, user, id);
 
   if (!col) {
     if (req.method === "GET") {
@@ -46,7 +53,7 @@ export default async (req, context) => {
     return fail("method", "Metodo non supportato.", 405);
   }
 
-  if (!COLS.has(col) || !ID.test(item || "") || (col === "meta" && !META.has(item))) {
+  if (!validPath(col, item)) {
     return fail("invalid", "Percorso del documento non valido.");
   }
   if (req.method === "PUT") {
@@ -74,4 +81,34 @@ export default async (req, context) => {
   return fail("method", "Metodo non supportato.", 405);
 };
 
-export const config = { path: ["/api/projects/:id", "/api/projects/:id/items/:col/:item"] };
+// Salvataggio in blocco: una sola query invece di una richiesta per elemento (rinomina di una release, assegnazioni in massa).
+// Le operazioni sulla stessa chiave si riducono all'ultima; un'eliminazione è un salvataggio con deleted = true.
+async function batch(req, user, id) {
+  if (req.method !== "POST") return fail("method", "Usa POST.", 405);
+  const text = await req.text();
+  if (text.length > MAX_BATCH_BYTES) return fail("too_large", "Troppi dati in una volta (massimo 4 MB).", 413);
+  let body;
+  try { body = JSON.parse(text); } catch { return fail("invalid", "Il corpo deve essere JSON."); }
+  const ops = Array.isArray(body?.ops) ? body.ops : null;
+  if (!ops?.length || ops.length > MAX_OPS) return fail("invalid", `Servono da 1 a ${MAX_OPS} operazioni.`);
+  const last = new Map();
+  for (const o of ops) {
+    if (!o || !validPath(o.col, o.id)) return fail("invalid", "Percorso del documento non valido.");
+    const del = o.data === null;
+    if (!del && (!o.data || typeof o.data !== "object" || Array.isArray(o.data))) return fail("invalid", "Ogni documento deve essere un oggetto JSON.");
+    if (!del && JSON.stringify(o.data).length > MAX_BYTES) return fail("too_large", "Documento troppo grande (massimo 1 MB).", 413);
+    last.set(`${o.col}/${o.id}`, { col: o.col, id: o.id, data: del ? null : o.data });
+  }
+  const rows = [...last.values()];
+  await sql`insert into items (project_id, col, id, data, deleted, updated_by, updated_at)
+            select ${id}, x.col, x.id, coalesce(x.data, '{}'::jsonb), x.data is null, ${user.account_id}, clock_timestamp()
+            from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as x(col text, id text, data jsonb)
+            on conflict (project_id, col, id) do update
+              set data = excluded.data, deleted = excluded.deleted, updated_by = excluded.updated_by, updated_at = clock_timestamp()`;
+  const named = rows.find((r) => r.col === "meta" && r.id === "project" && r.data?.name);
+  if (named) await sql`update projects set updated_at = now(), name = ${String(named.data.name).slice(0, 120)} where id = ${id}`;
+  else await sql`update projects set updated_at = now() where id = ${id}`;
+  return json({ ok: true, saved: rows.length });
+}
+
+export const config = { path: ["/api/projects/:id", "/api/projects/:id/items/:col/:item", "/api/projects/:id/batch"] };

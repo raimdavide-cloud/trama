@@ -20,6 +20,7 @@ function fakeSql() {
     if (/^select \* from projects where id = \? and cloud_id = any/.test(q)) { const p = db.projects[v[0]]; return p && v[1].includes(p.cloud_id) ? [p] : []; }
     if (/^select clock_timestamp/.test(q)) return [{ now: "2026-10-16T08:00:00.000Z" }];
     if (/^select col, id, data, deleted from items/.test(q)) return db.items.filter((i) => i.project_id === v[0]);
+    if (/^insert into items .* jsonb_to_recordset/.test(q)) { for (const r of JSON.parse(v[2])) db.items.push({ project_id: v[0], col: r.col, id: r.id, data: r.data, deleted: r.data === null, by: v[1] }); return []; }
     if (/^insert into items .* 'meta', 'project'/.test(q)) { db.items.push({ project_id: v[0], col: "meta", id: "project", data: JSON.parse(v[1]), by: v[2] }); return []; }
     if (/^insert into items/.test(q)) { db.items.push({ project_id: v[0], col: v[1], id: v[2], data: JSON.parse(v[3]), by: v[4] }); return []; }
     if (/^update items set deleted = true/.test(q)) { db.deleted.push([v[1], v[2], v[3]]); return []; }
@@ -127,4 +128,29 @@ test("le operazioni Jira: solo POST, solo operazioni note, solo sui propri siti"
   const other = await call("/api/jira/getIssueLinkTypes", { method: "POST", body: { cloudId: ALTRO } });
   assert.equal(other.status, 403);
   assert.equal((await other.json()).code, "forbidden_site");
+});
+
+test("salvataggio in blocco: più documenti in una query, l'ultima versione vince, eliminazioni comprese", async () => {
+  const post = (body, o) => call("/api/projects/p1/batch", { method: "POST", body, ...o });
+  const r = await post({ ops: [{ col: "reqs", id: "r1", data: { t: 1 } }, { col: "reqs", id: "r2", data: { t: 2 } }, { col: "reqs", id: "r1", data: { t: 3 } }, { col: "tickets", id: "t9", data: null }, { col: "meta", id: "project", data: { name: "Rinominato" } }] });
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).saved, 4);
+  assert.equal(db.log.filter((q) => /^insert into items/.test(q)).length, 1, "una sola query di scrittura");
+  assert.deepEqual(db.items.map((i) => [i.col, i.id, i.data, i.deleted]), [["reqs", "r1", { t: 3 }, false], ["reqs", "r2", { t: 2 }, false], ["tickets", "t9", null, true], ["meta", "project", { name: "Rinominato" }, false]]);
+  assert.equal(db.projects.p1.name, "Rinominato");
+});
+
+test("salvataggio in blocco: un'operazione non valida fa rifiutare tutto, nulla viene scritto", async () => {
+  const post = (body, o) => call("/api/projects/p1/batch", { method: "POST", body, ...o });
+  const bad = async (body, status = 400) => { const r = await post(body); assert.equal(r.status, status, JSON.stringify(body).slice(0, 80)); };
+  await bad({ ops: [{ col: "reqs", id: "r1", data: { a: 1 } }, { col: "segreti", id: "x", data: {} }] });
+  await bad({ ops: [{ col: "reqs", id: "r1", data: [1, 2] }] });
+  await bad({ ops: [{ col: "meta", id: "qualsiasi", data: {} }] });
+  await bad({ ops: [] });
+  await bad({ ops: Array.from({ length: 501 }, (_, i) => ({ col: "reqs", id: "r" + i, data: {} })) });
+  await bad({ ops: [{ col: "docs", id: "d1", data: { text: "x".repeat(1_000_001) } }] }, 413);
+  assert.equal((await call("/api/projects/p1/batch")).status, 405);
+  assert.equal((await post({ ops: [{ col: "reqs", id: "r1", data: {} }] }, { origin: "https://malevolo.example" })).status, 403);
+  assert.equal((await call("/api/projects/pAltro/batch", { method: "POST", body: { ops: [{ col: "reqs", id: "r1", data: {} }] } })).status, 404);
+  assert.equal(db.items.length, 0);
 });

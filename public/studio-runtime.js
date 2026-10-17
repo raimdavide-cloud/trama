@@ -43,22 +43,52 @@
       else (store[c] ||= {})[id] = data;
     };
     const url = (c, id) => `/api/projects/${encodeURIComponent(pid)}/items/${c}/${encodeURIComponent(id)}`;
-    async function write(c, id, data) {
+    // Salvataggi: quelli chiesti nello stesso momento (per esempio la rinomina di una release che tocca cento elementi)
+    // partono insieme in una sola richiesta. Un gruppo alla volta, nell'ordine in cui sono stati chiesti.
+    const MAX_OPS = 500, MAX_BYTES = 3_500_000;
+    const outbox = [];
+    let flushTimer = null, chain = Promise.resolve();
+    const writeErr = (e) => ({
+      code: e.code === "too_large" ? "quota_exceeded" : e.code === "unauthenticated" || e.code === "not_found" ? "revoked" : "unavailable",
+      message: e.message,
+    });
+    function write(c, id, data) {
       const k = `${c}/${id}`;
       pending.set(k, (pending.get(k) || 0) + 1);
+      touch();
+      return new Promise((resolve, reject) => {
+        outbox.push({ c, id, data, k, size: data === null ? 0 : JSON.stringify(data).length, resolve, reject });
+        flushTimer ??= setTimeout(flush, 0);
+      });
+    }
+    function flush() {
+      flushTimer = null;
+      let bytes = 0, n = 0;
+      while (n < outbox.length && n < MAX_OPS && (n === 0 || bytes + outbox[n].size <= MAX_BYTES)) bytes += outbox[n++].size;
+      const group = outbox.splice(0, n);
+      if (outbox.length) flushTimer = setTimeout(flush, 0);
+      chain = chain.then(() => send(group));
+    }
+    async function send(group) {
       try {
-        await api(url(c, id), data === null ? { method: "DELETE" } : { method: "PUT", body: data });
-        apply(c, id, data);
+        if (group.length === 1) {
+          const g = group[0];
+          await api(url(g.c, g.id), g.data === null ? { method: "DELETE" } : { method: "PUT", body: g.data });
+        } else {
+          await api(`/api/projects/${encodeURIComponent(pid)}/batch`, { method: "POST", body: { ops: group.map((g) => ({ col: g.c, id: g.id, data: g.data })) } });
+        }
+        for (const g of group) { apply(g.c, g.id, g.data); g.resolve(); }
       } catch (e) {
-        throw {
-          code: e.code === "too_large" ? "quota_exceeded" : e.code === "unauthenticated" || e.code === "not_found" ? "revoked" : "unavailable",
-          message: e.message,
-        };
+        const err = writeErr(e);
+        for (const g of group) g.reject(err);
       } finally {
-        const n = pending.get(k) - 1;
-        n ? pending.set(k, n) : pending.delete(k);
+        for (const g of group) { const n = pending.get(g.k) - 1; n ? pending.set(g.k, n) : pending.delete(g.k); }
       }
     }
+    // chi chiude o ricarica la scheda mentre un salvataggio è in corso riceve l'avviso del browser invece di perderlo
+    window.addEventListener("beforeunload", (e) => { if (pending.size) { e.preventDefault(); e.returnValue = ""; } });
+    // per i test e le misure: finisce quando non resta nulla da inviare né in viaggio
+    BS.writesDone = async () => { while (outbox.length || flushTimer) await new Promise((r) => setTimeout(r, 0)); await chain; };
     const ref = (c, id) => ({ set: (d) => write(c, id, d), delete: () => write(c, id, null) });
     async function poll() {
       try {
@@ -76,13 +106,30 @@
           }
         }
         changed.forEach(notify);
+        if (changed.size) lastActive = Date.now(); // qualcuno sta lavorando: si resta rapidi
         BS.onSync?.(true);
       } catch (e) {
         BS.onSync?.(false, e);
       }
     }
-    setInterval(() => { if (!document.hidden) poll(); }, 6000);
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+    // Sincronizzazione: ogni 6 secondi mentre si lavora; dopo 2 minuti senza modifiche né interazioni, ogni 30 secondi.
+    // Al primo clic o tasto dopo una pausa si sincronizza subito e si torna rapidi. Con la scheda nascosta non si chiede nulla.
+    const FAST = 6000, SLOW = 30000, QUIET = 120000;
+    let lastActive = Date.now(), timer = null, busy = false;
+    const schedule = (ms) => { clearTimeout(timer); timer = setTimeout(tick, ms); };
+    async function tick() {
+      if (busy) return;
+      busy = true;
+      try { if (!document.hidden) await poll(); } finally { busy = false; schedule(Date.now() - lastActive < QUIET ? FAST : SLOW); }
+    }
+    function touch() {
+      const wasQuiet = Date.now() - lastActive >= QUIET;
+      lastActive = Date.now();
+      if (wasQuiet) schedule(0);
+    }
+    for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, touch, { capture: true, passive: true });
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) { lastActive = Date.now(); schedule(0); } });
+    schedule(FAST);
     return {
       doc: (path) => { const [c, id] = path.split("/"); return ref(c, id); },
       collection: (c) => ({

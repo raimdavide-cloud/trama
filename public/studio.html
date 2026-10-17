@@ -208,7 +208,8 @@ let ME=null,SITES=[],SERVER_PROJECT=null,GATE=null,PROJECTS=null;
 
 /* scritture: una alla volta, nell'ordine in cui avvengono */
 let wchain=Promise.resolve();
-function queue(fn){wchain=wchain.then(fn).catch(dbErr);return wchain}
+// i salvataggi partono subito: il runtime li raggruppa e li invia in ordine, un gruppo alla volta
+function queue(fn){const p=Promise.resolve().then(fn).catch(dbErr);wchain=wchain.then(()=>p);return p}
 function dbErr(e){const c=e?.code;
   if(c==="invalid_argument"){READONLY=true;toast("Non hai i permessi per modificare questo progetto: lo strumento resta in sola lettura.")}
   else if(c==="quota_exceeded")toast("Spazio dati esaurito: elimina documenti o ticket non più necessari.");
@@ -227,9 +228,15 @@ function syncQDecisions(){if(QSYNC||READONLY)return;QSYNC=true;try{let n=0;
 function del(c,id){const o={...S[c]};delete o[id];S[c]=o;scheduleRender();if(DB)queue(()=>DB.collection(c).doc(id).delete())}
 const P=()=>S.project||{}, K=()=>S.kit||defaultKit();
 const arr=c=>Object.entries(S[c]).map(([id,v])=>({...v,id}));
-const reqList=()=>arr("reqs").sort((a,b)=>(a.order??0)-(b.order??0)||String(a.code).localeCompare(b.code));
+const reqList=()=>listOf("reqs",(a,b)=>(a.order??0)-(b.order??0)||COLL.compare(String(a.code),String(b.code)));
 const cleanVerify=v=>{if(!v||v==="ok"||!/^Manca: /.test(v))return v;const rest=v.slice(7).split(/,\s*(?![^()]*\))/).filter(x=>x.trim()&&!/^(componente|fixversion|assegnatario)/i.test(x.trim()));return rest.length?"Manca: "+rest.join(", "):"ok"},vOf=t=>cleanVerify(t.verify);
-const ticketList=()=>arr("tickets").sort((a,b)=>String(a.ref).localeCompare(b.ref,undefined,{numeric:true}));
+const ticketList=()=>listOf("tickets",(a,b)=>COLLN.compare(String(a.ref),String(b.ref)));
+/* Prestazioni: ogni salvataggio sostituisce l'intera raccolta (S[c] = {...}), quindi l'identità di S[c] è la sua versione.
+   Liste ordinate, controlli dei ticket e piano di creazione si ricalcolano solo quando cambia ciò da cui dipendono.
+   Le liste restituite sono copie (si possono ordinare o filtrare); gli elementi sono condivisi e non vanno modificati. */
+const LMEMO=new Map(),COLL=new Intl.Collator(),COLLN=new Intl.Collator(undefined,{numeric:true});
+function listOf(c,cmp){const src=S[c],m=LMEMO.get(c);if(m?.src===src)return m.list.slice();const list=Object.entries(src).map(([id,v])=>({...v,id})).sort(cmp);LMEMO.set(c,{src,list});return list.slice()}
+let REFS={src:null,set:null};const ticketRefs=()=>REFS.src===S.tickets?REFS.set:(REFS={src:S.tickets,set:new Set(ticketList().map(x=>x.ref))}).set;
 const editKit=fn=>{const k=clone(K());fn(k);syncPhases(k);saveMeta("kit",k)};
 /* Release = Fase: una Fase per ogni release del K2, con lo stesso nome; l'epica sta sotto la Fase della sua release.
    Le Fasi già create in Jira restano anche se la loro release sparisce (in Jira non si cancella nulla da qui). */
@@ -706,7 +713,9 @@ STEPS.push({id:"kit",phase:"Preparazione",short:"Kit di progetto",sub:"Release, 
 function relOf(name){return K().releases.find(r=>r.name===name)}
 function fullTitle(t){const a=AREAS[t.area];const raw=String(t.title||"").replace(/^\s*\[[^\]]+\]\s*/,"");return(a?a.prefix+" ":"")+raw}
 function labelsOf(t){const r=relOf(t.release);return[...new Set([r?.label,t.work,...(t.labels||[]).map(canonLabel)].filter(Boolean))]}
-function issuesOf(t){const e=[],w=[],k=K(),a=AREAS[t.area],j=S.jira;
+const IMEMO=new WeakMap();
+function issuesOf(t){const m=IMEMO.get(t);if(m&&m.kit===S.kit&&m.jira===S.jira&&m.ts===S.tickets)return m.r;const r=issuesOf0(t);if(t&&typeof t==="object")IMEMO.set(t,{kit:S.kit,jira:S.jira,ts:S.tickets,r});return r}
+function issuesOf0(t){const e=[],w=[],k=K(),a=AREAS[t.area],j=S.jira;
   if(!TYPES.includes(t.type))e.push("Tipo di ticket non valido");
   else{const tn=k.types[t.type]||t.type;if(j.readAt&&(j.types||[]).length&&!j.types.some(x=>x.name===tn))e.push(`Il tipo «${tn}» non esiste nel progetto Jira: rileggi la configurazione o sceglilo nel kit (K1)`);else if(tn!==t.type)w.push(`Nel progetto Jira il tipo «${t.type}» non esiste: verrà creato come «${tn}»`)}
   if(!a)e.push("Area mancante");
@@ -715,11 +724,11 @@ function issuesOf(t){const e=[],w=[],k=K(),a=AREAS[t.area],j=S.jira;
   if(!t.epic)e.push("Epica mancante (K3)");else if(!k.epics.some(x=>x.name===t.epic))e.push("Epica non presente nel kit");
   const r=relOf(t.release);if(!t.release)e.push("Release mancante (K2)");else if(!r)e.push("Release non presente nel kit");else{if(!r.label)e.push("Label di release mancante")}
   if(!WORK.includes(t.work))e.push("Label di tipo lavoro mancante (K5)");
-  const extra=K().extraLabels.split(",").map(s=>s.trim()).filter(Boolean);
+  const extra=String(k.extraLabels||"").split(",").map(s=>s.trim()).filter(Boolean);
   (t.labels||[]).forEach(l=>{const c=canonLabel(l);if(c!==l)w.push(`Label «${l}» verrà scritta «${c}»`);else if(!LABELS.includes(l)&&!extra.includes(l)&&!k.releases.some(x=>x.label===l))w.push(`Label «${l}» fuori dal vocabolario del kit`)});
   (SECTIONS[t.type]||[]).forEach(s=>{if(!String(t.desc||"").includes(s))w.push(`Sezione «${s.slice(3)}» mancante nella descrizione`)});
   (j.required||[]).forEach(f=>{if(!k.custom?.[f.key])e.push(`Campo obbligatorio «${f.name}» senza valore (K1)`)});
-  (t.links||[]).forEach(l=>{if(!ticketList().some(x=>x.ref===l.to))e.push(`Collegamento a ${l.to}: ticket inesistente`);if(!k.links[l.type])e.push(`Tipo di collegamento «${l.type}» non scelto nel kit`)});
+  (t.links||[]).forEach(l=>{if(!ticketRefs().has(l.to))e.push(`Collegamento a ${l.to}: ticket inesistente`);if(!k.links[l.type])e.push(`Tipo di collegamento «${l.type}» non scelto nel kit`)});
   return{e,w}}
 function nextRef(){const n=ticketList().reduce((m,t)=>Math.max(m,+(String(t.ref).match(/\d+/)||[0])[0]),0);return n+1}
 const fmtRef=n=>"T-"+String(n).padStart(3,"0");
@@ -816,7 +825,8 @@ function computeChecks0(pl){const k=K(),j=S.jira,h=k.hier,c=[];const add=(lvl,t,
   return c}
 // durante un aggiornamento della pagina i dati non cambiano: piano e controlli si calcolano una volta sola
 let RMEMO=null;
-function planOf(){if(RMEMO?.pl)return RMEMO.pl;const r=planOf0();if(RMEMO)RMEMO.pl=r;return r}
+let PMEMO=null;
+function planOf(){const d=[S.tickets,S.kit,S.jira,T.pre];if(PMEMO&&PMEMO.d.every((x,i)=>x===d[i]))return PMEMO.r;const r=planOf0();PMEMO={d,r};return r}
 function planOf0(){const ts=ticketList(),k=K();const ready=ts.filter(t=>t.state!=="created"&&t.state!=="unknown"&&!issuesOf(t).e.length);const blocked=ts.filter(t=>t.state!=="created"&&issuesOf(t).e.length);
   const ex=T.pre?.existing||{};const dup=ready.filter(t=>ex[fullTitle(t).toLowerCase()]);
   const epics=k.epics.filter(e=>!e.key&&ready.some(t=>t.epic===e.name));
@@ -1457,7 +1467,8 @@ function suggList(){const turns=(S.chat?.turns||[]).filter(t=>t.role!=="note"),l
   const follow=last?.role==="assistant"?(last.meta?.next||[]).map(q=>({label:q,prompt:q})):[];
   const stat=(s.ask||[]).concat(SUGG_MORE[s.id]||[]).map(q=>({label:q,prompt:q}));
   return[...(ideas[s.id]||[]).map(q=>({label:q,prompt:q})),...follow,...dynSugg(),...stat].filter(x=>{const k=sKey(x.label);if(seen.has(k)||u[k])return false;seen.add(k);return true})}
-function renderSugg(){const l=suggList().slice(0,3);
+let SUGG_STALE=false;
+function renderSugg(){if(!$("#chat")?.classList.contains("open")){SUGG_STALE=true;return}SUGG_STALE=false;const l=suggList().slice(0,3);
   $("#chatSugg").innerHTML=l.map(x=>`<button type="button" data-sugg="${esc(x.label)}" data-p="${esc(x.prompt)}">${esc(x.label)}</button>`).join("")+(SAMPLE?`<button type="button" class="ideas" data-ideas ${ideasBusy?"disabled":""}>${ideasBusy?"Sto pensando…":"✨ Nuove idee"}</button>`:"")}
 async function newIdeas(){if(!SAMPLE||ideasBusy)return;ideasBusy=true;renderSugg();const sid=STEPS[cur].id;
   try{const used=Object.keys(usedSugg()).map(k=>k.split("|")[1]).slice(-20);
@@ -1558,7 +1569,7 @@ $("#chatImg").onchange=e=>{chatImg=e.target.files[0]||null;$("#chatImgName").tex
 document.addEventListener("pointerover",e=>{const el=e.target.closest&&e.target.closest("summary .ttl,summary .q-ans,.sugg button,.st small,.st>span:last-child");if(el&&!el.title&&el.scrollWidth>el.clientWidth+1)el.title=el.textContent.trim()},{passive:true});
 const chatEl=$("#chat"),fabEl=$("#chatFab");
 function setChatOpen(open,focus=true){chatEl.classList.toggle("open",open);document.body.classList.toggle("chat-open",open);fabEl.setAttribute("aria-expanded",String(open));fabEl.setAttribute("aria-label",open?"Chiedi a Claude: chiudi la chat":"Chiedi a Claude: apri la chat");fabEl.title=open?"Chiudi la chat":"Chat con Claude";
-  if(open){fabEl.classList.remove("dot","hint");const log=$("#chatLog");log.scrollTop=log.scrollHeight;if(focus)$("#chatIn").focus()}else if(focus)fabEl.focus();
+  if(open){if(SUGG_STALE)renderSugg();fabEl.classList.remove("dot","hint");const log=$("#chatLog");log.scrollTop=log.scrollHeight;if(focus)$("#chatIn").focus()}else if(focus)fabEl.focus();
   ls.set("chatOpen",open)}
 fabEl.onclick=()=>setChatOpen(!chatEl.classList.contains("open"));
 $("#chatClose").onclick=()=>setChatOpen(false);
