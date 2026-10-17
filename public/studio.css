@@ -396,3 +396,9 @@ body.panel-open #chatFab{right:calc(min(580px,46vw) + 20px)}
 .sec-b details.item>summary{padding:10px 4px}
 .sec-b details.item>.in{border-top:0;padding:4px 4px 14px 21px}
 @media(prefers-reduced-motion:reduce){.sec>summary::after{transition:none}}
+
+/* Sblocco progressivo: la riga che annuncia la prossima sezione */
+.sec-next{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 18px;margin:0 0 12px;border:1px dashed var(--line);border-radius:var(--r-l);color:var(--muted);font-size:14px}
+.sec-next .sec-n{background:var(--sunk);color:var(--muted)}
+.sec-next b{color:var(--fg);font-weight:600}
+.sec-next button.link{margin-left:auto}

@@ -293,3 +293,25 @@ test("sezioni apribili: stato nel titolo, apertura automatica, Apri tutto e memo
   const docs = await openSec(page, "Documenti");
   await expect(docs.locator(".sec-b details.item").first()).toBeVisible();
 });
+
+test("sblocco progressivo: in uno studio nuovo ogni sezione compare quando la precedente è completata", async ({ page }) => {
+  await openStudio(page);
+  await goToStep(page, "Requisiti");
+  const visible = page.locator("#main details.sec:not([hidden]) summary .sec-t");
+  const next = page.locator("#main .sec-next");
+  await expect(visible).toHaveText(["Documenti", "Estrazione dei requisiti", "Requisiti"]); // studio compilato: tutto visibile
+  await expect(next).toHaveCount(0);
+  // svuoto documenti e requisiti, come in uno studio appena creato
+  const doc = await page.evaluate(() => { const [id, d] = Object.entries(S.docs)[0]; for (const c of ["docs", "reqs"]) for (const k of Object.keys(S[c])) del(c, k); return { id, d }; });
+  await expect(visible).toHaveText(["Documenti"]);
+  await expect(next).toContainText("Poi: Estrazione dei requisiti");
+  await page.evaluate(({ id, d }) => put("docs", id, d), doc); // un documento caricato sblocca l'estrazione
+  await expect(visible).toHaveText(["Documenti", "Estrazione dei requisiti"]);
+  await expect(next).toContainText("Poi: Requisiti");
+  await page.evaluate(({ id }) => del("docs", id), doc);
+  await expect(visible).toHaveText(["Documenti"]);
+  await next.getByRole("button", { name: "Non ho documenti: aggiungo i requisiti a mano" }).click(); // senza documenti si parte a mano
+  await expect(page.locator(".sp")).toBeVisible();
+  await expect(visible).toHaveText(["Documenti", "Estrazione dei requisiti", "Requisiti"]);
+  await expect(next).toHaveCount(0);
+});
