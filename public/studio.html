@@ -308,7 +308,7 @@ function renderStepper(){
     return g+`<button class="st ${i===cur&&!T.rulesOpen?"cur":""} ${st[i]?"done":""}" data-act="go" data-i="${i}" ${i===cur&&!T.rulesOpen?'aria-current="step"':""}><span class="n" title="${s.aux?s.short:"Passo "+(i+1)}">${ICO(st[i]?"i-check":STEP_ICONS[s.id]||"i-list")}</span><span>${s.short}<small>${s.sub}</small></span></button>`}).join("")}</div>`;
   $("#chatCtx").textContent=STEPS[cur].aux?"Registro":"Passo "+(cur+1);
 }
-function render(){renderChrome();const s=STEPS[cur];const main=$("#main");const top=main.scrollTop,spk=main.querySelector(".sp")?.dataset.panel,spt=main.querySelector(".sp-b")?.scrollTop||0;main.__secOpen=new Set([...main.querySelectorAll("details.sec[open]")].map(d=>d.dataset.sec));RMEMO={};try{main.innerHTML=T.rulesOpen?rulesPage():shell(cur,s.view());if(!T.rulesOpen)sectionize(main,s);renderRecap()}finally{RMEMO=null}main.scrollTop=top;{const sp=main.querySelector(".sp");document.body.classList.toggle("panel-open",!!sp);if(sp){document.documentElement.style.setProperty("--top-h",($(".app > header")?.offsetHeight||64)+"px");if(sp.dataset.panel===spk)sp.querySelector(".sp-b").scrollTop=spt}}labelTableFields(main);if(T.fresh?.size)T.fresh.forEach(id=>main.querySelector(`[data-k="req-${id}"],[data-k="t-${id}"]`)?.classList.add("fresh"));
+function render(){renderChrome();const s=STEPS[cur];const main=$("#main");const top=main.scrollTop,spk=main.querySelector(".sp")?.dataset.panel,spt=main.querySelector(".sp-b")?.scrollTop||0;main.__secOpen=new Set([...main.querySelectorAll("details.sec[open]")].map(d=>d.dataset.sec));RMEMO={};try{main.innerHTML=T.rulesOpen?rulesPage():shell(cur,s.view());if(!T.rulesOpen)sectionize(main,s);renderRecap()}finally{RMEMO=null}main.scrollTop=top;{const sp=main.querySelector(".sp");document.body.classList.toggle("panel-open",!!sp);if(sp){document.documentElement.style.setProperty("--top-h",($(".app > header")?.offsetHeight||64)+"px");if(sp.dataset.panel===spk)sp.querySelector(".sp-b").scrollTop=spt}}if(T.panel?.kind==="relq"&&T.relqFocus&&(document.activeElement===document.body||!document.activeElement)){const fr=main.querySelector(`.rq-qr[data-id="${T.relqFocus}"]`);fr?.focus({preventScroll:true});fr?.scrollIntoView({block:"nearest"})}labelTableFields(main);if(T.fresh?.size)T.fresh.forEach(id=>main.querySelector(`[data-k="req-${id}"],[data-k="t-${id}"]`)?.classList.add("fresh"));
   $$("details[data-k]",main).forEach(d=>{if(openSet.has(d.dataset.k))d.open=true});if(document.querySelector("#chatLog .act:not(.done)"))renderChat();else renderSugg();if(T.focusTab){T.focusTab=false;$('.tab[aria-selected="true"]')?.focus()}}
 function msgHtml(id){const m=msgs[id];return m?`<div class="msg ${m.t}" role="status">${m.html??esc(m.text)}</div>`:""}
 function setMsg(id,t,text,html){msgs[id]={t,text,html};scheduleRender()}
@@ -414,6 +414,18 @@ function sidePanel(kind,id,head,body){const ids=T.panelIds||[],i=ids.indexOf(id)
 function traceCell(code,ts){const n=ts.length,c=ts.filter(t=>t.state==="created").length;if(!n)return'<span class="pill warn">nessuno</span>';
   const [cl,l]=c===n?["ok",`${n} · in Jira`]:c?["",`${c} di ${n} in Jira`]:["",n===1?"1 bozza":`${n} bozze`];
   return`<button type="button" class="pill ${cl} pill-btn" data-act="reqTickets" data-code="${esc(code)}" title="Apri i ticket di ${esc(code)} nel Backlog">${l}</button>`}
+/* Assegnazione rapida della release: i requisiti che ne erano senza, in un pannello; un clic (o un tasto 1–9) per riga,
+   oppure tutti i rimanenti insieme. Le righe restano finché il pannello è aperto, così si può correggere una scelta. */
+function relqPanel(){const rels=K().releases.map(r=>r.name).filter(Boolean),rows=(T.relq||[]).map(id=>S.reqs[id]&&{...S.reqs[id],id}).filter(Boolean),left=rows.filter(x=>!x.release),done=rows.length-left.length;
+  const row=x=>`<li class="rq-qr${x.release?" done":""}" tabindex="0" data-id="${x.id}" aria-label="${esc(x.code)} ${esc(x.title)}"><span class="key">${esc(x.code)}</span><span class="rq-qt">${esc(x.title)}<small>${esc((x.components||[]).map(c=>COMP_SHORT[c]||c).join(" · "))}</small></span>
+    <span class="rq-qb" role="group" aria-label="Release di ${esc(x.code)}">${rels.map((v,i)=>`<button type="button" class="rq-qc${x.release===v?" on":""}" data-act="relqSet" data-id="${x.id}" data-rel="${esc(v)}" aria-pressed="${x.release===v}" tabindex="-1" ${READONLY?"disabled":""}>${i<9?`<kbd>${i+1}</kbd>`:""}${esc(v)}</button>`).join("")}</span></li>`;
+  const body=!rels.length?`<p class="empty">Nel Kit non c'è ancora nessuna release: aggiungile in K2, poi torna qui.</p>`:`
+   <p class="small muted">Scegli la release di ogni requisito con un clic, oppure con i tasti <kbd>1</kbd>–<kbd>${Math.min(rels.length,9)}</kbd> sulla riga evidenziata (<kbd>↑</kbd> <kbd>↓</kbd> per spostarti). Un secondo clic sulla stessa release la toglie.</p>
+   ${left.length>1?`<div class="rq-bulk"><label class="f">Tutti i ${left.length} rimanenti in<select id="relqAll">${rels.map(v=>`<option ${v===T.relqRel?"selected":""}>${esc(v)}</option>`).join("")}</select></label><button type="button" data-act="relqAll" class="${T.arm.relqAll?"armed":""}" ${READONLY?"disabled":""}>${T.arm.relqAll?`Conferma: «${esc(T.relqRel)}» a ${left.length}`:`Assegna a ${left.length}`}</button></div>`:""}
+   ${left.length?"":`<div class="msg ok" role="status">Fatto: tutti questi requisiti hanno una release.</div>`}
+   <ol class="rq-q">${rows.map(row).join("")}</ol>`;
+  return`<aside class="sp" aria-label="Assegnazione rapida della release" data-panel="relq:all"><div class="sp-h"><div class="sp-t" tabindex="-1">Release dei requisiti <span class="pill ${left.length?"warn":"ok"}">${done} di ${rows.length} assegnati</span></div><div class="sp-nav">
+   <button type="button" class="icon-btn" data-act="spClose" aria-label="Chiudi il pannello (Esc)" title="Chiudi (Esc)">×</button></div></div><div class="sp-b">${body}</div></aside>`}
 function reqTable(r,rf){if(!r.length)return'<p class="empty">Nessun requisito ancora. Estraili con Claude o aggiungili a mano.</p>';
   T.panelIds=rf.map(x=>x.id);if(!rf.length)return'<p class="empty">Nessun requisito corrisponde ai filtri.</p>';
   const by={};ticketList().forEach(t=>{(by[t.req]=by[t.req]||[]).push(t)});
@@ -629,10 +641,11 @@ STEPS.push({id:"reqs",phase:"Preparazione",short:"Requisiti",sub:"Carica, estrai
    ${progBlock("extractReqs")}<p class="small muted">Claude elabora un documento alla volta e salta i requisiti con lo stesso titolo di uno esistente.</p></div>`;
   h+=`<h2 class="sec-h">3 · Requisiti (${r.length})</h2>`;
   if(r.length){const miss=r.filter(x=>!x.release).length;
-   h+=`<div class="toolbar"><span class="pill ${miss?"warn":"ok"}">${miss?miss+" requisiti senza release":"Tutti i requisiti hanno una release"}</span><span class="pill">${r.filter(x=>x.questions).length} con domande aperte</span><span style="flex:1"></span>${B("validateReqs",P().reqsValidatedAt?"Validata il "+new Date(P().reqsValidatedAt).toLocaleDateString("it-IT")+" · valida di nuovo":"Valida la lista (PO)")}</div>`}
+   h+=`<div class="toolbar"><span class="pill ${miss?"warn":"ok"}">${miss?miss+" requisiti senza release":"Tutti i requisiti hanno una release"}</span>${miss?B("relQuick","Assegna le release",{cls:"primary"}):""}<span class="pill">${r.filter(x=>x.questions).length} con domande aperte</span><span style="flex:1"></span>${B("validateReqs",P().reqsValidatedAt?"Validata il "+new Date(P().reqsValidatedAt).toLocaleDateString("it-IT")+" · valida di nuovo":"Valida la lista (PO)")}</div>`}
   h+=reqBar(r,rf);
   h+=reqTable(r,rf)+`
   <div class="card warn small" style="margin-top:14px">Controlla che ogni nota UI/UX sia sulla riga giusta: nei fogli del cliente le colonne sfalsate sono un errore frequente.</div>`;
+  if(T.panel?.kind==="relq")h+=relqPanel();
   if(T.panel?.kind==="req"){const x=S.reqs[T.panel.id]&&{...S.reqs[T.panel.id],id:T.panel.id};if(x)h+=sidePanel("req",x.id,`<span class="key">${esc(x.code)}</span><span>${esc(x.title)}</span>`,reqForm(x))}
   return h},
  ask:["Riassumi i documenti caricati in 5 punti","Quali requisiti hanno dipendenze esterne?","Ci sono requisiti duplicati o sovrapposti?","Proponi l'ordine dei requisiti in base alle dipendenze"]});
@@ -912,6 +925,10 @@ A.epicMoveSkip=()=>{T.epicMove=null;render()};
 A.decReset=()=>{T.dq={q:"",type:"*",src:"*"};render()};
 const rowOf=p=>p&&document.querySelector(`#main tr[data-k="${p.kind==="req"?"req":"t"}-${p.id}"]`);
 A.openRow=el=>{const kind=el.dataset.kind,id=el.dataset.id;if(T.panel?.kind===kind&&T.panel.id===id)return;T.panel={kind,id};render();rowOf(T.panel)?.scrollIntoView({block:"nearest"});$("#main .sp .sp-t")?.focus({preventScroll:true})};
+A.relQuick=()=>{T.relq=reqList().filter(x=>!x.release).map(x=>x.id);T.relqFocus=T.relq[0];T.panel={kind:"relq",id:"all"};render()};
+A.relqSet=el=>{const id=el.dataset.id,r=S.reqs[id];if(!r||READONLY)return;const v=r.release===el.dataset.rel?"":el.dataset.rel;put("reqs",id,{...r,release:v});
+  const ids=T.relq||[],i=ids.indexOf(id),free=x=>!S.reqs[x]?.release;T.relqFocus=v?ids.slice(i+1).find(free)||ids.find(free)||id:id;render()};
+A.relqAll=el=>{T.relqRel=$("#relqAll")?.value||T.relqRel;arm("relqAll",el,()=>{const v=T.relqRel;if(!v)return;(T.relq||[]).forEach(id=>{const r=S.reqs[id];if(r&&!r.release)put("reqs",id,{...r,release:v})});toast(`Release «${v}» assegnata.`)})};
 A.spClose=()=>{const p=T.panel;T.panel=null;render();rowOf(p)?.focus({preventScroll:true})};
 A.spMove=el=>{const ids=T.panelIds||[],i=ids.indexOf(T.panel?.id),j=i+(+el.dataset.d);if(!T.panel||j<0||j>=ids.length)return;T.panel={...T.panel,id:ids[j]};render();rowOf(T.panel)?.scrollIntoView({block:"nearest"})};
 A.reqTickets=el=>{T.bReq=el.dataset.code;T.bTab="tickets";T.rel="*";T.onlyIssues=false;A.go({dataset:{i:STEPS.findIndex(s=>s.id==="backlog")}})};
@@ -1287,11 +1304,15 @@ document.addEventListener("toggle",e=>{const d=e.target;if(d.matches?.("details[
 document.addEventListener("click",e=>{const sm=e.target.closest("details.sec>summary");if(!sm)return;const d=sm.parentElement;if(d.classList.contains("locked")){e.preventDefault();return}
   setTimeout(()=>{if(d.classList.contains("step")){secAct(d);recapCta()}else{secRemember(d);secAllLabel()}},0)});
 document.addEventListener("toggle",e=>{if(e.target.matches?.("details.sec"))secAllLabel()},true);
+document.addEventListener("focusin",e=>{const r=e.target.closest?.(".rq-qr");if(r)T.relqFocus=r.dataset.id});
 // tastiera per tabelle e pannello: Invio apre la riga, ↑ ↓ cambiano riga, Esc chiude
 document.addEventListener("keydown",e=>{const t=e.target,typing=t.closest?.("input,textarea,select,[contenteditable]");
   if(e.key==="Escape"&&T.panel){if(document.querySelector(".dd-menu:not([hidden])"))return;if(typing&&!t.closest(".sp"))return;if(typing)t.blur();e.preventDefault();A.spClose();return}
   if(typing||e.altKey||e.metaKey||e.ctrlKey)return;
   if((e.key==="Enter"||e.key===" ")&&t.matches?.('tr[data-act="openRow"]')){e.preventDefault();A.openRow(t);return}
+  if(T.panel?.kind==="relq"){const row=t.closest?.(".rq-qr");if(!row)return;const rows=$$(".sp .rq-qr"),i=rows.indexOf(row);
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();const n=rows[i+(e.key==="ArrowDown"?1:-1)];if(n){n.focus();T.relqFocus=n.dataset.id}return}
+    const b=/^[1-9]$/.test(e.key)&&row.querySelectorAll("[data-act=relqSet]")[+e.key-1];if(b){e.preventDefault();A.relqSet(b)}return}
   if(T.panel&&(e.key==="ArrowDown"||e.key==="ArrowUp")&&!t.closest?.('[role="tab"],select')){e.preventDefault();A.spMove({dataset:{d:e.key==="ArrowDown"?1:-1}})}});
 // ricerca nei requisiti: filtra le righe senza ridisegnare la pagina, così il cursore resta nel campo
 document.addEventListener("input",e=>{if(e.target.id!=="decSearch")return;T.dq.q=e.target.value;const all=arr("decisions"),vis=new Set(decFilter(all).map(x=>x.id));
