@@ -197,3 +197,49 @@ test("solo desktop: sotto i 900 px lo studio mostra l'avviso", async ({ page }) 
   await page.setViewportSize({ width: 1280, height: 900 });
   await expect(page.locator(".app")).toBeVisible();
 });
+
+test("Kit: cambiare la release (= Fase) di un'epica la sposta in Jira con i suoi ticket, dopo conferma", async ({ page, request }) => {
+  test.setTimeout(240_000);
+  await openStudio(page);
+  // 1. struttura e ticket in Jira
+  await goToStep(page, "Crea su Jira");
+  await expect(page.locator("#ackBox")).toBeVisible({ timeout: 20_000 });
+  await page.locator("#ackBox").check();
+  const run = page.locator("[data-act=runCreate]");
+  await run.click();
+  await run.click();
+  await expect(page.locator("#main")).toContainText(/Verifica: \d+ di \d+ ticket con tutti i campi salvati/, { timeout: 150_000 });
+  let state = await (await request.get("/__sim/state")).json();
+  const epic0 = state.issues.find((i) => i.summary === "Diario colturale");
+  const tickets0 = state.issues.filter((i) => i.parent === epic0.key);
+  expect(tickets0.length).toBeGreaterThan(0);
+  expect(tickets0.every((t) => t.labels.includes("Release1"))).toBe(true);
+
+  // 2. nel Kit un solo menu «Release (= Fase)»; la Fase non si sceglie più a parte
+  await goToStep(page, "Kit di progetto");
+  await expect(page.locator("#main th", { hasText: "Release (= Fase)" }).first()).toBeVisible();
+  await expect(page.locator('#main select[data-bind$=".phase"]')).toHaveCount(0);
+  const i = await page.evaluate(() => K().epics.findIndex((e) => e.name === "Diario colturale"));
+  await page.locator(`select[data-bind="meta:kit:epics.${i}.release"]`).selectOption("Release 1.0");
+  const card = page.locator("#epicMove");
+  await expect(card).toContainText("Aggiornare anche Jira?");
+  await expect(card).toContainText("Release2");
+  state = await (await request.get("/__sim/state")).json();
+  expect(state.issues.find((x) => x.key === epic0.key).parent, "senza conferma Jira non cambia").toBe(epic0.parent);
+
+  // 3. conferma: Jira aggiornato e verificato
+  await card.locator("[data-act=epicMoveRun]").click();
+  await expect(page.locator("#main .msg").first()).toContainText("spostata nella Fase", { timeout: 60_000 });
+  state = await (await request.get("/__sim/state")).json();
+  const phase = state.issues.find((x) => x.type === "Fase" && x.summary === "Release 1.0");
+  expect(phase, "la Fase della nuova release viene creata").toBeTruthy();
+  const epic = state.issues.find((x) => x.key === epic0.key);
+  expect(epic.parent).toBe(phase.key);
+  for (const t of [epic, ...state.issues.filter((x) => x.parent === epic.key)]) {
+    expect(t.labels, t.key).toContain("Release2");
+    expect(t.labels, t.key).not.toContain("Release1");
+    expect(t.fixVersions, t.key).not.toContain("0.1.0");
+  }
+  await goToStep(page, "Registro decisioni");
+  await expect(page.locator("#main table")).toContainText("Diario colturale");
+});

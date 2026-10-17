@@ -107,6 +107,11 @@ async function handle(url, init) {
     if (method === "PUT") {
       const parent = body.fields?.parent?.key;
       if (parent) { const bad = checkParent(issue.type, parent); if (bad) return bad; issue.parent = parent; }
+      if (body.fields?.labels) issue.fields.labels = body.fields.labels;
+      if (body.fields?.fixVersions) {
+        for (const v of body.fields.fixVersions) if (!sim.versions.includes(v.name)) return err(400, { fixVersions: `Versione «${v.name}» inesistente.` });
+        issue.fields.fixVersions = body.fields.fixVersions;
+      }
       return new Response(null, { status: 204 });
     }
   }
