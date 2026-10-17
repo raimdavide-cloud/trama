@@ -3,6 +3,7 @@
 import authCallback, * as authCallbackMod from "../server/functions/auth-callback.mjs";
 import authLogin, * as authLoginMod from "../server/functions/auth-login.mjs";
 import authLogout, * as authLogoutMod from "../server/functions/auth-logout.mjs";
+import cspReport, * as cspReportMod from "../server/functions/csp-report.mjs";
 import jira, * as jiraMod from "../server/functions/jira.mjs";
 import me, * as meMod from "../server/functions/me.mjs";
 import project, * as projectMod from "../server/functions/project.mjs";
@@ -11,7 +12,7 @@ import { fail } from "../server/lib/core.mjs";
 import { runPrivacyReport } from "../server/lib/privacy.mjs";
 
 const MODULES = [
-  [authCallback, authCallbackMod], [authLogin, authLoginMod], [authLogout, authLogoutMod],
+  [authCallback, authCallbackMod], [authLogin, authLoginMod], [authLogout, authLogoutMod], [cspReport, cspReportMod],
   [jira, jiraMod], [me, meMod], [project, projectMod], [projects, projectsMod],
 ];
 

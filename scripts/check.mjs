@@ -1,8 +1,7 @@
 // Controlli veloci prima di pubblicare (li esegue anche la CI): sintassi di tutto il JavaScript,
-// script dentro le pagine HTML, JSON di configurazione, ponte scaricabile allineato, nessun segreto nei file versionati.
-import { readFileSync, readdirSync, writeFileSync, mkdtempSync, rmSync, statSync } from "node:fs";
+// nessuno script dentro le pagine HTML (CSP), JSON di configurazione, ponte scaricabile allineato, nessun segreto nei file versionati.
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, extname, relative } from "node:path";
-import { tmpdir } from "node:os";
 import { execFileSync, spawnSync } from "node:child_process";
 
 const ROOT = new URL("..", import.meta.url).pathname;
@@ -34,21 +33,25 @@ const jsFiles = ["api", "server", "scripts", "tests", "public"].flatMap((d) => w
 const okJs = jsFiles.filter((f) => syntax(join(ROOT, f), f)).length;
 if (okJs === jsFiles.length) ok(`sintassi di ${jsFiles.length} file JavaScript`);
 
-// 2. script dentro le pagine HTML (lo studio è quasi tutto qui)
-const tmp = mkdtempSync(join(tmpdir(), "trama-check-"));
-let inline = 0;
+// 2. niente JavaScript dentro le pagine HTML: la Content-Security-Policy (vercel.json) ammette solo file del sito e di cdnjs.
+//    Restano permessi i blocchi di dati (JSON-LD), che il browser non esegue.
+const inlineJs = [];
+let dataBlocks = 0;
 for (const f of walk("public").filter((f) => f.endsWith(".html"))) {
   const html = readFileSync(join(ROOT, f), "utf8");
   for (const [i, m] of [...html.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/g)].entries()) {
     const attrs = m[1] || "";
-    if (/\bsrc=/.test(attrs) || /application\/(ld\+)?json|importmap/.test(attrs) || !m[2].trim()) continue;
-    const out = join(tmp, `${f.replace(/\W/g, "_")}_${i}${/type=["']?module/.test(attrs) ? ".mjs" : ".js"}`);
-    writeFileSync(out, m[2]);
-    if (syntax(out, `${f} (script ${i + 1})`)) inline++;
+    if (/\bsrc=/.test(attrs) || !m[2].trim()) continue;
+    if (/application\/(ld\+)?json|importmap/.test(attrs)) {
+      try { JSON.parse(m[2]); dataBlocks++; } catch (e) { ko(`JSON non valido: ${f} (script ${i + 1}): ${e.message}`); }
+      continue;
+    }
+    inlineJs.push(`${f} (script ${i + 1})`);
   }
+  for (const m of html.matchAll(/<[a-z][^>]*\s(on[a-z]+)=/gi)) inlineJs.push(`${f}: attributo ${m[1]}`);
+  if (/href=["']?javascript:/i.test(html)) inlineJs.push(`${f}: collegamento javascript:`);
 }
-rmSync(tmp, { recursive: true, force: true });
-ok(`${inline} script nelle pagine HTML`);
+inlineJs.length ? ko(`JavaScript dentro le pagine (la CSP lo blocca: spostalo in un file .js):\n    ${inlineJs.join("\n    ")}`) : ok(`nessuno script nelle pagine HTML (${dataBlocks} blocchi di dati JSON-LD validi)`);
 
 // 3. JSON di configurazione
 for (const f of ["package.json", "vercel.json", "public/manifest.webmanifest"]) {

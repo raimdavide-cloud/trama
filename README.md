@@ -11,13 +11,14 @@ Dal documento di requisiti al backlog Jira, passo dopo passo, con Claude e le re
 
 | Parte | Dove | Cosa fa |
 | --- | --- | --- |
-| Pagine | `public/index.html`, `public/studio.html` | Copertina e strumento (HTML e JS senza build) |
+| Pagine | `public/index.html`, `public/studio.html` + `public/studio-app.js` | Copertina e strumento (HTML e JS senza build, nessuno script inline) |
 | Runtime del browser | `public/studio-runtime.js` | Sincronizzazione dati, chiamate a Jira e a Claude |
 | API | `api/router.mjs` | Un'unica funzione Vercel che instrada `/api/*` verso i gestori in `server/functions` |
 | Login | `server/functions/auth-*.mjs` | OAuth 2.0 (3LO) Atlassian, sessione in cookie `HttpOnly` |
 | Dati | `server/functions/project*.mjs` | Progetti e documenti su Postgres (Neon), sincronizzati ogni 6 secondi |
 | Jira | `server/functions/jira.mjs`, `server/lib/jira-ops.mjs` | API REST di Jira Cloud con il token dell'utente |
 | Claude | `scripts/claude-bridge.mjs` | Ponte locale: usa Claude Code sul tuo Mac con il tuo abbonamento |
+| Sicurezza | `vercel.json`, `server/functions/csp-report.mjs` | Intestazioni e Content-Security-Policy (per ora in sola segnalazione, violazioni nei log) |
 | Test | `tests/` | Simulatore di Jira, dati di prova anonimizzati, test unitari ed end-to-end |
 
 Claude non gira sul server: Trama lo chiama tramite un **ponte locale** (`npm run claude`) che usa Claude Code sul tuo Mac, autenticato con il tuo abbonamento. Il ponte ascolta solo su `127.0.0.1:8790`, accetta richieste solo dal sito in `APP_URL` (e da `http://localhost:8888`) e lancia `claude -p` senza strumenti in una cartella temporanea vuota. Senza ponte acceso, Trama funziona tutto tranne le funzioni di Claude.

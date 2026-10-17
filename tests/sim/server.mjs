@@ -36,9 +36,13 @@ function resetStore() {
 }
 resetStore();
 
+// stesse intestazioni di sicurezza della produzione (vercel.json › "/(.*)"), CSP compresa
+const SECURITY = JSON.parse(readFileSync(join(ROOT, "vercel.json"))).headers.find((h) => h.source === "/(.*)").headers.map((h) => [h.key, h.value]);
+const cspReports = []; // segnalazioni ricevute, lette dai test con /__sim/csp
+
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".json": "application/json", ".webmanifest": "application/manifest+json" };
 const send = (res, status, body, type = "application/json; charset=utf-8") => {
-  res.writeHead(status, { "content-type": type, "cache-control": "no-store" });
+  res.writeHead(status, { ...Object.fromEntries(SECURITY), "content-type": type, "cache-control": "no-store" });
   res.end(typeof body === "string" || Buffer.isBuffer(body) ? body : JSON.stringify(body));
 };
 // date fisse: le immagini dei test non cambiano con il giorno in cui girano
@@ -56,10 +60,12 @@ createServer(async (req, res) => {
   try {
     // comandi del simulatore, usati dai test
     if (p === "/__sim/state") return send(res, 200, { issues: [...sim.issues.values()].map((i) => ({ key: i.key, type: i.type, summary: i.summary, parent: i.parent || null, labels: i.fields?.labels || [], fixVersions: (i.fields?.fixVersions || []).map((v) => v.name) })), links: sim.links || [], calls: sim.calls });
-    if (p === "/__sim/reset") { sim.reset(); sim.links = []; resetStore(); return send(res, 200, { ok: true }); }
+    if (p === "/__sim/reset") { sim.reset(); sim.links = []; cspReports.length = 0; resetStore(); return send(res, 200, { ok: true }); }
+    if (p === "/__sim/csp") return send(res, 200, { reports: cspReports });
     if (p === "/__sim/fault") { const b = JSON.parse(raw); sim.faults[b.kind][b.type] = b.times; return send(res, 200, sim.faults); }
 
-    // API dello studio
+    // API di Trama
+    if (p === "/api/csp-report" && req.method === "POST") { try { cspReports.push(JSON.parse(raw)); } catch {} res.writeHead(204, Object.fromEntries(SECURITY)); return res.end(); }
     if (p === "/api/me") return send(res, 200, { ok: true, user: { accountId: user.account_id, name: user.name, email: user.email, picture: "" }, sites: user.sites });
     if (p === "/api/projects") return send(res, 200, { ok: true, projects: [projectRow()] });
     let m;
