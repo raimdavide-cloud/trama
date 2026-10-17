@@ -14,8 +14,27 @@ async function openStudio(page) {
 const goToStep = (page, name) => page.locator("#stepList .st", { hasText: name }).click();
 async function openSec(page, title) {
   const sec = page.locator("#main details.sec", { has: page.locator("summary .sec-t", { hasText: title }) });
-  if (!(await sec.evaluate((d) => d.open))) await sec.locator("summary").click();
+  if (!(await sec.evaluate((d) => d.open))) await sec.locator(":scope > summary").click();
   return sec;
+}
+// Crea su Jira è uno stepper: dal controllo (parte da solo) si va avanti con «Continua» fino alle ipotesi
+async function toAck(page) {
+  const ctl = page.locator('#main details.sec[data-sec="create:controllo-prima-della-creazione"]');
+  await expect(ctl.locator(".sec-go")).toHaveAttribute("aria-disabled", "false", { timeout: 20_000 });
+  await openSec(page, "Controllo prima della creazione");
+  await ctl.locator(".sec-go").click();
+  await expect(page.locator('#main details.sec[data-sec="create:anteprima"]')).toHaveAttribute("open", "");
+  await page.locator('#main details.sec[data-sec="create:anteprima"] .sec-go').click();
+  await expect(page.locator("#ackBox")).toBeVisible();
+}
+async function runCreate(page) {
+  await openSec(page, "Ipotesi e scelte fatte al tuo posto");
+  await page.locator("#ackBox").check();
+  await page.locator('#main details.sec[data-sec="create:ipotesi-e-scelte-fatte-al-tuo-posto"] .sec-go').click();
+  const run = page.locator("[data-act=runCreate]");
+  await run.click(); // primo clic: chiede conferma
+  await expect(run).toContainText("Conferma");
+  await run.click();
 }
 
 test("la pagina dei progetti mostra le schede e le azioni nel menu", async ({ page }) => {
@@ -131,19 +150,15 @@ test("Crea su Jira: anteprima a colonne, poi struttura completa e collegata", as
   test.setTimeout(180_000); // crea circa 90 elementi e 100 collegamenti: sulla CI è più lento che in locale
   await openStudio(page);
   await goToStep(page, "Crea su Jira");
-  await expect(page.locator("#ackBox")).toBeVisible({ timeout: 20_000 }); // il controllo parte da solo
-
+  await expect(page.locator('#main details.sec[data-sec="create:controllo-prima-della-creazione"]')).toHaveAttribute("open", ""); // il controllo parte da solo
   const cols = page.locator(".sc .sc-c");
   await expect(cols).toHaveCount(4);
+  await toAck(page); // passa dall'anteprima
+  await openSec(page, "Anteprima");
   const epic = cols.nth(2).locator(".sc-b").nth(1);
   await epic.click();
   await expect(cols.nth(2).locator(".sc-b").nth(1)).toHaveClass(/sel/);
-
-  await page.locator("#ackBox").check();
-  const run = page.locator("[data-act=runCreate]");
-  await run.click(); // primo clic: chiede conferma
-  await expect(run).toContainText("Conferma");
-  await run.click();
+  await runCreate(page);
   await expect(page.locator("#main")).toContainText(/Verifica: \d+ di \d+ ticket con tutti i campi salvati/, { timeout: 150_000 });
   // dopo la creazione: esito e sincronizzazione sono sezioni numerate, niente blocchi sparsi
   await expect(page.locator("#main details.sec .sec-t")).toHaveText(["Controllo prima della creazione", "Anteprima", "Ipotesi e scelte fatte al tuo posto", "Crea su Jira", "Esito della creazione", "Sincronizzazione con Jira"]);
@@ -215,11 +230,8 @@ test("Kit: cambiare la release (= Fase) di un'epica la sposta in Jira con i suoi
   await openStudio(page);
   // 1. struttura e ticket in Jira
   await goToStep(page, "Crea su Jira");
-  await expect(page.locator("#ackBox")).toBeVisible({ timeout: 20_000 });
-  await page.locator("#ackBox").check();
-  const run = page.locator("[data-act=runCreate]");
-  await run.click();
-  await run.click();
+  await toAck(page);
+  await runCreate(page);
   await expect(page.locator("#main")).toContainText(/Verifica: \d+ di \d+ ticket con tutti i campi salvati/, { timeout: 150_000 });
   let state = await (await request.get("/__sim/state")).json();
   const epic0 = state.issues.find((i) => i.summary === "Diario colturale");
@@ -270,48 +282,69 @@ test("niente più Spike: i ticket di design sono UX Story, anche nei progetti cr
   expect(types).not.toContain("Spike");
 });
 
-test("sezioni apribili: stato nel titolo, apertura automatica, Apri tutto e memoria della scelta", async ({ page }) => {
+test("stepper nei passi: uno step aperto alla volta, riassunto con Modifica e memoria della scelta", async ({ page }) => {
   await openStudio(page);
   await goToStep(page, "Requisiti");
   const secs = page.locator("#main details.sec");
   await expect(secs).toHaveCount(3);
-  const reqSec = secs.nth(2);
-  await expect(reqSec).toHaveAttribute("open", "");
-  await expect(reqSec.locator("summary")).toContainText("senza release"); // stato nel titolo
-  await expect(secs.nth(1)).not.toHaveAttribute("open", ""); // estrazione già fatta: chiusa
-  const all = page.locator("[data-act=secAll]");
-  await expect(all).toHaveText("Apri tutto");
-  await all.click();
-  for (let i = 0; i < 3; i++) await expect(secs.nth(i)).toHaveAttribute("open", "");
-  await expect(all).toHaveText("Chiudi tutto");
-  await all.click();
-  await expect(reqSec).not.toHaveAttribute("open", "");
+  await expect(secs.nth(2)).toHaveAttribute("open", ""); // studio compilato: si apre lo step su cui si lavora
+  await expect(page.locator("#main details.sec[open]")).toHaveCount(1);
+  await expect(secs.nth(2).locator(":scope > summary")).toContainText("senza release"); // stato nel titolo
+  await expect(secs.nth(0).locator(":scope > summary")).toContainText("Modifica"); // completato: riassunto e Modifica
+  await expect(page.locator("[data-act=secAll]")).toHaveCount(0); // niente «Apri tutto» nello stepper
+  await secs.nth(0).locator(":scope > summary").click(); // aprire uno step chiude gli altri
+  await expect(secs.nth(0)).toHaveAttribute("open", "");
+  await expect(page.locator("#main details.sec[open]")).toHaveCount(1);
+  await secs.nth(0).locator(".sec-go").click(); // Continua apre lo step successivo
+  await expect(secs.nth(1)).toHaveAttribute("open", "");
   await page.reload(); // la scelta resta
   await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
-  await expect(page.locator("#main details.sec").nth(2)).not.toHaveAttribute("open", "");
-  // livello 2: i documenti sono righe dentro la sezione, non schede
+  await expect(page.locator("#main details.sec").nth(1)).toHaveAttribute("open", "");
+  // livello 2: i documenti sono righe dentro lo step, non schede
   const docs = await openSec(page, "Documenti");
   await expect(docs.locator(".sec-b details.item").first()).toBeVisible();
 });
 
-test("sblocco progressivo: in uno studio nuovo ogni sezione compare quando la precedente è completata", async ({ page }) => {
+test("riepilogo a destra: numeri del backlog e un solo pulsante principale", async ({ page }) => {
+  await openStudio(page);
+  await goToStep(page, "Kit di progetto");
+  const rc = page.locator("#recap");
+  await expect(rc).toBeVisible();
+  await expect(rc.locator(".rc-l")).toContainText("Epiche");
+  await expect(rc.locator(".rc-st")).toContainText("Passo completato");
+  await expect(rc.locator(".rc-go")).toHaveClass(/primary/); // passo completo: «Prossimo» è il pulsante principale
+  await expect(page.locator("#main details.sec[open] .sec-go.primary")).toHaveCount(0);
+  await rc.locator(".rc-go").click();
+  await expect(page.locator("#stepList .st.cur")).toContainText("Backlog");
+  await goToStep(page, "Requisiti");
+  await expect(rc.locator(".rc-st")).toContainText("Manca");
+  await expect(rc.locator(".rc-go")).not.toHaveClass(/primary/);
+});
+
+test("sblocco progressivo: in uno studio nuovo gli step si sbloccano uno dopo l'altro", async ({ page }) => {
   await openStudio(page);
   await goToStep(page, "Requisiti");
-  const visible = page.locator("#main details.sec:not([hidden]) summary .sec-t");
-  const next = page.locator("#main .sec-next");
-  await expect(visible).toHaveText(["Documenti", "Estrazione dei requisiti", "Requisiti"]); // studio compilato: tutto visibile
-  await expect(next).toHaveCount(0);
+  const locked = page.locator("#main details.sec.locked summary .sec-t");
+  await expect(locked).toHaveCount(0); // studio compilato: niente di bloccato
   // svuoto documenti e requisiti, come in uno studio appena creato
   const doc = await page.evaluate(() => { const [id, d] = Object.entries(S.docs)[0]; for (const c of ["docs", "reqs"]) for (const k of Object.keys(S[c])) del(c, k); return { id, d }; });
-  await expect(visible).toHaveText(["Documenti"]);
-  await expect(next).toContainText("Poi: Estrazione dei requisiti");
+  await expect(locked).toHaveText(["Estrazione dei requisiti", "Requisiti"]);
+  await expect(page.locator("#main details.sec.locked").first()).toContainText("Si sblocca quando carichi almeno un documento");
+  const docs = page.locator("#main details.sec").first();
+  await expect(docs).toHaveAttribute("open", "");
+  const go = docs.locator(".sec-go");
+  await expect(go).toHaveAttribute("aria-disabled", "true");
+  await go.click({ force: true }); // bloccato: dice cosa manca
+  await expect(docs.locator(".sec-why")).toHaveClass(/err/);
   await page.evaluate(({ id, d }) => put("docs", id, d), doc); // un documento caricato sblocca l'estrazione
-  await expect(visible).toHaveText(["Documenti", "Estrazione dei requisiti"]);
-  await expect(next).toContainText("Poi: Requisiti");
+  await expect(locked).toHaveText(["Requisiti"]);
+  await expect(go).toHaveAttribute("aria-disabled", "false");
+  await go.click();
+  await expect(page.locator("#main details.sec").nth(1)).toHaveAttribute("open", "");
   await page.evaluate(({ id }) => del("docs", id), doc);
-  await expect(visible).toHaveText(["Documenti"]);
-  await next.getByRole("button", { name: "Non ho documenti: aggiungo i requisiti a mano" }).click(); // senza documenti si parte a mano
+  await expect(locked).toHaveText(["Estrazione dei requisiti", "Requisiti"]);
+  await openSec(page, "Documenti");
+  await page.getByRole("button", { name: "Non ho documenti: aggiungo i requisiti a mano" }).click(); // senza documenti si parte a mano
   await expect(page.locator(".sp")).toBeVisible();
-  await expect(visible).toHaveText(["Documenti", "Estrazione dei requisiti", "Requisiti"]);
-  await expect(next).toHaveCount(0);
+  await expect(locked).toHaveCount(0);
 });

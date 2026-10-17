@@ -51,6 +51,7 @@
   <div class="body">
     <aside id="stepper" aria-label="Passi del processo"></aside>
     <main id="main"></main>
+    <aside id="recap" aria-label="Riepilogo del backlog"></aside>
     <aside id="chat" aria-label="Chat con Claude"><i class="rz" data-r="n"></i><i class="rz" data-r="s"></i><i class="rz" data-r="w"></i><i class="rz" data-r="e"></i><i class="rz" data-r="nw"></i><i class="rz" data-r="ne"></i><i class="rz" data-r="sw"></i><i class="rz" data-r="se"></i>
       <div class="chat-top"><div class="chat-h"><h2><span class="chat-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path class="bubble" d="M10 4.5h12a6.5 6.5 0 0 1 6.5 6.5v6.5a6.5 6.5 0 0 1-6.5 6.5h-6.4l-5.6 4.2V24A6.5 6.5 0 0 1 3.5 17.5V11A6.5 6.5 0 0 1 10 4.5z"/><rect class="wf wf1" x="8" y="8.9" width="16" height="2.6" rx="1.3"/><rect class="wf wf3" x="8" y="17.1" width="16" height="2.6" rx="1.3"/><rect class="wp" x="14.7" y="7.1" width="2.6" height="14.4" rx="1.3"/><rect class="wf wf2" x="8" y="13" width="16" height="2.6" rx="1.3"/></svg></span>Chat con Claude</h2><span class="chip plain" id="chatCtx"></span><button id="chatMemBtn" class="link" type="button" aria-expanded="false" aria-controls="chatMem">Memoria</button><button id="chatReset" class="link" type="button" hidden title="Riporta la finestra in basso a destra">Reimposta</button><button id="chatClose" class="link" type="button" aria-label="Riduci la chat a icona" title="Riduci a icona: la conversazione resta"><span class="d">Riduci</span><span class="m">Chiudi</span></button></div><div id="chatMem" hidden></div></div>
       <div id="chatLog" aria-live="polite"></div>
@@ -307,7 +308,7 @@ function renderStepper(){
     return g+`<button class="st ${i===cur&&!T.rulesOpen?"cur":""} ${st[i]?"done":""}" data-act="go" data-i="${i}" ${i===cur&&!T.rulesOpen?'aria-current="step"':""}><span class="n" title="${s.aux?s.short:"Passo "+(i+1)}">${ICO(st[i]?"i-check":STEP_ICONS[s.id]||"i-list")}</span><span>${s.short}<small>${s.sub}</small></span></button>`}).join("")}</div>`;
   $("#chatCtx").textContent=STEPS[cur].aux?"Registro":"Passo "+(cur+1);
 }
-function render(){renderChrome();const s=STEPS[cur];const main=$("#main");const top=main.scrollTop,spk=main.querySelector(".sp")?.dataset.panel,spt=main.querySelector(".sp-b")?.scrollTop||0;main.__secOpen=new Set([...main.querySelectorAll("details.sec[open]")].map(d=>d.dataset.sec));RMEMO={};try{main.innerHTML=T.rulesOpen?rulesPage():shell(cur,s.view());if(!T.rulesOpen)sectionize(main,s)}finally{RMEMO=null}main.scrollTop=top;{const sp=main.querySelector(".sp");document.body.classList.toggle("panel-open",!!sp);if(sp){document.documentElement.style.setProperty("--top-h",($(".app > header")?.offsetHeight||64)+"px");if(sp.dataset.panel===spk)sp.querySelector(".sp-b").scrollTop=spt}}labelTableFields(main);if(T.fresh?.size)T.fresh.forEach(id=>main.querySelector(`[data-k="req-${id}"],[data-k="t-${id}"]`)?.classList.add("fresh"));
+function render(){renderChrome();const s=STEPS[cur];const main=$("#main");const top=main.scrollTop,spk=main.querySelector(".sp")?.dataset.panel,spt=main.querySelector(".sp-b")?.scrollTop||0;main.__secOpen=new Set([...main.querySelectorAll("details.sec[open]")].map(d=>d.dataset.sec));RMEMO={};try{main.innerHTML=T.rulesOpen?rulesPage():shell(cur,s.view());if(!T.rulesOpen)sectionize(main,s);renderRecap()}finally{RMEMO=null}main.scrollTop=top;{const sp=main.querySelector(".sp");document.body.classList.toggle("panel-open",!!sp);if(sp){document.documentElement.style.setProperty("--top-h",($(".app > header")?.offsetHeight||64)+"px");if(sp.dataset.panel===spk)sp.querySelector(".sp-b").scrollTop=spt}}labelTableFields(main);if(T.fresh?.size)T.fresh.forEach(id=>main.querySelector(`[data-k="req-${id}"],[data-k="t-${id}"]`)?.classList.add("fresh"));
   $$("details[data-k]",main).forEach(d=>{if(openSet.has(d.dataset.k))d.open=true});if(document.querySelector("#chatLog .act:not(.done)"))renderChat();else renderSugg();if(T.focusTab){T.focusTab=false;$('.tab[aria-selected="true"]')?.focus()}}
 function msgHtml(id){const m=msgs[id];return m?`<div class="msg ${m.t}" role="status">${m.html??esc(m.text)}</div>`:""}
 function setMsg(id,t,text,html){msgs[id]={t,text,html};scheduleRender()}
@@ -416,7 +417,7 @@ function traceCell(code,ts){const n=ts.length,c=ts.filter(t=>t.state==="created"
 function reqTable(r,rf){if(!r.length)return'<p class="empty">Nessun requisito ancora. Estraili con Claude o aggiungili a mano.</p>';
   T.panelIds=rf.map(x=>x.id);if(!rf.length)return'<p class="empty">Nessun requisito corrisponde ai filtri.</p>';
   const by={};ticketList().forEach(t=>{(by[t.req]=by[t.req]||[]).push(t)});
-  return`<div class="dt-wrap"><table class="dt"><colgroup><col style="width:96px"><col><col style="width:150px"><col style="width:140px"><col style="width:130px"><col style="width:170px"></colgroup>
+  return`<div class="dt-wrap"><table class="dt"><colgroup><col style="width:calc(96px*var(--colk,1))"><col><col style="width:calc(150px*var(--colk,1))"><col style="width:calc(140px*var(--colk,1))"><col style="width:calc(130px*var(--colk,1))"><col style="width:calc(170px*var(--colk,1))"></colgroup>
    <thead><tr><th scope="col">ID</th><th scope="col">Titolo</th><th scope="col">Componenti</th><th scope="col">Release</th><th scope="col">Ticket</th><th scope="col">Note</th></tr></thead>
    <tbody>${rf.map(x=>dtRow("req",x.id,`<td><span class="key">${esc(x.code)}</span></td><td class="dt-t" title="${esc(x.title)}">${esc(x.title)}</td><td class="dt-t muted">${(x.components||[]).map(c=>COMP_SHORT[c]||c).join(" · ")||"—"}</td><td>${x.release?`<span class="pill" title="${esc(x.release)}">${esc(x.release)}</span>`:'<span class="pill err">manca</span>'}</td><td>${traceCell(x.code,by[x.code]||[])}</td><td>${[x.questions&&'<span class="pill warn">domande</span>',x.designReady&&'<span class="pill ok">design pronto</span>'].filter(Boolean).join(" ")}</td>`)).join("")}</tbody></table></div>`}
 function reqTrace(x){const ts=ticketList().filter(t=>t.req===x.code);
@@ -445,7 +446,7 @@ function decTable(d){if(!d.length)return'<p class="empty">Nessuna decisione anco
   const rows=df.map(x=>{const n=num.get(x.id),sup=d.some(y=>y.replaces===x.id),armed=T.arm["d"+x.id];
    return`<tr data-dec="${x.id}"${sup?' class="superseded"':""}><td class="muted">${n}</td><td class="mono small">${esc(x.date)}</td><td>${esc(x.text)}${sup?' <span class="pill">sostituita</span>':""}</td>${cols.map(([k])=>`<td>${cell(x,k)}</td>`).join("")}
     <td>${READONLY?"":`<div class="dd row-dd"><button type="button" class="dd-btn icon-btn" aria-haspopup="menu" aria-expanded="${!!armed}" aria-label="Azioni per la decisione ${n}"><span aria-hidden="true">⋯</span></button><div class="dd-menu right" role="menu" ${armed?"":"hidden"}><button type="button" role="menuitem" class="danger-item" data-act="delDecision" data-id="${x.id}">${armed?"Conferma: elimina la decisione":"Elimina decisione"}</button></div></div>`}</td></tr>`}).join("");
-  return bar+`<div class="dt-wrap dt-menus"><table class="dt dt-dec"><colgroup><col style="width:44px"><col style="width:100px"><col>${cols.map(([,,w])=>`<col style="width:${w}px">`).join("")}<col style="width:56px"></colgroup>
+  return bar+`<div class="dt-wrap dt-menus"><table class="dt dt-dec"><colgroup><col style="width:calc(44px*var(--colk,1))"><col style="width:calc(100px*var(--colk,1))"><col>${cols.map(([,,w])=>`<col style="width:calc(${w}px*var(--colk,1))">`).join("")}<col style="width:calc(56px*var(--colk,1))"></colgroup>
    <thead><tr><th scope="col">#</th><th scope="col">Data</th><th scope="col">Decisione</th>${cols.map(([,l])=>`<th scope="col">${l}</th>`).join("")}<th scope="col"><span class="sr-only">Azioni</span></th></tr></thead><tbody>${rows||`<tr><td colspan="${4+cols.length}" class="muted">Nessuna decisione corrisponde ai filtri.</td></tr>`}</tbody></table></div>`}
 /* Accessibilità: i campi dentro le tabelle (kit, struttura…) non hanno un'etichetta propria, la loro etichetta visiva
    è l'intestazione di colonna. Qui la diamo anche ai lettori di schermo: «Colonna, riga N». */
@@ -506,6 +507,9 @@ function migrateSpike(loaded){if(SPIKE_DONE||READONLY||!loaded.has("meta")||!loa
    sole mentre le guardi, e ricordano la scelta di chi le apre o chiude finché lo stato «da fare» non cambia.
    Livelli: 1 sezione · 2 riga apribile dentro la sezione · 3 pannello laterale. */
 const SECST=(()=>{try{return ls.get("secState",{})||{}}catch{return{}}})();
+let DATA_READY=false; // diventa vero quando tutte le raccolte del progetto sono arrivate: prima i passi si disegnano vuoti
+const SECACT=(()=>{try{return ls.get("secAct",{})||{}}catch{return{}}})(); // step aperto nello stepper di ogni passo ("" = tutti chiusi)
+function secAct(d){SECACT[d.dataset.sec.split(":")[0]]=d.open?d.dataset.sec:"";try{ls.set("secAct",SECACT)}catch{}}
 const secSlug=t=>String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 function secSpec(id,raw,memo={}){const r=x=>raw.includes(x),pill=(c,t)=>`<span class="pill ${c}">${esc(t)}</span>`,plain=t=>t?`<span>${esc(t)}</span>`:"",n1=(n,a,b)=>n===1?"1 "+a:n+" "+b;
   if(id==="jira"){const p=P(),j=S.jira,read=!!j.readAt&&j.key===p.key;
@@ -552,7 +556,8 @@ function secFlow(id,memo){const done=t=>t;
   if(id==="create"){const pl=memo.pl||(memo.pl=planOf()),ts=memo.ts||(memo.ts=ticketList()),ck=memo.ck||(memo.ck=T.pre?computeChecks(pl):[]),made=ts.some(t=>t.state==="created"),errs=ck.filter(c=>c.lvl==="err"&&!(c.t==="Elementi da creare o collegare"&&made)).length;
     return{"Controllo prima della creazione":{gate:made||(!!T.pre&&!errs),unlock:"il controllo è eseguito e nulla blocca la creazione"},"Anteprima":{gate:true,has:made},"Ipotesi e scelte fatte al tuo posto":{gate:made||!!T.ack,has:made,unlock:"confermi le ipotesi"},"Crea su Jira":{gate:true,has:made},"Esito della creazione":{gate:true,has:made}}}
   return null}
-function sectionize(main,step){if(step.aux)return;const prev=main.__secOpen||new Set(),memo={};const SKIP=".foot,.sp,datalist,.bridge-panel,.desk-only";
+// uno step aperto quando i dati non erano ancora arrivati non conta come «già aperto»
+function sectionize(main,step){if(step.aux)return;const prev=main.__secEarly?new Set():main.__secOpen||new Set(),memo={};main.__secEarly=!DATA_READY;const SKIP=".foot,.sp,datalist,.bridge-panel,.desk-only";
   const kit=main.querySelector('details[data-k="kit-adv"]');if(kit){const inn=kit.querySelector(".in");kit.replaceWith(...inn.children)}
   const mk=(raw,nodes)=>{const sp=secSpec(step.id,raw,memo),key=step.id+":"+secSlug(sp.title||raw),d=document.createElement("details");
     d.className="sec";d.dataset.sec=key;d.dataset.todo=sp.todo?"1":"";d.__title=sp.title||raw;d.__num=sp.num||"";d.__ok=!!sp.ok;
@@ -567,13 +572,39 @@ function sectionize(main,step){if(step.aux)return;const prev=main.__secOpen||new
   for(const c of [...main.children]){if(c.matches("h2.sec-h")){flush();cur=c;raw=c.textContent.trim();continue}if(!cur)continue;if(c.matches(".foot")||c.matches("details.sec")){flush();continue}if(c.matches(SKIP))continue;bucket.push(c)}flush();
   const secs=boxes.flatMap(b=>[...b.querySelectorAll(":scope>details.sec")]);
   const flow=secFlow(step.id,memo);
-  if(flow){let open=true,prev=null,teased=false,blocker=null;
-    for(const d of secs){const f=flow[d.__title]||{gate:true},vis=open||(f.has??d.__ok);d.hidden=!vis;
-      if(!vis&&!teased&&prev){teased=true;const pf=flow[blocker?.__title]||flow[prev.__title]||{},el=document.createElement("div");el.className="sec-next";
-        el.innerHTML=`<span class="sec-n" aria-hidden="true">${esc(d.__num)}</span><span>Poi: <b>${esc(d.__title)}</b>${pf.unlock?` · compare quando ${esc(pf.unlock)}`:""}.</span>${pf.action||""}`;d.before(el)}
-      if(vis)prev=d;if(!f.opt){if(open&&!f.gate)blocker=d;open=open&&!!f.gate}}}
-  const shown=secs.filter(d=>!d.hidden);
-  if(shown.length>1){const bar=document.createElement("div");bar.className="sec-all";bar.innerHTML=`<button type="button" class="link" data-act="secAll"></button>`;secs[0].before(bar);secAllLabel()}}
+  if(!flow){if(secs.length>1){const bar=document.createElement("div");bar.className="sec-all";bar.innerHTML=`<button type="button" class="link" data-act="secAll"></button>`;secs[0].before(bar);secAllLabel()}return}
+  /* Stepper (come un checkout): uno step aperto alla volta; quelli completati si chiudono con il riassunto e «Modifica»;
+     quelli non ancora sbloccati si vedono, grigi, con il motivo. «Continua» apre lo step successivo. */
+  let open=true,blocker=null,firstLocked=true;
+  for(const d of secs){const f=flow[d.__title]||{gate:true};d.__f=f;d.__locked=!(open||(f.has??d.__ok));
+    if(d.__locked){d.classList.add("locked");d.open=false;const sm=d.querySelector("summary");sm.setAttribute("aria-disabled","true");sm.tabIndex=-1;
+      const why=firstLocked&&flow[blocker?.__title]?.unlock;d.querySelector(".sec-s").innerHTML=why?`<span>${ICO("i-lock")} Si sblocca quando ${esc(why)}</span>`:"";firstLocked=false}
+    if(!f.opt){if(open&&!f.gate)blocker=d;open=open&&!!f.gate}}
+  const unl=secs.filter(d=>!d.__locked);
+  secs.forEach((d,i)=>{d.classList.add("step");if(d.__locked)return;d.setAttribute("name","sec-"+step.id);
+    if(d.__ok)d.querySelector(".sec-s").insertAdjacentHTML("beforeend",`<span class="sec-edit">Modifica</span>`);
+    const nx=secs[i+1];if(!nx)return;const f=d.__f,go=(!!f.gate||!!f.opt)&&!nx.__locked,lead=go&&(d.__ok||!!f.opt)&&!nx.__f.opt; // verso le sezioni facoltative «Continua» non è il pulsante principale
+    const why=go?"":nx.__locked&&f.gate?flow[blocker?.__title]?.unlock:f.unlock;
+    d.classList.toggle("ready",lead);
+    d.querySelector(".sec-b").insertAdjacentHTML("beforeend",`<div class="sec-foot">${!go&&f.action?`<span class="sec-alt">oppure ${f.action}</span>`:""}<span class="sec-why" id="why-${esc(d.dataset.sec)}">${why?"Per continuare: "+esc(why)+".":""}</span><button type="button" class="sec-go${lead?" primary":""}" data-act="secNext" data-next="${esc(nx.dataset.sec)}" aria-disabled="${!go}"${why?` aria-describedby="why-${esc(d.dataset.sec)}"`:""}>Continua ${ICO("i-arrow")}</button></div>`)});
+  // prima la scelta di chi usa lo studio, poi lo step già aperto (non si chiude da solo mentre lo guardi), poi quello di base
+  const act=SECACT[step.id];let pick=act===""?null:act?unl.find(d=>d.dataset.sec===act):undefined;
+  if(pick===undefined)pick=unl.find(d=>prev.has(d.dataset.sec));
+  // di base: il primo step che blocca, altrimenti l'ultimo obbligatorio (quello dove si lavora: Requisiti, Ticket…)
+  if(pick===undefined)pick=unl.find(d=>!d.__f.opt&&!d.__f.gate)||[...unl].reverse().find(d=>!d.__f.opt)||null;
+  secs.forEach(d=>{if(!d.__locked)d.open=d===pick})}
+/* Riepilogo fisso a destra (come il carrello di un checkout): i numeri del backlog, cosa manca al passo e un solo
+   pulsante principale per andare avanti. Si vede solo dove c'è spazio (da 1300 px in su). */
+function renderRecap(){const el=$("#recap");if(!el)return;const i=cur,s=STEPS[i];document.body.classList.add("has-recap");
+  const cs=s.aux?[]:s.checks(),req=cs.filter(c=>!c.opt),miss=req.find(c=>!c.ok),done=!s.aux&&!miss,nx=STEPS[i+1]&&!STEPS[i+1].aux?i+1:-1;
+  const ts=ticketList(),made=ts.filter(t=>t.state==="created").length,row=(t,v)=>`<div><dt>${t}</dt><dd>${v}</dd></div>`;
+  el.innerHTML=`<div class="rc"><h2 class="rc-h">Il tuo backlog</h2>
+  <dl class="rc-l">${row("Documenti",arr("docs").length)}${row("Requisiti",reqList().length)}${row("Epiche",K().epics.length)}${row("Ticket",ts.length?ts.length+(made?` <small>· ${made} in Jira</small>`:""):"—")}</dl>
+  ${s.aux||T.rulesOpen?"":`<p class="rc-st${done?" ok":""}">${done?ICO("i-check")+" Passo completato":`<b>${req.filter(c=>c.ok).length} di ${req.length}</b> · Manca: ${miss.t}`}</p>`}
+  ${nx>=0&&!T.rulesOpen?`<button type="button" class="rc-go" data-act="go" data-i="${nx}" data-done="${done?1:""}"><span>Prossimo: ${esc(STEPS[nx].short)}</span>${ICO("i-arrow")}</button>`:""}
+  <ul class="rc-why"><li>${ICO("i-check")} Salvato in automatico</li><li>${ICO("i-lock")} Niente va su Jira finché non confermi</li></ul></div>`;recapCta()}
+/* un solo pulsante pieno per schermata: il «Prossimo passo» lo diventa quando il passo è completo e nessun «Continua» è in attesa */
+function recapCta(){const b=$("#recap .rc-go");if(b)b.classList.toggle("primary",!!b.dataset.done&&!$("#main details.sec[open] .sec-go.primary"))}
 function secAllLabel(){const b=$('#main [data-act="secAll"]');if(!b)return;const ds=$$("#main details.sec:not([hidden])");b.textContent=ds.some(d=>!d.open)?"Apri tutto":"Chiudi tutto"}
 function secRemember(d){SECST[d.dataset.sec]={o:d.open,t:d.dataset.todo};try{ls.set("secState",SECST)}catch{}}
 function docsView(){const d=arr("docs").sort((a,b)=>(a.at||0)-(b.at||0));
@@ -710,7 +741,7 @@ function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.rele
   const bodies=groups.map(({r,ts:gts})=>{const shown=T.onlyIssues?gts.filter(t=>{const i=issuesOf(t);return i.e.length||i.w.length}):gts;if(!shown.length)return"";const bad=gts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;shown.forEach(t=>ids.push(t.id));
    return`<tbody><tr class="dt-g"><th colspan="6" scope="rowgroup"><div class="dt-gh">${r?`<span class="key">${esc(r.code)}</span><span class="dt-t">${esc(r.title)}</span>`:`<span>Ticket senza requisito</span>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")}):""}</div></th></tr>${shown.map(ticketRow).join("")}</tbody>`}).join("");
   T.panelIds=ids;
-  h+=bodies?`<div class="dt-wrap"><table class="dt"><colgroup><col style="width:92px"><col style="width:96px"><col><col style="width:180px"><col style="width:150px"><col style="width:160px"></colgroup>
+  h+=bodies?`<div class="dt-wrap"><table class="dt"><colgroup><col style="width:calc(92px*var(--colk,1))"><col style="width:calc(96px*var(--colk,1))"><col><col style="width:calc(180px*var(--colk,1))"><col style="width:calc(150px*var(--colk,1))"><col style="width:calc(160px*var(--colk,1))"></colgroup>
    <thead><tr><th scope="col">Rif.</th><th scope="col">Tipo</th><th scope="col">Titolo</th><th scope="col">Epica</th><th scope="col">Problemi</th><th scope="col">Stato</th></tr></thead>${bodies}</table></div>`:(ts.length?'<p class="empty">Nessun ticket corrisponde al filtro.</p>':'<p class="empty">Nessun ticket ancora. Scegli la release e premi «Genera ticket».</p>');
   h+="</div>";
   if(T.panel?.kind==="ticket"){const t=ticketList().find(x=>x.id===T.panel.id);if(t)h+=sidePanel("ticket",t.id,`<span class="key">${esc(t.ref)}</span><span class="pill acc">${esc(t.type)}</span><span>${esc(fullTitle(t))}</span>`,ticketForm(t))}
@@ -872,6 +903,9 @@ function bridgeSettings(){const custom=BS.bridgeUrl()!==BS.DEFAULT_BRIDGE;
    <div class="toolbar" style="margin-top:10px"><button class="primary" data-act="saveBridge">Salva e ricollega</button><button data-act="resetBridge">Ripristina l'indirizzo del Mac</button></div>`)}
 {const sid=ls.get("stepid:"+PID,""),ix=STEPS.findIndex(x=>x.id===sid);cur=ix>=0?ix:0}
 const A={};
+A.secNext=el=>{const d=el.closest("details.sec");
+  if(el.getAttribute("aria-disabled")==="true"){const w=d.querySelector(".sec-why");w.classList.add("err");w.setAttribute("role","alert");(d.querySelector(".sec-b input:not([type=hidden]):not([type=checkbox]):placeholder-shown,.sec-b select:invalid")||el).focus();return}
+  const nx=$(`#main details.sec[data-sec="${CSS.escape(el.dataset.next)}"]`);if(!nx)return;nx.open=true;secAct(nx);recapCta();nx.scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"});nx.querySelector("summary").focus({preventScroll:true})};
 A.secAll=()=>{const ds=$$("#main details.sec:not([hidden])"),open=ds.some(d=>!d.open);ds.forEach(d=>{d.open=open;secRemember(d)});secAllLabel()};
 A.epicMoveRun=()=>run("epicMoveRun","Aggiornamento di Jira…",epicMoveRun,"kit");
 A.epicMoveSkip=()=>{T.epicMove=null;render()};
@@ -1250,7 +1284,8 @@ function copyText(t,el){const done=()=>{if(el){const o=el.textContent;el.textCon
 /* ================= eventi ================= */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.disabled)return;const ln=e.target.closest("a[href]");if(ln&&ln!==b&&b.contains(ln))return;e.preventDefault();const f=A[b.dataset.act];if(f)f(b)});
 document.addEventListener("toggle",e=>{const d=e.target;if(d.matches?.("details[data-k]")){d.open?openSet.add(d.dataset.k):openSet.delete(d.dataset.k);ls.set("open",[...openSet].slice(-200))}},true);
-document.addEventListener("click",e=>{const sm=e.target.closest("details.sec>summary");if(sm)setTimeout(()=>{secRemember(sm.parentElement);secAllLabel()},0)});
+document.addEventListener("click",e=>{const sm=e.target.closest("details.sec>summary");if(!sm)return;const d=sm.parentElement;if(d.classList.contains("locked")){e.preventDefault();return}
+  setTimeout(()=>{if(d.classList.contains("step")){secAct(d);recapCta()}else{secRemember(d);secAllLabel()}},0)});
 document.addEventListener("toggle",e=>{if(e.target.matches?.("details.sec"))secAllLabel()},true);
 // tastiera per tabelle e pannello: Invio apre la riga, ↑ ↓ cambiano riga, Esc chiude
 document.addEventListener("keydown",e=>{const t=e.target,typing=t.closest?.("input,textarea,select,[contenteditable]");
@@ -1520,7 +1555,7 @@ if(ls.get("chatOpen",false)&&matchMedia("(min-width:761px)").matches)setChatOpen
 if(!ls.get("chatHinted",false)){ls.set("chatHinted",true);fabEl.classList.add("hint");setTimeout(()=>fabEl.classList.remove("hint"),5000)}
 
 /* ================= accesso e progetti ================= */
-function showGate(kind,note){GATE=kind;document.body.classList.add("gate");$("#projName").textContent="";$("#pmenu").hidden=true;
+function showGate(kind,note){GATE=kind;document.body.classList.add("gate");document.body.classList.remove("has-recap");$("#projName").textContent="";$("#pmenu").hidden=true;
   $("#capChips").innerHTML="";
   if(kind==="login"){$("#main").innerHTML=`<div style="padding:8vh 0 0;max-width:560px"><div class="eyebrow">Trama</div><h1>Accedi con il tuo account Atlassian</h1>
     <p class="lead">Lo strumento lavora sul tuo Jira con i tuoi permessi: i ticket risultano creati da te e vedi solo i progetti dei siti a cui hai accesso.</p>
@@ -1573,9 +1608,9 @@ $("#main").innerHTML='<p class="empty" style="padding-top:10vh">Caricamento…</
   DB=BS.createDB(PID,st);caps.db="ok";MCP=BS.mcp;caps.mcp="ok";LIM=await BS.sample.limits();DL=BS.downloads;
   await checkBridge();setInterval(()=>{if(!document.hidden)checkBridge()},10000);
   const LOADED=new Set();
-  DB.collection("meta").onSnapshot(s=>{if(!LOADED.has("meta")){LOADED.add("meta");queueMicrotask(()=>migrateSpike(LOADED))}s.docs.forEach(d=>{if(d.exists)S[d.id]=d.data()});S.kit={...defaultKit(),...(S.kit||{}),team:{...defaultKit().team,...(S.kit?.team||{})}};renderChat();scheduleRender()});
+  DB.collection("meta").onSnapshot(s=>{if(!LOADED.has("meta")){LOADED.add("meta");DATA_READY=["meta",...COLS].every(x=>LOADED.has(x));queueMicrotask(()=>migrateSpike(LOADED))}s.docs.forEach(d=>{if(d.exists)S[d.id]=d.data()});S.kit={...defaultKit(),...(S.kit||{}),team:{...defaultKit().team,...(S.kit?.team||{})}};renderChat();scheduleRender()});
   // alla prima lettura di domande e registro si riallineano le decisioni nate dalle domande (anche quelle scritte da versioni precedenti)
-  COLS.forEach(c=>DB.collection(c).onSnapshot(s=>{const o={};s.docs.forEach(d=>{if(d.exists)o[d.id]=d.data()});S[c]=o;if(!LOADED.has(c)){LOADED.add(c);if(c==="tickets")queueMicrotask(()=>migrateSpike(LOADED));if(LOADED.has("questions")&&LOADED.has("decisions")&&!LOADED.has("qsync")){LOADED.add("qsync");queueMicrotask(syncQDecisions)}}scheduleRender()}));
+  COLS.forEach(c=>DB.collection(c).onSnapshot(s=>{const o={};s.docs.forEach(d=>{if(d.exists)o[d.id]=d.data()});S[c]=o;if(!LOADED.has(c)){LOADED.add(c);DATA_READY=["meta",...COLS].every(x=>LOADED.has(x));if(c==="tickets")queueMicrotask(()=>migrateSpike(LOADED));if(LOADED.has("questions")&&LOADED.has("decisions")&&!LOADED.has("qsync")){LOADED.add("qsync");queueMicrotask(syncQDecisions)}}scheduleRender()}));
   setTimeout(()=>{const p=P();if(p.cloudId!==SERVER_PROJECT.cloudId||p.siteUrl!==SERVER_PROJECT.siteUrl)editProject(q=>{q.cloudId=SERVER_PROJECT.cloudId;q.siteUrl=SERVER_PROJECT.siteUrl;if(!q.name)q.name=SERVER_PROJECT.name})},60);
   render();renderChat();if(STEPS[cur].id==="create")A.go({dataset:{i:cur}})})();
 </script>
