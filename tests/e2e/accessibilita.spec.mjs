@@ -17,7 +17,7 @@ test.beforeEach(async ({ request }) => {
   await request.get("/__sim/reset");
 });
 
-for (const path of ["/", "/brand", "/installazione", "/privacy", "/componenti"]) {
+for (const path of ["/", "/brand", "/installazione", "/privacy", "/componenti", "/architettura"]) {
   test(`accessibilità: pagina ${path}`, async ({ page }) => {
     await page.goto(path);
     await audit(page, path);

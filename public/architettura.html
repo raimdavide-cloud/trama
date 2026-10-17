@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Architettura · Trama</title>
+<meta name="description" content="Architettura di Trama per un pubblico tecnico: container, componenti, flussi, dati, sicurezza, qualità, decisioni e limiti noti.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/studio.css">
+<link rel="stylesheet" href="/architettura.css">
+</head>
+<body>
+<div class="ax-wrap">
+<header class="ax-top">
+  <a class="brand" href="/" style="text-decoration:none;color:inherit"><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama, home</span></a>
+  <nav aria-label="Documentazione"><a href="/componenti">Componenti</a><a href="/architettura" aria-current="page">Architettura</a><a href="/studio">Apri Trama</a></nav>
+</header>
+<main class="ax-main">
+<header class="ax-hero">
+  <div class="eyebrow">Architettura</div>
+  <h1>Come è fatta Trama</h1>
+  <p class="ax-lead">Trama trasforma documenti di requisiti in un backlog Jira strutturato (Project › Fase › Epica › ticket) seguendo un playbook PO+AI. Gira nel browser come applicazione a pagina singola; il server è una funzione serverless senza stato che conserva i dati del progetto e chiama Jira con i permessi dell'utente; Claude risponde dal computer dell'utente tramite un ponte locale.</p>
+  <dl class="ax-facts">
+    <div><dt>Front-end</dt><dd>HTML + JS senza framework</dd></div>
+    <div><dt>Back-end</dt><dd>Node 22 · Vercel · fra1</dd></div>
+    <div><dt>Dati</dt><dd>Postgres Neon · eu-central-1</dd></div>
+    <div><dt>Identità</dt><dd>Atlassian OAuth 2.0 (3LO)</dd></div>
+    <div><dt>AI</dt><dd>Claude Code via ponte locale</dd></div>
+  </dl>
+  <nav class="ax-toc" aria-label="In questa pagina"><a href="#contesto">Contesto e container</a><a href="#componenti">Componenti</a><a href="#flussi">Flussi</a><a href="#dati">Dati e consistenza</a><a href="#sicurezza">Sicurezza</a><a href="#qualita">Qualità misurata</a><a href="#decisioni">Decisioni</a><a href="#limiti">Limiti noti</a></nav>
+</header>
+
+<section id="contesto" class="ax-sec">
+  <div class="ax-h"><span class="eyebrow">1 · Contesto e container</span><h2>Tre zone di fiducia</h2>
+  <p>Il computer dell'utente (browser e ponte), la piattaforma Vercel (pagine e funzione) e i servizi gestiti (Neon e Atlassian). La linea zafferano segue un requisito dal documento al ticket in Jira.</p></div>
+  <div class="ax-diagram" role="img" tabindex="0" aria-label="Diagramma dei container: computer dell'utente con Trama nel browser, ponte Claude su 127.0.0.1:8790 e Claude Code; Vercel fra1 con pagine statiche, funzione /api e cron privacy; servizi esterni Neon Postgres eu-central-1 e Atlassian (OAuth 2.0, Jira Cloud REST, Personal Data Reporting)."><svg viewBox="0 0 1200 720" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ax-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ax-ar" d="M0 0 L10 5 L0 10 z"/></marker>
+    <marker id="ax-ahT" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse"><path class="ax-ar ax-ar-t" d="M0 0 L10 5 L0 10 z"/></marker>
+  </defs>
+  <rect class="ax-z" x="16" y="16" width="372" height="688" rx="16"/>
+  <rect class="ax-z" x="414" y="16" width="372" height="688" rx="16"/>
+  <rect class="ax-z" x="812" y="16" width="372" height="688" rx="16"/>
+  <text class="ax-zl" x="36" y="46">Computer dell'utente</text>
+  <text class="ax-zl" x="434" y="46">Vercel · fra1</text>
+  <text class="ax-zl" x="832" y="46">Servizi gestiti</text>
+
+  <rect class="ax-b ax-k" x="36" y="66" width="332" height="282" rx="12"/>
+  <text class="ax-bt" x="56" y="96">Trama · SPA nel browser</text>
+  <text class="ax-bs" x="56" y="118">HTML + JS senza framework · 83 KB Brotli</text>
+  <rect class="ax-row" x="56" y="134" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="70" y="160">Estrazione Word/PDF/Excel nel browser</text>
+  <rect class="ax-row" x="56" y="184" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="70" y="210">Regole, validazione, piano di creazione</text>
+  <rect class="ax-row" x="56" y="234" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="70" y="260">Delta ogni 6 s · 30 s da fermo</text>
+  <rect class="ax-row" x="56" y="284" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="70" y="310">Scritture in blocco (≤ 500 operazioni)</text>
+
+  <rect class="ax-b" x="36" y="404" width="332" height="112" rx="12"/>
+  <text class="ax-bt" x="56" y="434">Ponte Claude · Node</text>
+  <text class="ax-bm" x="56" y="458">127.0.0.1:8790 · CORS + PNA</text>
+  <text class="ax-bs" x="56" y="482">Origin in elenco · token opzionale</text>
+  <text class="ax-bs" x="56" y="502">max 2 richieste · timeout 10 min</text>
+  <rect class="ax-b" x="36" y="570" width="332" height="114" rx="12"/>
+  <text class="ax-bt" x="56" y="600">Claude Code (CLI)</text>
+  <text class="ax-bs" x="56" y="624">Abbonamento dell'utente</text>
+  <text class="ax-bm" x="56" y="648">claude -p --tools ""</text>
+  <text class="ax-bs" x="56" y="670">cartella temporanea vuota</text>
+
+  <rect class="ax-b" x="434" y="66" width="332" height="110" rx="12"/>
+  <text class="ax-bt" x="454" y="96">Pagine statiche</text>
+  <text class="ax-bs" x="454" y="120">home, guida, marchio, componenti,</text>
+  <text class="ax-bs" x="454" y="140">privacy, architettura, app</text>
+  <text class="ax-bm" x="454" y="162">CDN Vercel · cleanUrls</text>
+
+  <rect class="ax-b ax-k" x="434" y="210" width="332" height="320" rx="12"/>
+  <text class="ax-bt" x="454" y="240">Funzione /api · Node 22</text>
+  <text class="ax-bs" x="454" y="262">api/router.mjs · senza stato · 60 s max</text>
+  <rect class="ax-row" x="454" y="278" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="468" y="304">/auth · OAuth 3LO, sessioni</text>
+  <rect class="ax-row" x="454" y="328" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="468" y="354">/projects · documenti, delta, batch</text>
+  <rect class="ax-row" x="454" y="378" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="468" y="404">/jira/:op · 11 operazioni ammesse</text>
+  <text class="ax-bs" x="454" y="446">Ogni richiesta: sessione → stessa origine →</text>
+  <text class="ax-bs" x="454" y="466">sito Atlassian dell'utente → validazione</text>
+  <text class="ax-bm" x="454" y="496">token Atlassian cifrati AES-256-GCM</text>
+  <text class="ax-bm" x="454" y="516">segreti solo nelle variabili d'ambiente</text>
+
+  <rect class="ax-b" x="434" y="570" width="332" height="114" rx="12"/>
+  <text class="ax-bt" x="454" y="600">Cron · 03:00 UTC</text>
+  <text class="ax-bs" x="454" y="624">Personal Data Reporting;</text>
+  <text class="ax-bs" x="454" y="644">cancellazione degli account chiusi</text>
+  <text class="ax-bm" x="454" y="668">Authorization: Bearer CRON_SECRET</text>
+
+  <rect class="ax-b" x="832" y="66" width="332" height="262" rx="12"/>
+  <text class="ax-bt" x="852" y="96">Neon Postgres · eu-central-1</text>
+  <text class="ax-bs" x="852" y="118">driver serverless su HTTPS · pooler</text>
+  <text class="ax-bm" x="852" y="150">users</text><text class="ax-bs" x="944" y="150">token cifrati, siti</text>
+  <text class="ax-bm" x="852" y="178">sessions</text><text class="ax-bs" x="944" y="178">SHA-256 dell'id</text>
+  <text class="ax-bm" x="852" y="206">projects</text><text class="ax-bs" x="944" y="206">cloud_id = confine</text>
+  <text class="ax-bm" x="852" y="234">items</text><text class="ax-bs" x="944" y="234">JSONB, delta per updated_at</text>
+  <text class="ax-bs" x="852" y="270">PK (project_id, col, id)</text>
+  <text class="ax-bs" x="852" y="292">indice (project_id, updated_at)</text>
+
+  <rect class="ax-b ax-k" x="832" y="362" width="332" height="322" rx="12"/>
+  <text class="ax-bt" x="852" y="392">Atlassian</text>
+  <rect class="ax-row" x="852" y="408" width="292" height="62" rx="8"/>
+  <text class="ax-rt" x="866" y="432">auth.atlassian.com · OAuth 2.0</text>
+  <text class="ax-bm" x="866" y="455">read/write:jira-work, offline_access</text>
+  <rect class="ax-row" x="852" y="480" width="292" height="84" rx="8"/>
+  <text class="ax-rt" x="866" y="504">Jira Cloud REST v3 (+ v2 create)</text>
+  <text class="ax-bs" x="866" y="525">Project › Fase › Epica › ticket</text>
+  <text class="ax-bm" x="866" y="548">api.atlassian.com/ex/jira/{cloudId}</text>
+  <rect class="ax-row" x="852" y="574" width="292" height="62" rx="8"/>
+  <text class="ax-rt" x="866" y="598">Personal Data Reporting API</text>
+  <text class="ax-bs" x="866" y="620">account con dati conservati</text>
+
+  <path class="ax-ln" d="M368 120 H434" marker-end="url(#ax-ah)"/>
+  <rect class="ax-lbg" x="374" y="98" width="52" height="18" rx="4"/><text class="ax-lb" x="378" y="111">HTTPS</text>
+  <path class="ax-ln" d="M368 196 C 404 196, 400 250, 434 250" marker-end="url(#ax-ah)"/>
+  <rect class="ax-lbg" x="370" y="204" width="60" height="18" rx="4"/><text class="ax-lb" x="374" y="217">cookie</text>
+  <path class="ax-ln" d="M766 330 C 800 330, 800 200, 832 200" marker-end="url(#ax-ah)"/>
+  <rect class="ax-lbg" x="776" y="250" width="40" height="18" rx="4"/><text class="ax-lb" x="780" y="263">SQL</text>
+  <path class="ax-ln" d="M766 304 C 800 304, 800 438, 852 438" marker-end="url(#ax-ah)"/>
+  <path class="ax-ln ax-dash" d="M766 626 C 800 626, 810 605, 852 605" marker-end="url(#ax-ah)"/>
+
+  <path class="ax-th" d="M120 348 V 398" marker-end="url(#ax-ahT)"/>
+  <path class="ax-th" d="M120 516 V 564" marker-end="url(#ax-ahT)"/>
+  <path class="ax-th" d="M368 627 H 380 V 290 H 374" marker-end="url(#ax-ahT)"/>
+  <path class="ax-th" d="M368 318 C 404 318, 412 399, 454 399" marker-end="url(#ax-ahT)"/>
+  <path class="ax-th" d="M746 399 C 800 399, 800 522, 852 522" marker-end="url(#ax-ahT)"/>
+  <rect class="ax-pb" x="132" y="366" width="76" height="20" rx="10"/><text class="ax-tl" x="140" y="380">documento</text>
+  <rect class="ax-pb" x="132" y="530" width="64" height="20" rx="10"/><text class="ax-tl" x="140" y="544">prompt</text>
+  <rect class="ax-pb" x="296" y="530" width="76" height="20" rx="10"/><text class="ax-tl" x="304" y="544">streaming</text>
+  <rect class="ax-pb" x="772" y="462" width="56" height="20" rx="10"/><text class="ax-tl" x="780" y="476">ticket</text>
+</svg>
+</div>
+</section>
+
+<section id="componenti" class="ax-sec">
+  <div class="ax-h"><span class="eyebrow">2 · Componenti</span><h2>Cosa fa ogni pezzo</h2></div>
+  <div class="ax-tw" tabindex="0" role="region" aria-label="Tabella"><table class="ax-t"><thead><tr><th scope="col">Componente</th><th scope="col">Tecnologia</th><th scope="col">Responsabilità</th><th scope="col">Stato</th></tr></thead><tbody><tr><td><b>Trama (app)</b><br><code>/studio</code></td><td>HTML + JavaScript senza framework né build; 242 KB (83 KB Brotli)</td><td>Interfaccia dei 6 passi, regole del playbook, validazione dei ticket, piano di creazione, orchestrazione delle chiamate Jira</td><td>In memoria; preferenze in <code>localStorage</code></td></tr><tr><td><b>Runtime dati</b><br><code>studio-runtime.js</code></td><td>Livello dati con interfaccia <code>doc</code>/<code>collection</code>/<code>onSnapshot</code></td><td>Snapshot iniziale, scritture raggruppate, sincronizzazione a intervallo adattivo, chiamate <code>/api</code>, ponte Claude</td><td>Coda delle scritture in volo</td></tr><tr><td><b>Estrazione documenti</b></td><td>mammoth 1.6 (Word), pdf.js 3.11 (PDF), SheetJS 0.18 (Excel) da cdnjs, caricati al primo uso</td><td>Testo estratto nel browser; si salva solo il testo (≤ 110.000 caratteri per documento)</td><td>Nessun file sul server</td></tr><tr><td><b>Pagine statiche</b></td><td>Vercel, <code>cleanUrls</code>, region <code>fra1</code></td><td>Home, guida al ponte, marchio, componenti, privacy, architettura</td><td>—</td></tr><tr><td><b>Funzione <code>/api</code></b><br><code>api/router.mjs</code></td><td>Node 22, un'unica funzione con instradamento per <code>config.path</code>; <code>maxDuration</code> 60 s</td><td>Sessioni, progetti e documenti, salvataggio in blocco, operazioni Jira da un elenco chiuso</td><td>Senza stato</td></tr><tr><td><b>Cron privacy</b></td><td>Vercel Cron, ogni giorno alle 03:00 UTC, con <code>CRON_SECRET</code></td><td>Personal Data Reporting API di Atlassian; cancella i dati degli account chiusi</td><td>—</td></tr><tr><td><b>Database</b></td><td>Neon Postgres, <code>eu-central-1</code>, driver serverless su HTTPS (pooler)</td><td>Utenti e token cifrati, sessioni, progetti, documenti JSONB</td><td>Persistente</td></tr><tr><td><b>Ponte Claude</b><br><code>trama-ponte.mjs</code></td><td>Node, server HTTP su <code>127.0.0.1:8790</code>, scaricabile da <code>/installazione</code></td><td>Inoltra le richieste a <code>claude -p</code> e restituisce lo streaming</td><td>Senza stato</td></tr><tr><td><b>Atlassian</b></td><td>OAuth 2.0 (3LO); Jira Cloud REST v3 e v2 via <code>api.atlassian.com/ex/jira/{cloudId}</code></td><td>Identità, siti accessibili, lettura e scrittura dei ticket, segnalazione dati personali</td><td>Esterno</td></tr></tbody></table></div>
+</section>
+
+<section id="flussi" class="ax-sec">
+  <div class="ax-h"><span class="eyebrow">3 · Flussi</span><h2>I quattro percorsi che contano</h2>
+  <p>Linea continua: chiamata. Tratteggio: risposta. Zafferano: scrittura del backlog in Jira. Riquadro: elaborazione locale.</p></div>
+  <div class="ax-flows"><figure class="ax-seq-fig" id="seq-accesso">
+  <figcaption><h3>Accesso con Atlassian (OAuth 2.0, 3LO)</h3><p>Il token Atlassian non arriva mai al browser: resta cifrato nel database e la funzione lo rinnova da sola quando manca meno di un minuto alla scadenza. A ogni rinnovo si aggiorna anche l'elenco dei siti a cui l'utente accede.</p></figcaption>
+  <div class="ax-seq-wrap" role="img" tabindex="0" aria-label="Diagramma di sequenza: Accesso con Atlassian (OAuth 2.0, 3LO)"><div class="ax-seq" style="--n:5"><div class="ax-sp" style="grid-column:1">Browser</div><div class="ax-sp" style="grid-column:2">/api</div><div class="ax-sp" style="grid-column:3">auth.atlassian.com</div><div class="ax-sp" style="grid-column:4">api.atlassian.com</div><div class="ax-sp" style="grid-column:5">Postgres</div><div class="ax-life" style="grid-column:1;grid-row:2 / span 10" aria-hidden="true"></div><div class="ax-life" style="grid-column:2;grid-row:2 / span 10" aria-hidden="true"></div><div class="ax-life" style="grid-column:3;grid-row:2 / span 10" aria-hidden="true"></div><div class="ax-life" style="grid-column:4;grid-row:2 / span 10" aria-hidden="true"></div><div class="ax-life" style="grid-column:5;grid-row:2 / span 10" aria-hidden="true"></div><div class="ax-msg" style="grid-column:1 / span 2;grid-row:2;--span:2"><span>GET <code>/api/auth/login</code></span></div><div class="ax-msg rev ret" style="grid-column:1 / span 2;grid-row:3;--span:2"><span>302 + cookie <code>bs_oauth_state</code> (anti-CSRF)</span></div><div class="ax-msg" style="grid-column:1 / span 3;grid-row:4;--span:3"><span><code>/authorize</code> · scope Jira + <code>offline_access</code> · <code>prompt=consent</code></span></div><div class="ax-msg rev ret" style="grid-column:1 / span 3;grid-row:5;--span:3"><span>302 <code>/api/auth/callback?code&amp;state</code></span></div><div class="ax-msg" style="grid-column:1 / span 2;grid-row:6;--span:2"><span>callback: <code>state</code> confrontato con il cookie</span></div><div class="ax-msg" style="grid-column:2 / span 2;grid-row:7;--span:2"><span><code>POST /oauth/token</code> (client secret, solo lato server)</span></div><div class="ax-msg" style="grid-column:2 / span 3;grid-row:8;--span:3"><span><code>accessible-resources</code> → siti Jira; <code>/myself</code></span></div><div class="ax-msg" style="grid-column:2 / span 4;grid-row:9;--span:4"><span>upsert <code>users</code>: token cifrati AES-256-GCM</span></div><div class="ax-msg" style="grid-column:2 / span 4;grid-row:10;--span:4"><span>insert <code>sessions</code>: SHA-256 dell'id</span></div><div class="ax-msg rev ret" style="grid-column:1 / span 2;grid-row:11;--span:2"><span>302 verso l'app (<code>/studio</code>) + cookie <code>bs_session</code> (256 bit, HttpOnly, SameSite=Lax, Secure, 30 gg)</span></div></div></div>
+  <details class="ax-seq-text"><summary>Versione testuale</summary><ol><li>Browser → /api: GET <code>/api/auth/login</code></li><li>/api → Browser: 302 + cookie <code>bs_oauth_state</code> (anti-CSRF)</li><li>Browser → auth.atlassian.com: <code>/authorize</code> · scope Jira + <code>offline_access</code> · <code>prompt=consent</code></li><li>auth.atlassian.com → Browser: 302 <code>/api/auth/callback?code&amp;state</code></li><li>Browser → /api: callback: <code>state</code> confrontato con il cookie</li><li>/api → auth.atlassian.com: <code>POST /oauth/token</code> (client secret, solo lato server)</li><li>/api → api.atlassian.com: <code>accessible-resources</code> → siti Jira; <code>/myself</code></li><li>/api → Postgres: upsert <code>users</code>: token cifrati AES-256-GCM</li><li>/api → Postgres: insert <code>sessions</code>: SHA-256 dell'id</li><li>/api → Browser: 302 verso l'app (<code>/studio</code>) + cookie <code>bs_session</code> (256 bit, HttpOnly, SameSite=Lax, Secure, 30 gg)</li></ol></details>
+</figure><figure class="ax-seq-fig" id="seq-dati">
+  <figcaption><h3>Lettura, scrittura e sincronizzazione dei dati</h3><p>Consistenza finale con ultima scrittura vincente per documento. La finestra di 3 secondi sul <code>since</code> assorbe le differenze di orologio; se si chiude la scheda con salvataggi in volo il browser chiede conferma.</p></figcaption>
+  <div class="ax-seq-wrap" role="img" tabindex="0" aria-label="Diagramma di sequenza: Lettura, scrittura e sincronizzazione dei dati"><div class="ax-seq" style="--n:4"><div class="ax-sp" style="grid-column:1">Trama (browser)</div><div class="ax-sp" style="grid-column:2">Runtime dati</div><div class="ax-sp" style="grid-column:3">/api</div><div class="ax-sp" style="grid-column:4">Postgres</div><div class="ax-life" style="grid-column:1;grid-row:2 / span 10" aria-hidden="true"></div><div class="ax-life" style="grid-column:2;grid-row:2 / span 10" aria-hidden="true"></div><div class="ax-life" style="grid-column:3;grid-row:2 / span 10" aria-hidden="true"></div><div class="ax-life" style="grid-column:4;grid-row:2 / span 10" aria-hidden="true"></div><div class="ax-msg" style="grid-column:2 / span 2;grid-row:2;--span:2"><span><code>GET /api/projects/:id</code> (stato completo all'apertura)</span></div><div class="ax-msg" style="grid-column:3 / span 2;grid-row:3;--span:2"><span><code>items</code> non eliminati + <code>clock_timestamp()</code></span></div><div class="ax-note" style="grid-column:1;grid-row:4">modifica: aggiornamento immediato dell'interfaccia</div><div class="ax-msg" style="grid-column:1 / span 2;grid-row:5;--span:2"><span><code>set</code>/<code>delete</code> di più documenti nello stesso istante</span></div><div class="ax-note" style="grid-column:2;grid-row:6">raggruppa (≤ 500 operazioni, ≤ 3,5 MB); un gruppo alla volta, in ordine</div><div class="ax-msg" style="grid-column:2 / span 2;grid-row:7;--span:2"><span><code>POST /api/projects/:id/batch</code> (o <code>PUT</code> se è uno solo)</span></div><div class="ax-msg" style="grid-column:3 / span 2;grid-row:8;--span:2"><span>una query: <code>jsonb_to_recordset</code> + <code>ON CONFLICT</code></span></div><div class="ax-msg" style="grid-column:2 / span 2;grid-row:9;--span:2"><span>ogni 6 s (30 s dopo 2 min fermi): <code>GET …?since=t</code></span></div><div class="ax-msg rev ret" style="grid-column:2 / span 2;grid-row:10;--span:2"><span>delta da <code>t − 3 s</code>, eliminazioni comprese</span></div><div class="ax-msg rev ret" style="grid-column:1 / span 2;grid-row:11;--span:2"><span>notifica solo le raccolte cambiate; i documenti in volo non vengono sovrascritti</span></div></div></div>
+  <details class="ax-seq-text"><summary>Versione testuale</summary><ol><li>Runtime dati → /api: <code>GET /api/projects/:id</code> (stato completo all'apertura)</li><li>/api → Postgres: <code>items</code> non eliminati + <code>clock_timestamp()</code></li><li>Trama (browser) → Runtime dati: <code>set</code>/<code>delete</code> di più documenti nello stesso istante</li><li>Runtime dati → /api: <code>POST /api/projects/:id/batch</code> (o <code>PUT</code> se è uno solo)</li><li>/api → Postgres: una query: <code>jsonb_to_recordset</code> + <code>ON CONFLICT</code></li><li>Runtime dati → /api: ogni 6 s (30 s dopo 2 min fermi): <code>GET …?since=t</code></li><li>/api → Runtime dati: delta da <code>t − 3 s</code>, eliminazioni comprese</li><li>Runtime dati → Trama (browser): notifica solo le raccolte cambiate; i documenti in volo non vengono sovrascritti</li></ol></details>
+</figure><figure class="ax-seq-fig" id="seq-claude">
+  <figcaption><h3>Una richiesta a Claude</h3><p>Nessuna chiave Anthropic nel server: ogni persona usa il proprio abbonamento Claude Code. Il ponte ascolta solo sull'interfaccia di loopback e risponde agli header di Private Network Access.</p></figcaption>
+  <div class="ax-seq-wrap" role="img" tabindex="0" aria-label="Diagramma di sequenza: Una richiesta a Claude"><div class="ax-seq" style="--n:3"><div class="ax-sp" style="grid-column:1">Trama (browser)</div><div class="ax-sp" style="grid-column:2">Ponte (127.0.0.1:8790)</div><div class="ax-sp" style="grid-column:3">Claude Code</div><div class="ax-life" style="grid-column:1;grid-row:2 / span 7" aria-hidden="true"></div><div class="ax-life" style="grid-column:2;grid-row:2 / span 7" aria-hidden="true"></div><div class="ax-life" style="grid-column:3;grid-row:2 / span 7" aria-hidden="true"></div><div class="ax-msg" style="grid-column:1 / span 2;grid-row:2;--span:2"><span><code>GET /health</code> ogni 10 s: ponte attivo e accesso a Claude</span></div><div class="ax-msg" style="grid-column:1 / span 2;grid-row:3;--span:2"><span><code>POST</code> con <code>Origin</code> del sito (+ <code>x-bridge-token</code> se impostato)</span></div><div class="ax-note" style="grid-column:2;grid-row:4"><code>Origin</code> fuori elenco → 403; al massimo 2 richieste in parallelo</div><div class="ax-msg" style="grid-column:2 / span 2;grid-row:5;--span:2"><span><code>claude -p --tools ""</code> in una cartella temporanea vuota</span></div><div class="ax-msg rev ret" style="grid-column:2 / span 2;grid-row:6;--span:2"><span><code>stream-json</code></span></div><div class="ax-msg rev ret" style="grid-column:1 / span 2;grid-row:7;--span:2"><span>eventi nel formato dell'API Messages (streaming), timeout 10 min</span></div><div class="ax-note" style="grid-column:1;grid-row:8">proposte strutturate: l'utente le applica una per una</div></div></div>
+  <details class="ax-seq-text"><summary>Versione testuale</summary><ol><li>Trama (browser) → Ponte (127.0.0.1:8790): <code>GET /health</code> ogni 10 s: ponte attivo e accesso a Claude</li><li>Trama (browser) → Ponte (127.0.0.1:8790): <code>POST</code> con <code>Origin</code> del sito (+ <code>x-bridge-token</code> se impostato)</li><li>Ponte (127.0.0.1:8790) → Claude Code: <code>claude -p --tools ""</code> in una cartella temporanea vuota</li><li>Claude Code → Ponte (127.0.0.1:8790): <code>stream-json</code></li><li>Ponte (127.0.0.1:8790) → Trama (browser): eventi nel formato dell'API Messages (streaming), timeout 10 min</li></ol></details>
+</figure><figure class="ax-seq-fig" id="seq-jira">
+  <figcaption><h3>Creazione su Jira, idempotente</h3><p>La descrizione viaggia in wiki markup (API v2) per restare leggibile in Jira; il resto usa la v3. Un 401 provoca un rinnovo del token e un secondo tentativo; 429 e 5xx tornano come errori temporanei.</p></figcaption>
+  <div class="ax-seq-wrap" role="img" tabindex="0" aria-label="Diagramma di sequenza: Creazione su Jira, idempotente"><div class="ax-seq" style="--n:3"><div class="ax-sp" style="grid-column:1">Trama (browser)</div><div class="ax-sp" style="grid-column:2">/api</div><div class="ax-sp" style="grid-column:3">Jira Cloud</div><div class="ax-life" style="grid-column:1;grid-row:2 / span 10" aria-hidden="true"></div><div class="ax-life" style="grid-column:2;grid-row:2 / span 10" aria-hidden="true"></div><div class="ax-life" style="grid-column:3;grid-row:2 / span 10" aria-hidden="true"></div><div class="ax-msg" style="grid-column:1 / span 2;grid-row:2;--span:2"><span>controllo: configurazione, campi obbligatori, JQL dei duplicati</span></div><div class="ax-msg" style="grid-column:2 / span 2;grid-row:3;--span:2"><span>REST v3 (lettura) con il token dell'utente</span></div><div class="ax-msg thr" style="grid-column:1 / span 2;grid-row:4;--span:2"><span>struttura: Project → Fase → Feature Epic (padre del livello giusto)</span></div><div class="ax-msg thr" style="grid-column:2 / span 2;grid-row:5;--span:2"><span><code>POST /rest/api/2/issue</code> · solo campi ammessi</span></div><div class="ax-msg rev ret" style="grid-column:2 / span 2;grid-row:6;--span:2"><span>5xx o timeout: esito incerto</span></div><div class="ax-msg" style="grid-column:1 / span 2;grid-row:7;--span:2"><span>JQL <code>summary ~</code> + <code>created &gt;= -20m</code>: se c'è, lo riusa</span></div><div class="ax-msg thr" style="grid-column:1 / span 2;grid-row:8;--span:2"><span>ticket: uno per volta; esito incerto → stato «da verificare», si ferma</span></div><div class="ax-msg" style="grid-column:1 / span 2;grid-row:9;--span:2"><span>collegamenti con le chiavi reali (<code>issueLink</code>)</span></div><div class="ax-msg" style="grid-column:1 / span 2;grid-row:10;--span:2"><span>verifica: rilegge ogni ticket e i suoi campi</span></div><div class="ax-note" style="grid-column:1;grid-row:11">«Cerca in Jira» riconcilia un ticket incerto senza crearne un altro</div></div></div>
+  <details class="ax-seq-text"><summary>Versione testuale</summary><ol><li>Trama (browser) → /api: controllo: configurazione, campi obbligatori, JQL dei duplicati</li><li>/api → Jira Cloud: REST v3 (lettura) con il token dell'utente</li><li>Trama (browser) → /api: struttura: Project → Fase → Feature Epic (padre del livello giusto)</li><li>/api → Jira Cloud: <code>POST /rest/api/2/issue</code> · solo campi ammessi</li><li>Jira Cloud → /api: 5xx o timeout: esito incerto</li><li>Trama (browser) → /api: JQL <code>summary ~</code> + <code>created &gt;= -20m</code>: se c'è, lo riusa</li><li>Trama (browser) → /api: ticket: uno per volta; esito incerto → stato «da verificare», si ferma</li><li>Trama (browser) → /api: collegamenti con le chiavi reali (<code>issueLink</code>)</li><li>Trama (browser) → /api: verifica: rilegge ogni ticket e i suoi campi</li></ol></details>
+</figure></div>
+</section>
+
+<section id="dati" class="ax-sec">
+  <div class="ax-h"><span class="eyebrow">4 · Dati e consistenza</span><h2>Quattro tabelle, un documento per elemento</h2>
+  <p>Il confine di isolamento è il sito Atlassian: chi accede allo stesso sito vede gli stessi progetti. Il modello è documentale (JSONB) e si evolve senza migrazioni.</p></div>
+  <div class="ax-tw" tabindex="0" role="region" aria-label="Tabella"><table class="ax-t"><thead><tr><th scope="col">Tabella</th><th scope="col">Chiave</th><th scope="col">Contenuto</th><th scope="col">Note</th></tr></thead><tbody><tr><td><code>users</code></td><td><code>account_id</code> (Atlassian)</td><td>nome, email, avatar, <code>access_token</code> e <code>refresh_token</code> cifrati, <code>expires_at</code>, <code>sites</code> (JSONB)</td><td>cancellati con <code>DELETE /api/me</code> o quando l'account Atlassian viene chiuso</td></tr><tr><td><code>sessions</code></td><td><code>id_hash</code> = SHA-256 dell'id nel cookie</td><td><code>account_id</code>, scadenza a 30 giorni</td><td>a cascata con <code>users</code></td></tr><tr><td><code>projects</code></td><td><code>id</code> casuale (72 bit)</td><td>nome, <code>cloud_id</code> del sito Atlassian, autore</td><td>indice su <code>cloud_id</code>: è il confine di isolamento</td></tr><tr><td><code>items</code></td><td><code>(project_id, col, id)</code></td><td>un documento JSONB per requisito, ticket, domanda, decisione, documento, metadato</td><td>indice <code>(project_id, updated_at)</code> per il delta; eliminazione logica</td></tr></tbody></table></div>
+  <h3 class="ax-h3">Raccolte dentro <code>items</code></h3>
+  <div class="ax-tw" tabindex="0" role="region" aria-label="Tabella"><table class="ax-t"><thead><tr><th scope="col">Raccolta (<code>col</code>)</th><th scope="col">Documenti</th></tr></thead><tbody><tr><td><code>meta</code></td><td><code>project</code>, <code>kit</code> (release = Fasi, epiche, struttura, label), <code>jira</code> (configurazione letta), <code>chat</code>, <code>runlog</code>, <code>quality</code>, <code>sprints</code></td></tr><tr><td><code>docs</code></td><td>testo estratto dai documenti caricati</td></tr><tr><td><code>reqs</code></td><td>requisiti con ID stabile, release, componenti, note UX, dipendenze, domande</td></tr><tr><td><code>questions</code></td><td>domande di apertura con risposta o ipotesi</td></tr><tr><td><code>tickets</code></td><td>ticket con tipo, area, epica, release, label, modello di descrizione, collegamenti, stato di creazione e chiave Jira</td></tr><tr><td><code>decisions</code></td><td>registro delle decisioni con fonte e impatto</td></tr></tbody></table></div>
+  <ul class="ax-list">
+    <li><b>Consistenza.</b> Finale, con ultima scrittura vincente per documento. Le scritture dello stesso istante partono in un gruppo; i gruppi partono in ordine, uno alla volta.</li>
+    <li><b>Delta.</b> <code>updated_at</code> da <code>clock_timestamp()</code>; il client chiede le modifiche dal momento dell'ultima risposta meno 3 secondi.</li>
+    <li><b>Eliminazioni.</b> Logiche (<code>deleted = true</code>), così arrivano anche agli altri client tramite il delta.</li>
+    <li><b>Residenza.</b> Funzione e database a Francoforte; i file restano sul computer dell'utente.</li>
+  </ul>
+</section>
+
+<section id="sicurezza" class="ax-sec">
+  <div class="ax-h"><span class="eyebrow">5 · Sicurezza</span><h2>Minacce e controlli</h2></div>
+  <div class="ax-tw" tabindex="0" role="region" aria-label="Tabella"><table class="ax-t"><thead><tr><th scope="col">Minaccia</th><th scope="col">Controllo</th><th scope="col">Dove</th></tr></thead><tbody><tr><td>Furto o riuso della sessione</td><td>Cookie <code>HttpOnly</code>, <code>SameSite=Lax</code>, <code>Secure</code>; id a 256 bit salvato solo come SHA-256; scadenza 30 giorni</td><td><code>core.mjs</code></td></tr><tr><td>CSRF</td><td>Le richieste che modificano dati devono avere <code>Origin</code> uguale al sito; <code>state</code> nel login OAuth</td><td><code>sameOrigin()</code>, callback</td></tr><tr><td>Accesso ai progetti di altri</td><td>Ogni progetto appartiene a un sito Atlassian; si vede solo se il <code>cloud_id</code> è tra i siti dell'utente (aggiornati a ogni rinnovo del token)</td><td><code>loadProject()</code></td></tr><tr><td>Uso improprio di Jira tramite il server</td><td>Elenco chiuso di 11 operazioni; chiavi validate con espressione regolare; solo i campi <code>components</code>, <code>labels</code>, <code>parent</code>, <code>priority</code>, <code>customfield_*</code>; il <code>cloudId</code> deve essere un sito dell'utente</td><td><code>jira-ops.mjs</code>, <code>jira.mjs</code></td></tr><tr><td>Token Atlassian esposti</td><td>Cifrati con AES-256-GCM (IV casuale); la chiave sta solo nelle variabili d'ambiente; mai inviati al browser</td><td><code>seal()</code>/<code>unseal()</code></td></tr><tr><td>Input malevolo o eccessivo</td><td>Raccolte e id validati; 1 MB per documento; 4 MB e 500 operazioni per gruppo; un'operazione non valida fa rifiutare tutto il gruppo</td><td><code>project.mjs</code></td></tr><tr><td>Abuso del ponte Claude</td><td>Solo loopback; <code>Origin</code> in elenco; token opzionale; Claude senza strumenti in una cartella vuota</td><td><code>claude-bridge.mjs</code></td></tr><tr><td>Segreti nel codice</td><td>Controllo automatico a ogni commit (chiavi Anthropic e Atlassian, stringhe di connessione, chiavi private)</td><td><code>npm run check</code></td></tr><tr><td>Dati personali</td><td>Segnalazione giornaliera ad Atlassian; cancellazione su richiesta o ad account chiuso; i progetti restano senza riferimento all'autore</td><td><code>privacy.mjs</code></td></tr></tbody></table></div>
+</section>
+
+<section id="qualita" class="ax-sec">
+  <div class="ax-h"><span class="eyebrow">6 · Qualità misurata</span><h2>Numeri, non aggettivi</h2>
+  <p>Misure con <code>npm run perf</code> sul simulatore; latenze dalla produzione.</p></div>
+  <div class="ax-metrics">
+    <div><b>9 ms</b><span>ridisegno del Backlog con 67 ticket (prima 675 ms)</span></div>
+    <div><b>19 ms</b><span>ridisegno del Backlog con 268 ticket (prima 4,6 s)</span></div>
+    <div><b>2</b><span>richieste per rinominare una release su 130 elementi (prima 133)</span></div>
+    <div><b>110–150 ms</b><span>risposta della funzione da Vercel fra1, senza database</span></div>
+    <div><b>~40 ms</b><span>query a Neon dall'Italia; ~0,5 s al risveglio</span></div>
+    <div><b>0,6 s</b><span>primo disegno della home su 4G simulato</span></div>
+  </div>
+  <div class="ax-two">
+    <div class="ax-card"><h3>Test a ogni modifica</h3><ul class="ax-list">
+      <li><b>27 unitari</b>: router, sessioni e cifratura, API dei dati con database finto, operazioni Jira.</li>
+      <li><b>44 end-to-end</b> con Playwright su un simulatore completo: Trama vera, API in memoria, Jira finto con guasti su richiesta (risposta persa dopo la creazione, 500 prima della creazione).</li>
+      <li><b>Accessibilità</b> WCAG 2.2 AA con axe, anche in modalità scura; allineamento delle icone misurato.</li>
+      <li><b>25 confronti visivi</b> pixel per pixel, in locale.</li>
+    </ul></div>
+    <div class="ax-card"><h3>Dal commit alla produzione</h3><ol class="ax-steps">
+      <li>Pull request su GitHub (repository privato).</li>
+      <li>GitHub Actions: <code>npm run check</code> (sintassi, segreti, token di design), test unitari, test end-to-end.</li>
+      <li>Anteprima su Vercel per ogni pull request.</li>
+      <li>Produzione solo da <code>main</code> e solo con i test superati (<code>vercel deploy --prebuilt --prod</code>), poi controllo degli indirizzi.</li>
+      <li>Le pubblicazioni automatiche di Vercel da Git sono spente: non si va in produzione senza i test.</li>
+    </ol></div>
+  </div>
+</section>
+
+<section id="decisioni" class="ax-sec">
+  <div class="ax-h"><span class="eyebrow">7 · Decisioni</span><h2>Scelte e compromessi</h2></div>
+  <div class="ax-cards"><article class="ax-card"><h3>Trama senza framework né build</h3><p><b>Decisione.</b> Un solo file HTML con JavaScript vanilla, servito statico.</p><p><b>Conseguenze.</b> Nessuna catena di build da mantenere, avvio immediato, pagina ispezionabile. In cambio: disciplina manuale su stato e ridisegno, mitigata da memoizzazione per versione dei dati e da 44 test end-to-end.</p></article><article class="ax-card"><h3>Claude dal computer dell&#x27;utente</h3><p><b>Decisione.</b> Un ponte locale invoca Claude Code con l'abbonamento della persona.</p><p><b>Conseguenze.</b> Nessuna chiave né costo API centrale, nessun testo dei documenti che passa dal server. Richiede di installare Claude Code e avviare il ponte; senza ponte Trama funziona, ma senza proposte di Claude.</p></article><article class="ax-card"><h3>Documenti JSONB invece di tabelle per entità</h3><p><b>Decisione.</b> Una tabella <code>items</code> con chiave <code>(project, raccolta, id)</code>.</p><p><b>Conseguenze.</b> Il modello evolve senza migrazioni (per esempio UX Story al posto di Spike è stata una conversione nel client). Niente vincoli referenziali tra requisiti e ticket: li verifica Trama.</p></article><article class="ax-card"><h3>Sincronizzazione a polling</h3><p><b>Decisione.</b> Delta per <code>updated_at</code> ogni 6 s, 30 s da fermi.</p><p><b>Conseguenze.</b> Compatibile con funzioni serverless senza connessioni persistenti. Latenza di collaborazione fino a 30 s, costo proporzionale alle schede aperte.</p></article><article class="ax-card"><h3>Una sola funzione per tutte le API</h3><p><b>Decisione.</b> <code>api/router.mjs</code> instrada verso gestori dichiarativi.</p><p><b>Conseguenze.</b> Un solo avvio a freddo da scaldare, un solo punto per i controlli trasversali; i gestori restano piccoli e testabili.</p></article><article class="ax-card"><h3>Jira simulato nei test</h3><p><b>Decisione.</b> Un Jira finto in memoria che rispetta i livelli Project › Fase › Epica › ticket e accetta guasti su richiesta.</p><p><b>Conseguenze.</b> Test completi della creazione, anche con risposte perse, senza toccare un Jira vero e senza account.</p></article></div>
+</section>
+
+<section id="limiti" class="ax-sec">
+  <div class="ax-h"><span class="eyebrow">8 · Limiti noti</span><h2>Cosa non fa ancora</h2></div>
+  <ul class="ax-list ax-limits"><li><b>Nessuna Content-Security-Policy.</b> Le pagine inviano <code>nosniff</code>, <code>X-Frame-Options: DENY</code> e <code>Referrer-Policy</code>, ma non una CSP. Trama carica librerie da cdnjs: una CSP con elenco di origini è il prossimo passo.</li><li><b>Ultima scrittura vincente.</b> Due persone sullo stesso documento nello stesso intervallo: vince l'ultima. Possibile evoluzione: versione per documento e conflitto esplicito.</li><li><b>Stato completo all'apertura.</b> Il progetto si carica intero (circa 270 KB nel progetto di prova), testo dei documenti compreso. Possibile evoluzione: testo dei documenti su richiesta.</li><li><b>Polling invece di push.</b> Fino a 30 secondi per vedere le modifiche di un collega fermo da più di 2 minuti.</li><li><b>Limiti di Jira gestiti in modo semplice.</b> 429 e 5xx tornano come errori temporanei; non c'è un'attesa esponenziale automatica tra un tentativo e l'altro.</li><li><b>Eliminazioni logiche mai ripulite.</b> Le righe eliminate restano marcate in <code>items</code>; servirà una pulizia periodica.</li></ul>
+</section>
+</main>
+<footer class="ax-foot">Trama · architettura aggiornata a ottobre 2026. Fonte: il codice del repository; numeri da <code>npm run perf</code> e dalla produzione.</footer>
+</div>
+</body>
+</html>

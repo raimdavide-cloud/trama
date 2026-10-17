@@ -1,0 +1,103 @@
+<svg viewBox="0 0 1200 720" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ax-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ax-ar" d="M0 0 L10 5 L0 10 z"/></marker>
+    <marker id="ax-ahT" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse"><path class="ax-ar ax-ar-t" d="M0 0 L10 5 L0 10 z"/></marker>
+  </defs>
+  <rect class="ax-z" x="16" y="16" width="372" height="688" rx="16"/>
+  <rect class="ax-z" x="414" y="16" width="372" height="688" rx="16"/>
+  <rect class="ax-z" x="812" y="16" width="372" height="688" rx="16"/>
+  <text class="ax-zl" x="36" y="46">Computer dell'utente</text>
+  <text class="ax-zl" x="434" y="46">Vercel · fra1</text>
+  <text class="ax-zl" x="832" y="46">Servizi gestiti</text>
+
+  <rect class="ax-b ax-k" x="36" y="66" width="332" height="282" rx="12"/>
+  <text class="ax-bt" x="56" y="96">Trama · SPA nel browser</text>
+  <text class="ax-bs" x="56" y="118">HTML + JS senza framework · 83 KB Brotli</text>
+  <rect class="ax-row" x="56" y="134" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="70" y="160">Estrazione Word/PDF/Excel nel browser</text>
+  <rect class="ax-row" x="56" y="184" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="70" y="210">Regole, validazione, piano di creazione</text>
+  <rect class="ax-row" x="56" y="234" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="70" y="260">Delta ogni 6 s · 30 s da fermo</text>
+  <rect class="ax-row" x="56" y="284" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="70" y="310">Scritture in blocco (≤ 500 operazioni)</text>
+
+  <rect class="ax-b" x="36" y="404" width="332" height="112" rx="12"/>
+  <text class="ax-bt" x="56" y="434">Ponte Claude · Node</text>
+  <text class="ax-bm" x="56" y="458">127.0.0.1:8790 · CORS + PNA</text>
+  <text class="ax-bs" x="56" y="482">Origin in elenco · token opzionale</text>
+  <text class="ax-bs" x="56" y="502">max 2 richieste · timeout 10 min</text>
+  <rect class="ax-b" x="36" y="570" width="332" height="114" rx="12"/>
+  <text class="ax-bt" x="56" y="600">Claude Code (CLI)</text>
+  <text class="ax-bs" x="56" y="624">Abbonamento dell'utente</text>
+  <text class="ax-bm" x="56" y="648">claude -p --tools ""</text>
+  <text class="ax-bs" x="56" y="670">cartella temporanea vuota</text>
+
+  <rect class="ax-b" x="434" y="66" width="332" height="110" rx="12"/>
+  <text class="ax-bt" x="454" y="96">Pagine statiche</text>
+  <text class="ax-bs" x="454" y="120">home, guida, marchio, componenti,</text>
+  <text class="ax-bs" x="454" y="140">privacy, architettura, app</text>
+  <text class="ax-bm" x="454" y="162">CDN Vercel · cleanUrls</text>
+
+  <rect class="ax-b ax-k" x="434" y="210" width="332" height="320" rx="12"/>
+  <text class="ax-bt" x="454" y="240">Funzione /api · Node 22</text>
+  <text class="ax-bs" x="454" y="262">api/router.mjs · senza stato · 60 s max</text>
+  <rect class="ax-row" x="454" y="278" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="468" y="304">/auth · OAuth 3LO, sessioni</text>
+  <rect class="ax-row" x="454" y="328" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="468" y="354">/projects · documenti, delta, batch</text>
+  <rect class="ax-row" x="454" y="378" width="292" height="42" rx="8"/>
+  <text class="ax-rt" x="468" y="404">/jira/:op · 11 operazioni ammesse</text>
+  <text class="ax-bs" x="454" y="446">Ogni richiesta: sessione → stessa origine →</text>
+  <text class="ax-bs" x="454" y="466">sito Atlassian dell'utente → validazione</text>
+  <text class="ax-bm" x="454" y="496">token Atlassian cifrati AES-256-GCM</text>
+  <text class="ax-bm" x="454" y="516">segreti solo nelle variabili d'ambiente</text>
+
+  <rect class="ax-b" x="434" y="570" width="332" height="114" rx="12"/>
+  <text class="ax-bt" x="454" y="600">Cron · 03:00 UTC</text>
+  <text class="ax-bs" x="454" y="624">Personal Data Reporting;</text>
+  <text class="ax-bs" x="454" y="644">cancellazione degli account chiusi</text>
+  <text class="ax-bm" x="454" y="668">Authorization: Bearer CRON_SECRET</text>
+
+  <rect class="ax-b" x="832" y="66" width="332" height="262" rx="12"/>
+  <text class="ax-bt" x="852" y="96">Neon Postgres · eu-central-1</text>
+  <text class="ax-bs" x="852" y="118">driver serverless su HTTPS · pooler</text>
+  <text class="ax-bm" x="852" y="150">users</text><text class="ax-bs" x="944" y="150">token cifrati, siti</text>
+  <text class="ax-bm" x="852" y="178">sessions</text><text class="ax-bs" x="944" y="178">SHA-256 dell'id</text>
+  <text class="ax-bm" x="852" y="206">projects</text><text class="ax-bs" x="944" y="206">cloud_id = confine</text>
+  <text class="ax-bm" x="852" y="234">items</text><text class="ax-bs" x="944" y="234">JSONB, delta per updated_at</text>
+  <text class="ax-bs" x="852" y="270">PK (project_id, col, id)</text>
+  <text class="ax-bs" x="852" y="292">indice (project_id, updated_at)</text>
+
+  <rect class="ax-b ax-k" x="832" y="362" width="332" height="322" rx="12"/>
+  <text class="ax-bt" x="852" y="392">Atlassian</text>
+  <rect class="ax-row" x="852" y="408" width="292" height="62" rx="8"/>
+  <text class="ax-rt" x="866" y="432">auth.atlassian.com · OAuth 2.0</text>
+  <text class="ax-bm" x="866" y="455">read/write:jira-work, offline_access</text>
+  <rect class="ax-row" x="852" y="480" width="292" height="84" rx="8"/>
+  <text class="ax-rt" x="866" y="504">Jira Cloud REST v3 (+ v2 create)</text>
+  <text class="ax-bs" x="866" y="525">Project › Fase › Epica › ticket</text>
+  <text class="ax-bm" x="866" y="548">api.atlassian.com/ex/jira/{cloudId}</text>
+  <rect class="ax-row" x="852" y="574" width="292" height="62" rx="8"/>
+  <text class="ax-rt" x="866" y="598">Personal Data Reporting API</text>
+  <text class="ax-bs" x="866" y="620">account con dati conservati</text>
+
+  <path class="ax-ln" d="M368 120 H434" marker-end="url(#ax-ah)"/>
+  <rect class="ax-lbg" x="374" y="98" width="52" height="18" rx="4"/><text class="ax-lb" x="378" y="111">HTTPS</text>
+  <path class="ax-ln" d="M368 196 C 404 196, 400 250, 434 250" marker-end="url(#ax-ah)"/>
+  <rect class="ax-lbg" x="370" y="204" width="60" height="18" rx="4"/><text class="ax-lb" x="374" y="217">cookie</text>
+  <path class="ax-ln" d="M766 330 C 800 330, 800 200, 832 200" marker-end="url(#ax-ah)"/>
+  <rect class="ax-lbg" x="776" y="250" width="40" height="18" rx="4"/><text class="ax-lb" x="780" y="263">SQL</text>
+  <path class="ax-ln" d="M766 304 C 800 304, 800 438, 852 438" marker-end="url(#ax-ah)"/>
+  <path class="ax-ln ax-dash" d="M766 626 C 800 626, 810 605, 852 605" marker-end="url(#ax-ah)"/>
+
+  <path class="ax-th" d="M120 348 V 398" marker-end="url(#ax-ahT)"/>
+  <path class="ax-th" d="M120 516 V 564" marker-end="url(#ax-ahT)"/>
+  <path class="ax-th" d="M368 627 H 380 V 290 H 374" marker-end="url(#ax-ahT)"/>
+  <path class="ax-th" d="M368 318 C 404 318, 412 399, 454 399" marker-end="url(#ax-ahT)"/>
+  <path class="ax-th" d="M746 399 C 800 399, 800 522, 852 522" marker-end="url(#ax-ahT)"/>
+  <rect class="ax-pb" x="132" y="366" width="76" height="20" rx="10"/><text class="ax-tl" x="140" y="380">documento</text>
+  <rect class="ax-pb" x="132" y="530" width="64" height="20" rx="10"/><text class="ax-tl" x="140" y="544">prompt</text>
+  <rect class="ax-pb" x="296" y="530" width="76" height="20" rx="10"/><text class="ax-tl" x="304" y="544">streaming</text>
+  <rect class="ax-pb" x="772" y="462" width="56" height="20" rx="10"/><text class="ax-tl" x="780" y="476">ticket</text>
+</svg>
