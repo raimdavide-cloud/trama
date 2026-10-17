@@ -5,6 +5,8 @@ export const env = (k) => process.env[k];
 
 let _sql;
 export const sql = (...args) => (_sql ??= neon(env("DATABASE_URL")))(...args);
+// solo per i test unitari: un database finto in memoria al posto di Neon
+export const setSqlForTests = (fn) => { _sql = fn; };
 
 export const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), {

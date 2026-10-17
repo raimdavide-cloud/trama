@@ -762,6 +762,12 @@ function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.rele
 const ticketState=t=>t.state==="created"?`${browse(t.key)}${vOf(t)==="ok"?'<span class="pill ok">verificato</span>':vOf(t)?'<span class="pill warn">da verificare</span>':""}`:t.state==="error"?'<span class="pill err">errore Jira</span>':t.state==="unknown"?'<span class="pill warn">esito incerto</span>':'<span class="pill">bozza</span>';
 function ticketRow(t){const{e,w}=issuesOf(t),locked=t.state==="created";
  return dtRow("ticket",t.id,`<td><span class="key">${esc(t.ref)}</span></td><td><span class="pill acc">${esc(t.type)}</span></td><td class="dt-t" title="${esc(fullTitle(t))}">${esc(fullTitle(t))}</td><td class="dt-t muted" title="${esc(t.epic||"")}">${esc(t.epic||"—")}</td><td>${!locked&&e.length?`<span class="pill err">${e.length===1?"1 errore":e.length+" errori"}</span> `:""}${!locked&&w.length?`<span class="pill warn">${w.length===1?"1 avviso":w.length+" avvisi"}</span>`:""}</td><td class="dt-st">${ticketState(t)}</td>`)}
+/* Mentre si scrive nel pannello lo studio non ridisegna (il cursore resterebbe a metà): «cosa manca» si aggiorna da solo. */
+function refreshIssues(id){const sp=$(`.sp[data-panel="ticket:${id}"]`),t=S.tickets[id];if(!sp||!t||t.state==="created")return;const{e,w}=issuesOf({...t,id});
+  const html=e.map(x=>`<span class="pill err">${esc(x)}</span>`).join("")+w.map(x=>`<span class="pill warn">${esc(x)}</span>`).join("");let box=sp.querySelector(".issues");
+  if(!html){box?.remove();return}if(!box){box=document.createElement("div");box.className="issues";sp.querySelector(".sp-b .grid")?.before(box)}box.innerHTML=html}
+function refreshQuestion(id){const x=S.questions[id],p=$(`#main details.item[data-k="q-${id}"]>summary>.pill`);if(!x||!p)return;
+  const [c,l]=x.answer?.trim()?["ok","Risposta"]:x.hypothesis?.trim()?["warn","Ipotesi"]:["err","Aperta"];p.className="pill "+c;p.textContent=l}
 function ticketForm(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked=t.state==="created";
  return`${locked?`<div class="msg info">Creato in Jira come ${browse(t.key)}. Le modifiche qui non aggiornano Jira.${vOf(t)&&vOf(t)!=="ok"?" "+esc(vOf(t)):""}</div>`:""}
  ${t.err?`<div class="msg err">${esc(t.err)}</div>`:""}
@@ -991,7 +997,9 @@ function progFound(act,text,ix,n,added){const p=T.prog[act];if(!p)return;const i
   if(it.length===p.items.length)return;p.items=it;p.detail=`${n>1?`Documento ${ix+1} di ${n} · `:""}${it.length===1?"1 requisito trovato":it.length+" requisiti trovati"}${added?` · ${added} già aggiunti`:""}`;progPaint(act)}
 async function run(act,label,fn,step){busy[act]=label;scheduleRender();try{await fn()}catch(e){console.warn(e);setMsg(step||STEPS[cur].id,"err",jiraOrAi(e))}finally{delete busy[act];scheduleRender()}}
 function jiraOrAi(e){if(e?.ai)return aiMsg(e.e);if(e?.code&&["not_granted","sampling_disabled","rate_limited","prompt_too_large","invalid_json","refused","empty_completion","session_expired","no_ai","image_rejected","cancelled"].includes(e.code)&&!e.jira)return aiMsg(e);return e?.message&&!e.code?String(e.message):jiraMsg(e)}
-function arm(key,el,fn){if(T.arm[key]){delete T.arm[key];fn()}else{T.arm[key]=1;scheduleRender();setTimeout(()=>{if(T.arm[key]){delete T.arm[key];scheduleRender()}},4000)}}
+// Azioni da confermare con un secondo clic. I 4 secondi per confermare partono quando «Conferma…» è a schermo,
+// non dal clic: su un computer lento il ridisegno di un passo grande ne consumerebbe una parte.
+function arm(key,el,fn){if(T.arm[key]){delete T.arm[key];fn()}else{const at=T.arm[key]=Date.now();scheduleRender();requestAnimationFrame(()=>setTimeout(()=>{if(T.arm[key]===at){delete T.arm[key];scheduleRender()}},4000))}}
 
 /* passo 1 */
 A.jiraSites=()=>run("jiraSites","Collegamento…",async()=>{const p=await jira("getAccessibleAtlassianResources",{});T.sites=(Array.isArray(p)?p:p?.resources||[]).map(s=>({id:s.id,url:s.url,name:s.name}));
@@ -1335,7 +1343,7 @@ document.addEventListener("change",e=>{const el=e.target;
     if(c==="meta"&&id==="kit"&&/^epics\.\d+\.release$/.test(f)){epicRelease(+f.split(".")[1],v);return}
     if(c==="meta"){const doc=clone(S[id])||{};setPath(doc,f,v);let old=null;if(id==="kit"&&/^releases\.\d+\.name$/.test(f)){old=getPath(S.kit,f);if(old&&old!==v){doc.epics.forEach(x=>{if(x.release===old)x.release=v});(doc.hier?.phases||[]).forEach(x=>{if(x.name===old)x.name=v})}else old=null}if(id==="kit")syncPhases(doc);
       saveMeta(id,doc);if(old){arr("reqs").forEach(r=>{if(r.release===old){const{id:rid,...d}=r;put("reqs",rid,{...d,release:v})}});arr("tickets").forEach(t=>{if(t.release===old){const{id:tid,...d}=t;put("tickets",tid,{...d,release:v})}})}}
-    else{const doc=clone(S[c][id]);if(!doc)return;setPath(doc,f,v);put(c,id,doc)}}});
+    else{const doc=clone(S[c][id]);if(!doc)return;setPath(doc,f,v);put(c,id,doc);if(c==="tickets")refreshIssues(id);if(c==="questions")refreshQuestion(id)}}});
 document.addEventListener("dragover",e=>{const d=e.target.closest?.("#drop");if(d){e.preventDefault();d.classList.add("over")}});
 document.addEventListener("dragleave",e=>{const d=e.target.closest?.("#drop");if(d)d.classList.remove("over")});
 document.addEventListener("drop",e=>{const d=e.target.closest?.("#drop");if(d){e.preventDefault();d.classList.remove("over");addFiles([...e.dataTransfer.files])}});
