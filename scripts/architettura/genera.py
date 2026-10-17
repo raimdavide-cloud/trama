@@ -47,8 +47,10 @@ SEQ_LOGIN = seq("seq-accesso", "Accesso con Atlassian (OAuth 2.0, 3LO)",
 SEQ_SYNC = seq("seq-dati", "Lettura, scrittura e sincronizzazione dei dati",
   ["Trama (browser)", "Runtime dati", "/api", "Postgres"],
   [
-    (1, 2, "<code>GET /api/projects/:id</code> (stato completo all'apertura)", ""),
+    (1, 2, "<code>GET /api/projects/:id</code> (stato all'apertura, in forma leggera)", ""),
     (2, 3, "<code>items</code> non eliminati + <code>clock_timestamp()</code>", ""),
+    (2, 1, "testo dei documenti, log e qualità come segnaposto <code>_lazy: {len, v}</code>", "r"),
+    (1, 2, "quando servono: <code>GET …/items/:col/:item</code> (estrazione, anteprima, log, qualità, chat)", ""),
     (0, 0, "modifica: aggiornamento immediato dell'interfaccia", "n"),
     (0, 1, "<code>set</code>/<code>delete</code> di più documenti nello stesso istante", ""),
     (1, 1, "raggruppa (≤ 500 operazioni, ≤ 3,5 MB); un gruppo alla volta, in ordine", "n"),
@@ -58,7 +60,7 @@ SEQ_SYNC = seq("seq-dati", "Lettura, scrittura e sincronizzazione dei dati",
     (2, 1, "delta da <code>t − 3 s</code>, eliminazioni comprese", "r"),
     (1, 0, "notifica solo le raccolte cambiate; i documenti in volo non vengono sovrascritti", "r"),
   ],
-  "Consistenza finale con ultima scrittura vincente per documento. La finestra di 3 secondi sul <code>since</code> assorbe le differenze di orologio; se si chiude la scheda con salvataggi in volo il browser chiede conferma.")
+  "Consistenza finale con ultima scrittura vincente per documento. Un segnaposto non si salva mai: lo bloccano sia il runtime sia il server (409), così il testo completo non viene sovrascritto. La finestra di 3 secondi sul <code>since</code> assorbe le differenze di orologio; se si chiude la scheda con salvataggi in volo il browser chiede conferma.")
 
 SEQ_CLAUDE = seq("seq-claude", "Una richiesta a Claude",
   ["Trama (browser)", "Ponte (127.0.0.1:8790)", "Claude Code"],
@@ -97,7 +99,7 @@ def table(head, rows, cls="ax-t"):
 
 COMPONENTS = table(["Componente", "Tecnologia", "Responsabilità", "Stato"], [
   ["<b>Trama (app)</b><br><code>/studio</code>", "HTML + JavaScript senza framework né build; 242 KB (83 KB Brotli)", "Interfaccia dei 6 passi, regole del playbook, validazione dei ticket, piano di creazione, orchestrazione delle chiamate Jira", "In memoria; preferenze in <code>localStorage</code>"],
-  ["<b>Runtime dati</b><br><code>studio-runtime.js</code>", "Livello dati con interfaccia <code>doc</code>/<code>collection</code>/<code>onSnapshot</code>", "Snapshot iniziale, scritture raggruppate, sincronizzazione a intervallo adattivo, chiamate <code>/api</code>, ponte Claude", "Coda delle scritture in volo"],
+  ["<b>Runtime dati</b><br><code>studio-runtime.js</code>", "Livello dati con interfaccia <code>doc</code>/<code>collection</code>/<code>onSnapshot</code>", "Snapshot iniziale leggero e contenuti pesanti su richiesta, scritture raggruppate, sincronizzazione a intervallo adattivo, chiamate <code>/api</code>, ponte Claude", "Coda delle scritture in volo"],
   ["<b>Estrazione documenti</b>", "mammoth 1.6 (Word), pdf.js 3.11 (PDF), SheetJS 0.18 (Excel) da cdnjs, caricati al primo uso", "Testo estratto nel browser; si salva solo il testo (≤ 110.000 caratteri per documento)", "Nessun file sul server"],
   ["<b>Pagine statiche</b>", "Vercel, <code>cleanUrls</code>, region <code>fra1</code>", "Home, guida al ponte, marchio, componenti, privacy, architettura", "—"],
   ["<b>Funzione <code>/api</code></b><br><code>api/router.mjs</code>", "Node 22, un'unica funzione con instradamento per <code>config.path</code>; <code>maxDuration</code> 60 s", "Sessioni, progetti e documenti, salvataggio in blocco, operazioni Jira da un elenco chiuso", "Senza stato"],
@@ -137,7 +139,7 @@ SECURITY = table(["Minaccia", "Controllo", "Dove"], [
 ])
 
 ADR = [
-  ("Trama senza framework né build", "Un file HTML e file JavaScript vanilla, serviti statici.", "Nessuna catena di build da mantenere, avvio immediato, pagina ispezionabile. In cambio: disciplina manuale su stato e ridisegno, mitigata da memoizzazione per versione dei dati e da 54 test end-to-end."),
+  ("Trama senza framework né build", "Un file HTML e file JavaScript vanilla, serviti statici.", "Nessuna catena di build da mantenere, avvio immediato, pagina ispezionabile. In cambio: disciplina manuale su stato e ridisegno, mitigata da memoizzazione per versione dei dati e da 60 test end-to-end."),
   ("Claude dal computer dell'utente", "Un ponte locale invoca Claude Code con l'abbonamento della persona.", "Nessuna chiave né costo API centrale, nessun testo dei documenti che passa dal server. Richiede di installare Claude Code e avviare il ponte; senza ponte Trama funziona, ma senza proposte di Claude."),
   ("Documenti JSONB invece di tabelle per entità", "Una tabella <code>items</code> con chiave <code>(project, raccolta, id)</code>.", "Il modello evolve senza migrazioni (per esempio UX Story al posto di Spike è stata una conversione nel client). Niente vincoli referenziali tra requisiti e ticket: li verifica Trama."),
   ("Sincronizzazione a polling", "Delta per <code>updated_at</code> ogni 6 s, 30 s da fermi.", "Compatibile con funzioni serverless senza connessioni persistenti. Latenza di collaborazione fino a 30 s, costo proporzionale alle schede aperte."),
@@ -148,7 +150,7 @@ ADR = [
 LIMITS = [
   ("CSP in sola segnalazione", "La Content-Security-Policy è attiva come <code>Report-Only</code>: le violazioni si registrano ma non si bloccano. Diventerà obbligatoria dopo qualche giorno di log puliti. Un ponte Claude su un indirizzo diverso da <code>127.0.0.1:8790</code> (per esempio Tailscale) andrà aggiunto a <code>connect-src</code>."),
   ("Ultima scrittura vincente", "Due persone sullo stesso documento nello stesso intervallo: vince l'ultima. Possibile evoluzione: versione per documento e conflitto esplicito."),
-  ("Stato completo all'apertura", "Il progetto si carica intero (circa 270 KB nel progetto di prova), testo dei documenti compreso. Possibile evoluzione: testo dei documenti su richiesta."),
+  ("Ticket interi all'apertura", "Testo dei documenti, log e controllo di qualità si caricano su richiesta, così il peso dell'apertura non cresce più con i documenti caricati. Descrizioni e ipotesi dei ticket arrivano invece intere (circa metà dei 266 KB del progetto di prova, 46 KB compressi): la validazione dei ticket le legge già all'apertura. Caricarle su richiesta vorrebbe dire spostare o precalcolare sul server quel controllo: più rischio per pochi KB, finché Vercel comprime."),
   ("Polling invece di push", "Fino a 30 secondi per vedere le modifiche di un collega fermo da più di 2 minuti."),
   ("Creazioni in Jira senza nuovi tentativi automatici", "Letture e ricerche JQL si riprovano da sole su 429 e 5xx (al massimo 3 tentativi; <code>Retry-After</code> rispettato fino a 10 s, altrimenti attesa esponenziale con margine casuale; 20 s di attesa in tutto). Creazioni di ticket e collegamenti no, per non creare doppioni: un esito incerto si chiarisce con la riconciliazione di Trama e «Cerca in Jira»."),
   ("Eliminazioni logiche mai ripulite", "Le righe eliminate restano marcate in <code>items</code>; servirà una pulizia periodica."),
@@ -226,6 +228,7 @@ page = f'''<!doctype html>
   <ul class="ax-list">
     <li><b>Consistenza.</b> Finale, con ultima scrittura vincente per documento. Le scritture dello stesso istante partono in un gruppo; i gruppi partono in ordine, uno alla volta.</li>
     <li><b>Delta.</b> <code>updated_at</code> da <code>clock_timestamp()</code>; il client chiede le modifiche dal momento dell'ultima risposta meno 3 secondi.</li>
+    <li><b>Apertura leggera.</b> Snapshot e delta portano un segnaposto al posto del testo dei documenti, di <code>meta/runlog</code> e di <code>meta/quality</code>: lunghezza, conteggi e impronta del contenuto (<code>v</code>, FNV-1a sul JSON con chiavi ordinate, calcolata uguale da server e browser). Se un delta porta un segnaposto con l'impronta del contenuto già in memoria, il browser tiene il contenuto intero.</li>
     <li><b>Eliminazioni.</b> Logiche (<code>deleted = true</code>), così arrivano anche agli altri client tramite il delta.</li>
     <li><b>Residenza.</b> Funzione e database a Francoforte; i file restano sul computer dell'utente.</li>
   </ul>
@@ -243,14 +246,15 @@ page = f'''<!doctype html>
     <div><b>9 ms</b><span>ridisegno del Backlog con 67 ticket (prima 675 ms)</span></div>
     <div><b>19 ms</b><span>ridisegno del Backlog con 268 ticket (prima 4,6 s)</span></div>
     <div><b>2</b><span>richieste per rinominare una release su 130 elementi (prima 133)</span></div>
+    <div><b>46 KB</b><span>apertura del progetto di prova, compressa, anche con 5 documenti da 100.000 caratteri (prima 55 e 192 KB)</span></div>
     <div><b>110–150 ms</b><span>risposta della funzione da Vercel fra1, senza database</span></div>
     <div><b>~40 ms</b><span>query a Neon dall'Italia; ~0,5 s al risveglio</span></div>
     <div><b>0,6 s</b><span>primo disegno della home su 4G simulato</span></div>
   </div>
   <div class="ax-two">
     <div class="ax-card"><h3>Test a ogni modifica</h3><ul class="ax-list">
-      <li><b>40 unitari</b>: router, sessioni e cifratura, API dei dati con database finto, operazioni Jira e limiti di Jira (429, 5xx, <code>Retry-After</code>), segnalazioni CSP.</li>
-      <li><b>54 end-to-end</b> con Playwright su un simulatore completo: Trama vera, API in memoria, Jira finto con guasti su richiesta (risposta persa dopo la creazione, 500 prima della creazione, 429 con <code>Retry-After</code>, 503).</li>
+      <li><b>44 unitari</b>: router, sessioni e cifratura, API dei dati con database finto (apertura leggera compresa), operazioni Jira e limiti di Jira (429, 5xx, <code>Retry-After</code>), segnalazioni CSP.</li>
+      <li><b>60 end-to-end</b> con Playwright su un simulatore completo: Trama vera, API in memoria, Jira finto con guasti su richiesta (risposta persa dopo la creazione, 500 prima della creazione, 429 con <code>Retry-After</code>, 503).</li>
       <li><b>Accessibilità</b> WCAG 2.2 AA con axe, anche in modalità scura; allineamento delle icone misurato; nessuna violazione della CSP su pagine e passi.</li>
       <li><b>25 confronti visivi</b> pixel per pixel, in locale.</li>
     </ul></div>

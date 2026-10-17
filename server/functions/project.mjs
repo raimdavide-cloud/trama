@@ -1,9 +1,12 @@
-// GET    /api/projects/:id?since=ISO   stato del progetto (solo le modifiche dopo `since`)
+// GET    /api/projects/:id?since=ISO   stato del progetto (solo le modifiche dopo `since`), in forma leggera:
+//                                       testo dei documenti, log e qualità arrivano come segnaposto (server/lib/lazy.mjs)
+// GET    /api/projects/:id/items/:col/:item   un documento completo (per i segnaposto)
 // DELETE /api/projects/:id             elimina il progetto (solo chi l'ha creato)
 // PUT    /api/projects/:id/items/:col/:item   salva un documento
 // DELETE /api/projects/:id/items/:col/:item   elimina un documento
 // POST   /api/projects/:id/batch  {ops:[{col,id,data|null}]}  salva o elimina più documenti in una volta (al massimo 500)
 import { json, fail, getUser, sql, siteIds, sameOrigin } from "../lib/core.mjs";
+import { lighten, isPlaceholder, fingerprint } from "../lib/lazy.mjs";
 
 const COLS = new Set(["meta", "docs", "reqs", "questions", "tickets", "decisions"]);
 const META = new Set(["project", "kit", "jira", "chat", "runlog", "quality", "sprints"]);
@@ -42,7 +45,7 @@ export default async (req, context) => {
         ok: true,
         now,
         project: { id: project.id, name: project.name, cloudId: project.cloud_id, siteUrl: project.site_url, createdBy: project.created_by },
-        items,
+        items: items.map(lighten),
       });
     }
     if (req.method === "DELETE") {
@@ -56,12 +59,18 @@ export default async (req, context) => {
   if (!validPath(col, item)) {
     return fail("invalid", "Percorso del documento non valido.");
   }
+  if (req.method === "GET") {
+    const rows = await sql`select data, deleted from items where project_id = ${id} and col = ${col} and id = ${item}`;
+    if (!rows[0] || rows[0].deleted) return fail("not_found", "Documento inesistente o eliminato.", 404);
+    return json({ ok: true, item: { col, id: item, data: rows[0].data, v: fingerprint(rows[0].data) } });
+  }
   if (req.method === "PUT") {
     const text = await req.text();
     if (text.length > MAX_BYTES) return fail("too_large", "Documento troppo grande (massimo 1 MB).", 413);
     let data;
     try { data = JSON.parse(text); } catch { return fail("invalid", "Il corpo deve essere JSON."); }
     if (!data || typeof data !== "object" || Array.isArray(data)) return fail("invalid", "Il documento deve essere un oggetto JSON.");
+    if (isPlaceholder(data)) return fail("placeholder", "Contenuto non caricato: il documento completo non è stato sovrascritto.", 409);
     await sql`insert into items (project_id, col, id, data, deleted, updated_by, updated_at)
               values (${id}, ${col}, ${item}, ${JSON.stringify(data)}::jsonb, false, ${user.account_id}, clock_timestamp())
               on conflict (project_id, col, id) do update
@@ -96,6 +105,7 @@ async function batch(req, user, id) {
     if (!o || !validPath(o.col, o.id)) return fail("invalid", "Percorso del documento non valido.");
     const del = o.data === null;
     if (!del && (!o.data || typeof o.data !== "object" || Array.isArray(o.data))) return fail("invalid", "Ogni documento deve essere un oggetto JSON.");
+    if (!del && isPlaceholder(o.data)) return fail("placeholder", "Contenuto non caricato: il documento completo non è stato sovrascritto.", 409);
     if (!del && JSON.stringify(o.data).length > MAX_BYTES) return fail("too_large", "Documento troppo grande (massimo 1 MB).", 413);
     last.set(`${o.col}/${o.id}`, { col: o.col, id: o.id, data: del ? null : o.data });
   }

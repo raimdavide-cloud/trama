@@ -29,6 +29,20 @@
   }
   BS.api = api;
 
+  // Apertura leggera: testo dei documenti, log e controllo di qualità arrivano come segnaposto {…, _lazy: {len, v}}
+  // e si caricano con db.load(col, id). v è l'impronta del contenuto completo, calcolata come in server/lib/lazy.mjs.
+  BS.isLazy = (d) => !!d && typeof d === "object" && Object.hasOwn(d, "_lazy");
+  const canonical = (v) =>
+    Array.isArray(v) ? `[${v.map((x) => (x === undefined ? "null" : canonical(x))).join(",")}]`
+    : v && typeof v === "object" ? `{${Object.keys(v).sort().filter((k) => v[k] !== undefined).map((k) => `${JSON.stringify(k)}:${canonical(v[k])}`).join(",")}}`
+    : JSON.stringify(v) ?? "null";
+  BS.fingerprint = (data) => {
+    const s = canonical(data);
+    let h = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    return (h >>> 0).toString(36) + "-" + s.length.toString(36);
+  };
+
   /* ---------- dati condivisi: stessa forma del db degli artifact ---------- */
   BS.createDB = (pid, initial) => {
     const store = {};
@@ -53,6 +67,8 @@
       message: e.message,
     });
     function write(c, id, data) {
+      // un segnaposto non parte mai: sovrascriverebbe il contenuto completo (anche il server lo rifiuta)
+      if (BS.isLazy(data)) return Promise.reject({ code: "placeholder", message: "Contenuto non ancora caricato: nulla è stato salvato." });
       const k = `${c}/${id}`;
       pending.set(k, (pending.get(k) || 0) + 1);
       touch();
@@ -101,6 +117,8 @@
           if (it.deleted) {
             if (cur !== undefined) { apply(it.col, it.id, null); changed.add(it.col); }
           } else if (JSON.stringify(cur) !== JSON.stringify(it.data)) {
+            // segnaposto della stessa versione che abbiamo già intera (per esempio l'eco di un nostro salvataggio): si tiene l'intera
+            if (BS.isLazy(it.data) && cur !== undefined && !BS.isLazy(cur) && BS.fingerprint(cur) === it.data._lazy.v) continue;
             apply(it.col, it.id, it.data);
             changed.add(it.col);
           }
@@ -111,6 +129,27 @@
       } catch (e) {
         BS.onSync?.(false, e);
       }
+    }
+    // Contenuto completo di un segnaposto; richieste uguali in contemporanea diventano una sola.
+    // Se nel frattempo è arrivata una versione nuova, si richiede quella.
+    const loading = new Map();
+    function load(c, id) {
+      const k = `${c}/${id}`;
+      if (!BS.isLazy(store[c]?.[id])) return Promise.resolve(store[c]?.[id]);
+      if (!loading.has(k)) {
+        loading.set(k, (async () => {
+          for (let i = 0; i < 3; i++) {
+            const before = store[c]?.[id];
+            const r = await api(url(c, id));
+            const now = store[c]?.[id];
+            if (!BS.isLazy(now)) return now; // eliminato o già intero (salvato da qui)
+            // il server dà la versione più recente; si scarta solo se durante la richiesta è arrivato un segnaposto diverso
+            if (now === before || r.item.v === now._lazy.v) { apply(c, id, r.item.data); notify(c); return r.item.data; }
+          }
+          throw { code: "unavailable", message: "Il contenuto cambia di continuo: riprova tra poco." };
+        })().finally(() => loading.delete(k)));
+      }
+      return loading.get(k);
     }
     // Sincronizzazione: ogni 6 secondi mentre si lavora; dopo 2 minuti senza modifiche né interazioni, ogni 30 secondi.
     // Al primo clic o tasto dopo una pausa si sincronizza subito e si torna rapidi. Con la scheda nascosta non si chiede nulla.
@@ -141,6 +180,7 @@
         },
       }),
       poll,
+      load,
     };
   };
 
