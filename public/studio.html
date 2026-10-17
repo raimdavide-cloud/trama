@@ -537,10 +537,25 @@ function secSpec(id,raw,memo={}){const r=x=>raw.includes(x),pill=(c,t)=>`<span c
     if(r("5. Esito")){const odd=ts.filter(t=>t.state==="error"||t.state==="unknown").length,bad=(T.structReport||[]).filter(x=>!x.ok).length;return{num:"5",title:"Esito della creazione",ok:created>0&&!odd&&!bad,todo:!!T.report||odd>0||bad>0,status:plain(n1(created,"ticket creato","ticket creati"))+(odd?pill("err",odd+" da sistemare"):"")+(bad?pill("err",n1(bad,"livello non collegato","livelli non collegati")):T.structReport?.length?pill("ok","struttura collegata"):"")}}
     if(r("6. Sincronizzazione")){const sy=T.sync,warn=sy&&!sy.empty&&(sy.deleted.length||sy.parentDiff.length);return{num:"6",title:"Sincronizzazione con Jira",ok:!!sy&&!warn,todo:!!warn,status:sy?(warn?pill("warn","differenze trovate"):plain("sincronizzato alle "+new Date(sy.at).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}))):plain("da sincronizzare")}}}
   return{num:(raw.match(/^\s*(K?\d+)/)||[])[1]||"",title:raw.replace(/^\s*K?\d+\s*[.·]\s*/,""),todo:false,status:""}}
+/* Sblocco progressivo: in un progetto nuovo ogni sezione compare quando la precedente è completata.
+   Una sezione già compilata resta sempre visibile, quindi uno studio completo si vede tutto. Il passo Domande non è
+   sequenziale (le risposte arrivano in ordine sparso) e il Registro non ha sezioni. */
+function secFlow(id,memo){const done=t=>t;
+  if(id==="jira"){const p=P(),j=S.jira;return{"Sito Atlassian":{gate:!!p.cloudId,unlock:"il sito Atlassian è collegato"},"Progetto Jira":{gate:!!p.key,unlock:"scegli il progetto Jira"},"Configurazione del progetto":{gate:true}}}
+  if(id==="reqs"){const d=arr("docs").length,r=reqList().length;return{"Documenti":{gate:d>0||r>0,unlock:"carichi almeno un documento",action:B("addReq","Non ho documenti: aggiungo i requisiti a mano",{cls:"link"})},"Estrazione dei requisiti":{gate:r>0,has:r>0,unlock:"estrai i requisiti dai documenti"},"Requisiti":{gate:true,has:r>0}}}
+  if(id==="kit"){const k=K(),j=S.jira,pr=hierProblems();return{"Identificativi del tracker":{gate:!!(k.links.relates&&k.links.blocks)&&(j.required||[]).every(f=>k.custom?.[f.key]),unlock:"scegli i tipi di collegamento e compili i campi obbligatori"},
+    "Release (= Fasi in Jira)":{gate:k.releases.length>0&&k.releases.every(x=>x.name&&x.label),has:k.releases.length>0,unlock:"aggiungi almeno una release con la sua label"},
+    "Epiche":{gate:k.epics.length>0&&(!k.hier?.enabled||k.epics.every(e=>e.release)),has:k.epics.length>0,unlock:"aggiungi le epiche e la loro release"},
+    "Struttura gerarchica Jira":{gate:!k.hier?.enabled||!pr.length,unlock:"completi la struttura Project › Fase › Epica"},
+    "Label e prefissi":{opt:true,has:!!k.extraLabels},"Glossario, comunicazione, vincoli":{opt:true,has:!!(k.glossary||k.constraints||k.envs)}}}
+  if(id==="backlog"){const n=ticketList().length;return{"Scomposizione in ticket":{gate:n>0,unlock:"generi i ticket",action:B("addTicket","Aggiungo un ticket a mano",{cls:"link"})},"Ticket per requisito":{gate:true,has:n>0}}}
+  if(id==="create"){const pl=memo.pl||(memo.pl=planOf()),ts=memo.ts||(memo.ts=ticketList()),ck=memo.ck||(memo.ck=T.pre?computeChecks(pl):[]),made=ts.some(t=>t.state==="created"),errs=ck.filter(c=>c.lvl==="err"&&!(c.t==="Elementi da creare o collegare"&&made)).length;
+    return{"Controllo prima della creazione":{gate:made||(!!T.pre&&!errs),unlock:"il controllo è eseguito e nulla blocca la creazione"},"Anteprima":{gate:true,has:made},"Ipotesi e scelte fatte al tuo posto":{gate:made||!!T.ack,has:made,unlock:"confermi le ipotesi"},"Crea su Jira":{gate:true,has:made},"Esito della creazione":{gate:true,has:made}}}
+  return null}
 function sectionize(main,step){if(step.aux)return;const prev=main.__secOpen||new Set(),memo={};const SKIP=".foot,.sp,datalist,.bridge-panel,.desk-only";
   const kit=main.querySelector('details[data-k="kit-adv"]');if(kit){const inn=kit.querySelector(".in");kit.replaceWith(...inn.children)}
   const mk=(raw,nodes)=>{const sp=secSpec(step.id,raw,memo),key=step.id+":"+secSlug(sp.title||raw),d=document.createElement("details");
-    d.className="sec";d.dataset.sec=key;d.dataset.todo=sp.todo?"1":"";
+    d.className="sec";d.dataset.sec=key;d.dataset.todo=sp.todo?"1":"";d.__title=sp.title||raw;d.__num=sp.num||"";d.__ok=!!sp.ok;
     d.innerHTML=`<summary><span class="sec-n${sp.ok?" ok":""}${sp.num?"":" none"}" aria-hidden="true">${esc(sp.num||"")}</span><span class="sec-t">${esc(sp.title||raw)}</span>${sp.ok?'<span class="sr-only">, completata</span>':""}<span class="sec-s">${sp.status||""}</span></summary><div class="sec-b"></div>`;
     const b=d.querySelector(".sec-b");nodes.forEach(n=>{if(n.matches?.("div.card")&&n.classList.length===1&&!n.querySelector(":scope>h2")){b.append(...n.childNodes);n.remove()}else b.append(n)});
     const st=SECST[key];d.open=prev.has(key)||(st&&st.t===d.dataset.todo?st.o:!!sp.todo);return d};
@@ -551,8 +566,15 @@ function sectionize(main,step){if(step.aux)return;const prev=main.__secOpen||new
   let cur=null,raw="",bucket=[];const flush=()=>{if(cur){cur.replaceWith(mk(raw,bucket));cur=null;bucket=[]}};
   for(const c of [...main.children]){if(c.matches("h2.sec-h")){flush();cur=c;raw=c.textContent.trim();continue}if(!cur)continue;if(c.matches(".foot")||c.matches("details.sec")){flush();continue}if(c.matches(SKIP))continue;bucket.push(c)}flush();
   const secs=boxes.flatMap(b=>[...b.querySelectorAll(":scope>details.sec")]);
-  if(secs.length>1){const bar=document.createElement("div");bar.className="sec-all";bar.innerHTML=`<button type="button" class="link" data-act="secAll"></button>`;secs[0].before(bar);secAllLabel()}}
-function secAllLabel(){const b=$('#main [data-act="secAll"]');if(!b)return;const ds=$$("#main details.sec");b.textContent=ds.some(d=>!d.open)?"Apri tutto":"Chiudi tutto"}
+  const flow=secFlow(step.id,memo);
+  if(flow){let open=true,prev=null,teased=false,blocker=null;
+    for(const d of secs){const f=flow[d.__title]||{gate:true},vis=open||(f.has??d.__ok);d.hidden=!vis;
+      if(!vis&&!teased&&prev){teased=true;const pf=flow[blocker?.__title]||flow[prev.__title]||{},el=document.createElement("div");el.className="sec-next";
+        el.innerHTML=`<span class="sec-n" aria-hidden="true">${esc(d.__num)}</span><span>Poi: <b>${esc(d.__title)}</b>${pf.unlock?` · compare quando ${esc(pf.unlock)}`:""}.</span>${pf.action||""}`;d.before(el)}
+      if(vis)prev=d;if(!f.opt){if(open&&!f.gate)blocker=d;open=open&&!!f.gate}}}
+  const shown=secs.filter(d=>!d.hidden);
+  if(shown.length>1){const bar=document.createElement("div");bar.className="sec-all";bar.innerHTML=`<button type="button" class="link" data-act="secAll"></button>`;secs[0].before(bar);secAllLabel()}}
+function secAllLabel(){const b=$('#main [data-act="secAll"]');if(!b)return;const ds=$$("#main details.sec:not([hidden])");b.textContent=ds.some(d=>!d.open)?"Apri tutto":"Chiudi tutto"}
 function secRemember(d){SECST[d.dataset.sec]={o:d.open,t:d.dataset.todo};try{ls.set("secState",SECST)}catch{}}
 function docsView(){const d=arr("docs").sort((a,b)=>(a.at||0)-(b.at||0));
   let h=`<label class="drop" id="drop"><input type="file" id="fileIn" multiple accept=".docx,.pdf,.xlsx,.xls,.csv,.txt,.md,.markdown,.json,image/png,image/jpeg,image/webp,image/gif" ${READONLY?"disabled":""}><b>Trascina qui i file o scegli dal computer</b><span class="small muted">Word (.docx), PDF, Excel (.xlsx, .xls), CSV, testo, Markdown, immagini</span></label>`;
@@ -850,7 +872,7 @@ function bridgeSettings(){const custom=BS.bridgeUrl()!==BS.DEFAULT_BRIDGE;
    <div class="toolbar" style="margin-top:10px"><button class="primary" data-act="saveBridge">Salva e ricollega</button><button data-act="resetBridge">Ripristina l'indirizzo del Mac</button></div>`)}
 {const sid=ls.get("stepid:"+PID,""),ix=STEPS.findIndex(x=>x.id===sid);cur=ix>=0?ix:0}
 const A={};
-A.secAll=()=>{const ds=$$("#main details.sec"),open=ds.some(d=>!d.open);ds.forEach(d=>{d.open=open;secRemember(d)});secAllLabel()};
+A.secAll=()=>{const ds=$$("#main details.sec:not([hidden])"),open=ds.some(d=>!d.open);ds.forEach(d=>{d.open=open;secRemember(d)});secAllLabel()};
 A.epicMoveRun=()=>run("epicMoveRun","Aggiornamento di Jira…",epicMoveRun,"kit");
 A.epicMoveSkip=()=>{T.epicMove=null;render()};
 A.decReset=()=>{T.dq={q:"",type:"*",src:"*"};render()};
@@ -975,7 +997,7 @@ A.delDoc=el=>arm("doc"+el.dataset.id,el,()=>del("docs",el.dataset.id));
 
 /* passo 3 */
 function nextReqCode(){const used=new Set(reqList().map(r=>r.code));let i=1;while(used.has("REQ-"+String(i).padStart(3,"0")))i++;return"REQ-"+String(i).padStart(3,"0")}
-A.addReq=()=>{const id=uid();put("reqs",id,{code:nextReqCode(),title:"Nuovo requisito",desc:"",components:[],release:"",ui:"",extDeps:"",intDeps:"",questions:"",designReady:false,order:Date.now()});openSet.add("req-"+id)};
+A.addReq=()=>{const id=uid();put("reqs",id,{code:nextReqCode(),title:"Nuovo requisito",desc:"",components:[],release:"",ui:"",extDeps:"",intDeps:"",questions:"",designReady:false,order:Date.now()});T.panel={kind:"req",id};if(STEPS[cur].id!=="reqs")A.go({dataset:{i:STEPS.findIndex(x=>x.id==="reqs")}});T.panel={kind:"req",id};scheduleRender()};
 A.delReq=el=>arm("req"+el.dataset.id,el,()=>del("reqs",el.dataset.id));
 A.validateReqs=()=>{const r=reqList(),bad=r.filter(x=>!x.release);if(bad.length){setMsg("reqs","warn",`${bad.length} requisiti non hanno la release (${bad.slice(0,6).map(x=>x.code).join(", ")}). Indicala prima di validare.`);return}
   editProject(p=>p.reqsValidatedAt=Date.now());setMsg("reqs","ok","Lista dei requisiti validata dal PO.")};
@@ -1086,7 +1108,7 @@ A.genTickets=()=>run("genTickets","Claude sta scomponendo…",async()=>{const ts
   try{for(let i=0;i<todo.length;i+=3){if(T.prog.genTickets?.stop)break;const batch=todo.slice(i,i+3);Object.assign(T.prog.genTickets,{done:i,label:`Claude scompone ${batch.map(r=>r.code).join(", ")}`,detail:`Requisiti ${i} di ${todo.length} · ${tot} ticket finora`});progPaint("genTickets");T.genLog+=`Requisiti ${batch.map(r=>r.code).join(", ")}… `;scheduleRender();try{const n=await genFor(batch);tot+=n;T.genLog+=`${n} ticket\n`;Object.keys(S.tickets).forEach(id=>{if(!before.has(id))T.fresh.add(id)});Object.assign(T.prog.genTickets,{done:Math.min(i+3,todo.length),detail:`Requisiti ${Math.min(i+3,todo.length)} di ${todo.length} · ${tot} ticket finora`,items:[...T.fresh].map(id=>S.tickets[id]).filter(Boolean).slice(-4).map(t=>({code:t.ref,title:fullTitle(t)}))});progPaint("genTickets")}catch(e){T.genLog+="non riuscito\n";throw e}}}finally{stopped=progEnd("genTickets")}
   setMsg("backlog","ok",`${stopped?"Scomposizione fermata. ":""}${tot} ticket generati. Apri ognuno per controllare titolo, epica, descrizione e ipotesi; correggi gli errori segnalati in rosso.`)});
 A.regenReq=el=>{const code=el.dataset.code;arm("regen"+code,el,()=>run("regenReq","Rigenero…",async()=>{ticketList().filter(t=>t.req===code&&t.state!=="created").forEach(t=>del("tickets",t.id));const r=reqList().find(x=>x.code===code);const n=await genFor([r]);setMsg("backlog","ok",`${code}: ${n} ticket rigenerati.`)}));if(T.arm["regen"+code])toast("Premi di nuovo «Rigenera» per sostituire i ticket di "+code+".")};
-A.addTicket=()=>{const id=uid(),k=K();put("tickets",id,{ref:fmtRef(nextRef()),req:"",type:"Story",area:"be",title:"",epic:"",release:k.releases[0]?.name||"",work:"Back-End",labels:[],desc:TEMPLATES.Story,links:[],assumptions:[],state:"draft",order:Date.now()});openSet.add("t-"+id);T.rel="*"};
+A.addTicket=()=>{const id=uid(),k=K();put("tickets",id,{ref:fmtRef(nextRef()),req:"",type:"Story",area:"be",title:"",epic:"",release:k.releases[0]?.name||"",work:"Back-End",labels:[],desc:TEMPLATES.Story,links:[],assumptions:[],state:"draft",order:Date.now()});T.rel="*";T.bTab="tickets";T.panel={kind:"ticket",id};scheduleRender()};
 A.delTicket=el=>arm("t"+el.dataset.id,el,()=>del("tickets",el.dataset.id));
 A.applyTemplate=el=>arm("tpl"+el.dataset.id,el,()=>{const t=S.tickets[el.dataset.id];put("tickets",el.dataset.id,{...t,desc:TEMPLATES[t.type]})});
 A.exportTickets=()=>{const k=K();exportCsv("backlog.csv",["Ref","Requisito","Tipo","Titolo","Epica","Label","Collegamenti","Chiave Jira","Descrizione"],ticketList().map(t=>[t.ref,t.req,k.types[t.type]||t.type,fullTitle(t),t.epic,labelsOf(t).join(" "),linksText(t),t.key||"",t.desc]))};
