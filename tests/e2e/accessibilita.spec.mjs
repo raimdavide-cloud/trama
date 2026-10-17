@@ -93,3 +93,19 @@ test.describe("modalità scura", () => {
     }
   });
 });
+
+test.describe("in inglese", () => {
+  test.beforeEach(async ({ context }) => { await context.addInitScript(() => { try { localStorage.setItem("trama:lang", "en"); } catch {} }); });
+  test("accessibilità in inglese: passi di Trama e menu della lingua", async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.goto(PROJECT);
+    await expect(page.locator(".progress b")).toHaveText(/steps completed/);
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    for (const id of ["reqs", "kit", "backlog"]) {
+      await page.evaluate((id) => A.go({ dataset: { i: STEPS.findIndex((x) => x.id === id) } }), id);
+      await audit(page, `${id} (inglese)`);
+    }
+    await page.locator("#langBtn").click();
+    await audit(page, "menu della lingua (inglese)");
+  });
+});

@@ -471,3 +471,15 @@ body.has-recap{--colk:.7} /* finestre medie: senza riepilogo ma con poco spazio 
 .rq-qc kbd,.sp kbd{font:600 11px var(--f-mono);padding:1px 5px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--muted)}
 .rq-qc.on{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
 .rq-qc.on kbd{background:transparent;color:var(--on-primary);border-color:currentColor}
+
+/* ===== switch della lingua (header) ===== */
+.lang-btn{display:inline-flex;align-items:center;gap:7px;padding:5px 9px;border-radius:999px;font:600 13px var(--f-mono);letter-spacing:.04em}
+.flag{width:20px;height:20px;flex:none;display:block}
+html[lang="it"] .lang-btn [data-flag="en"],html[lang="en"] .lang-btn [data-flag="it"]{display:none}
+.lang-flag{display:inline-flex}
+#langMenu{min-width:220px}
+#langMenu button[role=menuitemradio]{display:flex;align-items:center;gap:10px;width:100%}
+#langMenu button[role=menuitemradio] span{flex:1;text-align:left}
+#langMenu button[aria-checked="true"]{background:var(--accent-soft);font-weight:700}
+#langMenu button[aria-checked="false"] .lang-ok{visibility:hidden}
+.lang-ok{width:16px;height:16px;color:var(--fg)}

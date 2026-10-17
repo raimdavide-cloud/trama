@@ -1,3 +1,5 @@
+/* lingua delle date e dei numeri: segue lo switch dell'header (i18n.js) */
+const LOCALE=()=>window.I18N?.locale()||"it-IT";
 /* ================= utilità ================= */
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -320,7 +322,7 @@ STEPS.push({id:"jira",phase:"Avvio",short:"Progetto Jira",sub:"Collega e leggi J
    ${p.key?`<p>Progetto selezionato: <span class="key">${esc(p.key)}</span> ${esc(p.jiraName||"")}</p>`:""}
    <div class="row" style="max-width:520px"><input id="projSearch" placeholder="Cerca per nome o chiave" value="${esc(T.projQ||"")}">${JB("jiraProjects","Cerca progetti")}</div>
    ${T.projects?`<div class="tw" style="margin-top:10px"><table><thead><tr><th>Chiave</th><th>Nome</th><th></th></tr></thead><tbody>${T.projects.map(x=>`<tr><td><span class="key">${esc(x.key)}</span></td><td>${esc(x.name)}</td><td>${B("pickProject",x.key===p.key?"Selezionato":"Usa questo progetto",{data:{key:x.key},dis:x.key===p.key})}</td></tr>`).join("")||'<tr><td colspan="3" class="muted">Nessun progetto trovato. Se l\'hai appena creato, attendi qualche secondo e cerca di nuovo.</td></tr>'}</tbody></table></div>`:""}</div>`}
-  if(p.key){h+=`<div class="card"><h2>3. Configurazione del progetto</h2><div class="toolbar">${JB("readConfig",j.readAt&&j.key===p.key?"Rileggi da Jira":"Leggi la configurazione")}${j.readAt?`<span class="small muted">Letta il ${new Date(j.readAt).toLocaleString("it-IT")}</span>`:""}</div>
+  if(p.key){h+=`<div class="card"><h2>3. Configurazione del progetto</h2><div class="toolbar">${JB("readConfig",j.readAt&&j.key===p.key?"Rileggi da Jira":"Leggi la configurazione")}${j.readAt?`<span class="small muted">Letta il ${new Date(j.readAt).toLocaleString(LOCALE())}</span>`:""}</div>
    ${j.readAt&&j.key===p.key?`<div class="grid small">
      <div><b>Tipi di ticket</b><br>${(j.types||[]).map(t=>`<span class="pill">${esc(t.name)}</span>`).join(" ")}</div>
      <div><b>Tipi di collegamento</b><br>${(j.links||[]).slice(0,8).map(l=>`<span class="pill">${esc(l.name)}</span>`).join(" ")}${(j.links||[]).length>8?` <span class="muted">+${j.links.length-8}</span>`:""}</div>
@@ -466,7 +468,7 @@ function secSpec(id,raw,memo={}){const r=x=>raw.includes(x),pill=(c,t)=>`<span c
   if(id==="jira"){const p=P(),j=S.jira,read=!!j.readAt&&j.key===p.key;
     if(r("Sito"))return{num:"1",title:"Sito Atlassian",ok:!!p.cloudId,todo:!p.cloudId,status:p.cloudId?plain((p.siteUrl||"").replace(/^https:\/\//,"")):pill("warn","da collegare")};
     if(r("Progetto"))return{num:"2",title:"Progetto Jira",ok:!!p.key,todo:!p.key,status:p.key?`<span class="key">${esc(p.key)}</span>${plain(p.jiraName)}`:pill("warn","da scegliere")};
-    if(r("Configurazione"))return{num:"3",title:"Configurazione del progetto",ok:read,todo:!read,status:read?plain("letta il "+new Date(j.readAt).toLocaleDateString("it-IT")):pill("warn","da leggere")}}
+    if(r("Configurazione"))return{num:"3",title:"Configurazione del progetto",ok:read,todo:!read,status:read?plain("letta il "+new Date(j.readAt).toLocaleDateString(LOCALE())):pill("warn","da leggere")}}
   if(id==="reqs"){const d=arr("docs").length,rq=reqList(),miss=rq.filter(x=>!x.release).length;
     if(r("Documenti"))return{num:"1",title:"Documenti",ok:d>0,todo:!d&&!rq.length,status:d?plain(n1(d,"documento","documenti")):pill("warn","nessun documento")};
     if(r("Estrazione"))return{num:"2",title:"Estrazione dei requisiti",ok:rq.length>0,todo:!!T.prog.extractReqs||(d>0&&!rq.length),status:T.prog.extractReqs?pill("acc","in corso…"):rq.length?plain(n1(rq.length,"requisito in lista","requisiti in lista")):pill("warn","da fare")};
@@ -490,7 +492,7 @@ function secSpec(id,raw,memo={}){const r=x=>raw.includes(x),pill=(c,t)=>`<span c
     if(r("3. Ipotesi"))return{num:"3",title:"Ipotesi e scelte fatte al tuo posto",ok:!!T.ack||(!total&&created>0),todo:!T.ack&&total>0,status:T.ack?pill("ok","confermate"):!total&&created?pill("ok","niente da confermare"):pill("warn","da confermare")};
     if(r("4. Crea"))return{num:"4",title:"Crea su Jira",ok:ts.length>0&&created===ts.length,todo:!!T.running||(!!T.ack&&total>0)||T.log.length>0,status:plain(`${created} di ${ts.length} ticket in Jira`)};
     if(r("5. Esito")){const odd=ts.filter(t=>t.state==="error"||t.state==="unknown").length,bad=(T.structReport||[]).filter(x=>!x.ok).length;return{num:"5",title:"Esito della creazione",ok:created>0&&!odd&&!bad,todo:!!T.report||odd>0||bad>0,status:plain(n1(created,"ticket creato","ticket creati"))+(odd?pill("err",odd+" da sistemare"):"")+(bad?pill("err",n1(bad,"livello non collegato","livelli non collegati")):T.structReport?.length?pill("ok","struttura collegata"):"")}}
-    if(r("6. Sincronizzazione")){const sy=T.sync,warn=sy&&!sy.empty&&(sy.deleted.length||sy.parentDiff.length);return{num:"6",title:"Sincronizzazione con Jira",ok:!!sy&&!warn,todo:!!warn,status:sy?(warn?pill("warn","differenze trovate"):plain("sincronizzato alle "+new Date(sy.at).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}))):plain("da sincronizzare")}}}
+    if(r("6. Sincronizzazione")){const sy=T.sync,warn=sy&&!sy.empty&&(sy.deleted.length||sy.parentDiff.length);return{num:"6",title:"Sincronizzazione con Jira",ok:!!sy&&!warn,todo:!!warn,status:sy?(warn?pill("warn","differenze trovate"):plain("sincronizzato alle "+new Date(sy.at).toLocaleTimeString(LOCALE(),{hour:"2-digit",minute:"2-digit"}))):plain("da sincronizzare")}}}
   return{num:(raw.match(/^\s*(K?\d+)/)||[])[1]||"",title:raw.replace(/^\s*K?\d+\s*[.·]\s*/,""),todo:false,status:""}}
 /* Sblocco progressivo: in un progetto nuovo ogni sezione compare quando la precedente è completata.
    Una sezione già compilata resta sempre visibile, quindi un progetto completo si vede tutto. Il passo Domande non è
@@ -562,8 +564,8 @@ function docsView(){const d=arr("docs").sort((a,b)=>(a.at||0)-(b.at||0));
   let h=`<label class="drop" id="drop"><input type="file" id="fileIn" multiple accept=".docx,.pdf,.xlsx,.xls,.csv,.txt,.md,.markdown,.json,image/png,image/jpeg,image/webp,image/gif" ${READONLY?"disabled":""}><b>Trascina qui i file o scegli dal computer</b><span class="small muted">Word (.docx), PDF, Excel (.xlsx, .xls), CSV, testo, Markdown, immagini</span></label>`;
   if(T.uploads.length)h+=`<div class="list" style="margin-top:10px">${T.uploads.map(u=>`<div class="row small"><span class="pill ${u.s==="ok"?"ok":u.s==="err"?"err":"acc"}">${u.s==="ok"?"Caricato":u.s==="err"?"Errore":"In lavorazione"}</span><b>${esc(u.name)}</b><span class="muted">${esc(u.note||"")}</span></div>`).join("")}</div>`;
   h+=`<details class="item" data-k="paste" style="margin-top:12px"><summary><span class="ttl">Incolla testo (appunti di meeting, messaggi, specifiche)</span></summary><div class="in"><div class="grid">${F("Titolo",`<input id="pasteName" placeholder="Es. Verbale kickoff 14 ottobre">`)}${F("Testo",`<textarea id="pasteText" rows="6"></textarea>`,"wide")}</div><div class="toolbar" style="margin-top:10px">${B("pasteDoc","Aggiungi ai documenti")}</div></div></details>`;
-  h+=`<h3>Documenti del progetto (${d.length})</h3><div class="list">${d.map(x=>det("doc-"+x.id,`<span class="pill acc">${esc(x.kind)}</span><span class="ttl">${esc(x.name)}</span><span class="small muted">${(x.chars||0).toLocaleString("it-IT")} caratteri${x.truncated?" · troncato":""}</span>`,
-    `${x.truncated?`<div class="msg warn">Il testo è stato troncato a ${(x.chars).toLocaleString("it-IT")} caratteri per restare nei limiti di salvataggio.</div>`:""}${lazy(x)?(openSet.has("doc-"+x.id)&&want("docs",x.id),'<p class="small muted">Caricamento del testo…</p>'):`<pre class="prev">${esc((x.text||"").slice(0,4000))}${(x.text||"").length>4000?"\n…":""}</pre>`}<div class="toolbar" style="margin-top:10px">${B("delDoc",T.arm["doc"+x.id]?"Conferma eliminazione":"Elimina",{cls:T.arm["doc"+x.id]?"armed":"danger",data:{id:x.id}})}</div>`)).join("")||'<p class="empty">Nessun documento ancora. Carica il documento di requisiti per iniziare.</p>'}</div>`;
+  h+=`<h3>Documenti del progetto (${d.length})</h3><div class="list">${d.map(x=>det("doc-"+x.id,`<span class="pill acc">${esc(x.kind)}</span><span class="ttl">${esc(x.name)}</span><span class="small muted">${(x.chars||0).toLocaleString(LOCALE())} caratteri${x.truncated?" · troncato":""}</span>`,
+    `${x.truncated?`<div class="msg warn">Il testo è stato troncato a ${(x.chars).toLocaleString(LOCALE())} caratteri per restare nei limiti di salvataggio.</div>`:""}${lazy(x)?(openSet.has("doc-"+x.id)&&want("docs",x.id),'<p class="small muted">Caricamento del testo…</p>'):`<pre class="prev">${esc((x.text||"").slice(0,4000))}${(x.text||"").length>4000?"\n…":""}</pre>`}<div class="toolbar" style="margin-top:10px">${B("delDoc",T.arm["doc"+x.id]?"Conferma eliminazione":"Elimina",{cls:T.arm["doc"+x.id]?"armed":"danger",data:{id:x.id}})}</div>`)).join("")||'<p class="empty">Nessun documento ancora. Carica il documento di requisiti per iniziare.</p>'}</div>`;
   return h}
 
 /* ---------- 3. Requisiti ---------- */
@@ -580,7 +582,7 @@ STEPS.push({id:"reqs",phase:"Preparazione",short:"Requisiti",sub:"Carica, estrai
    ${progBlock("extractReqs")}<p class="small muted">Claude elabora un documento alla volta e salta i requisiti con lo stesso titolo di uno esistente.</p></div>`;
   h+=`<h2 class="sec-h">3 · Requisiti (${r.length})</h2>`;
   if(r.length){const miss=r.filter(x=>!x.release).length;
-   h+=`<div class="toolbar"><span class="pill ${miss?"warn":"ok"}">${miss?miss+" requisiti senza release":"Tutti i requisiti hanno una release"}</span>${miss?B("relQuick","Assegna le release",{cls:"primary"}):""}<span class="pill">${r.filter(x=>x.questions).length} con domande aperte</span><span style="flex:1"></span>${B("validateReqs",P().reqsValidatedAt?"Validata il "+new Date(P().reqsValidatedAt).toLocaleDateString("it-IT")+" · valida di nuovo":"Valida la lista (PO)")}</div>`}
+   h+=`<div class="toolbar"><span class="pill ${miss?"warn":"ok"}">${miss?miss+" requisiti senza release":"Tutti i requisiti hanno una release"}</span>${miss?B("relQuick","Assegna le release",{cls:"primary"}):""}<span class="pill">${r.filter(x=>x.questions).length} con domande aperte</span><span style="flex:1"></span>${B("validateReqs",P().reqsValidatedAt?"Validata il "+new Date(P().reqsValidatedAt).toLocaleDateString(LOCALE())+" · valida di nuovo":"Valida la lista (PO)")}</div>`}
   h+=reqBar(r,rf);
   h+=reqTable(r,rf)+`
   <div class="card warn small" style="margin-top:14px">Controlla che ogni nota UI/UX sia sulla riga giusta: nei fogli del cliente le colonne sfalsate sono un errore frequente.</div>`;
@@ -742,7 +744,7 @@ function structCols(pl){const k=K(),H=k.hier,hon=!!H?.enabled,rd=pl.ready.filter
 function computeChecks(pl){if(RMEMO&&RMEMO.ckFor===pl)return RMEMO.ck;const r=computeChecks0(pl);if(RMEMO){RMEMO.ckFor=pl;RMEMO.ck=r}return r}
 function computeChecks0(pl){const k=K(),j=S.jira,h=k.hier,c=[];const add=(lvl,t,d)=>c.push({lvl,t,d:d||""});
   const read=j.readAt&&j.key===P().key;
-  add(read?"ok":"err","Configurazione di Jira letta",read?`${(j.types||[]).length} tipi di ticket e ${(j.links||[]).length} tipi di collegamento letti il ${new Date(j.readAt).toLocaleTimeString("it-IT")}`:"premi «Esegui il controllo»");
+  add(read?"ok":"err","Configurazione di Jira letta",read?`${(j.types||[]).length} tipi di ticket e ${(j.links||[]).length} tipi di collegamento letti il ${new Date(j.readAt).toLocaleTimeString(LOCALE())}`:"premi «Esegui il controllo»");
   const used=pl.ready.map(t=>k.types[t.type]||t.type);const structWork=h?.enabled&&(pl.struct.project||pl.struct.phases.length||pl.struct.link.length||pl.epics.length);
   if(pl.epics.length||structWork)used.push(k.types.Epic);if(structWork&&h?.enabled){if(pl.struct.project)used.push(h.projectType);if(pl.struct.phases.length)used.push(h.phaseType)}
   const uniq=[...new Set(used.filter(Boolean))],names=(j.types||[]).map(x=>x.name),miss=uniq.filter(x=>!names.includes(x));
@@ -788,7 +790,7 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
   const ck=T.pre?computeChecks(pl):[],errs=ck.filter(c=>c.lvl==="err"),warns=ck.filter(c=>c.lvl==="warn");
   const ico={ok:'<span class="pill ok">ok</span>',warn:'<span class="pill warn">attenzione</span>',err:'<span class="pill err">blocca</span>'};
   let h=`<div class="card"><h2>1. Controllo prima della creazione</h2><p class="small muted" style="margin:0 0 10px">Rilegge Jira (tipi, campi obbligatori, ticket già presenti) e verifica che tutto sia a posto. Parte da solo all'apertura del passo.</p>
-   <div class="toolbar">${JB("preflight",T.pre?"Esegui di nuovo il controllo":"Esegui il controllo",{cls:T.pre?"":"primary"})}${T.pre?`<span class="small muted">Eseguito alle ${new Date(T.pre.at).toLocaleTimeString("it-IT")} · ${Object.keys(T.pre.existing).length} ticket già in Jira</span>`:""}</div>
+   <div class="toolbar">${JB("preflight",T.pre?"Esegui di nuovo il controllo":"Esegui il controllo",{cls:T.pre?"":"primary"})}${T.pre?`<span class="small muted">Eseguito alle ${new Date(T.pre.at).toLocaleTimeString(LOCALE())} · ${Object.keys(T.pre.existing).length} ticket già in Jira</span>`:""}</div>
    ${ck.length?`<div class="tw" style="margin-top:10px"><table><tbody>${ck.map(c=>`<tr><td style="width:1%;white-space:nowrap">${ico[c.lvl]}</td><td><b>${esc(c.t)}</b><div class="small muted" style="font-weight:400">${esc(c.d)}</div></td></tr>`).join("")}</tbody></table></div>
    <div class="msg ${errs.length?"err":warns.length?"warn":"ok"}" style="margin:10px 0 0">${errs.length?`${errs.length} controlli bloccano la creazione: risolvili prima di procedere.`:warns.length?`Puoi procedere: ${warns.length} avvisi non bloccano la creazione.`:"Tutto in ordine: puoi procedere."}</div>`:""}</div>`;
   if(T.pre){h+=`<div class="card"><h2>2. Anteprima</h2><div class="stat"><div><b>${pl.epics.length}</b><span>epiche da creare</span></div><div><b>${pl.ready.length-(T.createDup?0:pl.dup.length)}</b><span>ticket da creare</span></div><div><b>${pl.links}</b><span>collegamenti</span></div><div><b style="color:${pl.blocked.length?"var(--err)":"inherit"}">${pl.blocked.length}</b><span>bloccati da errori</span></div></div>
@@ -801,7 +803,7 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
    <div class="toolbar">${T.running?B("stopRun","Ferma dopo il ticket in corso",{cls:"danger"}):JB("runCreate",T.arm.run?`Conferma: crea tutto (${(pl.struct.project?1:0)+pl.struct.phases.length+pl.epics.length+pl.ready.length-(T.createDup?0:pl.dup.length)} elementi)`:"Crea su Jira",{cls:T.arm.run?"armed":"primary",dis:!T.ack||errs.length>0})}</div>
    ${(()=>{const why=T.running?"Una creazione è in corso: attendi che finisca, oppure fermala.":errs.length?"Bloccato dal controllo: "+errs.map(e=>e.t).join("; ")+".":!T.ack?"Per attivare il pulsante, conferma le ipotesi nello step 3.":"";return why?`<p class="small" style="margin:10px 0 0;color:var(--warn)">${esc(why)}</p>`:""})()}
    <details class="item" data-k="adv-create" style="margin-top:12px"><summary><span class="ttl">Azioni avanzate (singoli passaggi)</span></summary><div class="in"><div class="toolbar" style="margin-top:10px">${JB("runStruct",T.arm.struct?`Conferma: crea ${pl.struct.project?"1 Project, ":""}${pl.struct.phases.length} Fasi e collega ${pl.struct.link.length} epiche`:"Crea solo la struttura Jira",{cls:T.arm.struct?"armed":"",dis:T.running||!T.ack||!(pl.struct.phases.length||pl.struct.link.length||pl.epics.length)})}${JB("runLinks","Crea i collegamenti tra ticket",{dis:T.running||!pl.links})}${JB("runVerify","Verifica i ticket creati",{dis:T.running||!ts.some(t=>t.state==="created")})}</div></div></details>
-   ${(()=>{if(!T.log.length&&lazy(S.runlog)){want("meta","runlog");return`<p class="small muted" style="margin:10px 0 4px">Ultimo log salvato (${new Date(S.runlog.at).toLocaleString("it-IT")}): caricamento…</p>`}const lines=T.log.length?T.log:(S.runlog?.lines||[]);return lines.length?`${T.log.length?"":`<p class="small muted" style="margin:10px 0 4px">Ultimo log salvato (${new Date(S.runlog.at).toLocaleString("it-IT")})</p>`}<div class="log">${esc(lines.join("\n"))}</div>`:""})()}</div>`}
+   ${(()=>{if(!T.log.length&&lazy(S.runlog)){want("meta","runlog");return`<p class="small muted" style="margin:10px 0 4px">Ultimo log salvato (${new Date(S.runlog.at).toLocaleString(LOCALE())}): caricamento…</p>`}const lines=T.log.length?T.log:(S.runlog?.lines||[]);return lines.length?`${T.log.length?"":`<p class="small muted" style="margin:10px 0 4px">Ultimo log salvato (${new Date(S.runlog.at).toLocaleString(LOCALE())})</p>`}<div class="log">${esc(lines.join("\n"))}</div>`:""})()}</div>`}
   const odd=ts.filter(t=>t.state==="error"||t.state==="unknown"),keys=createdKeys(),created=ts.filter(t=>t.state==="created");
   // 5 · Esito della creazione: una sezione, con le sue parti come righe di secondo livello
   const erow=(k,sum,inner,open)=>`<details class="item" data-k="esito-${k}"${open?" open":""}><summary>${sum}</summary><div class="in">${inner}</div></details>`,esito=[];
@@ -812,7 +814,7 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
   if(esito.length)h+=`<div class="card"><h2>5. Esito della creazione</h2><div class="list">${esito.join("")}</div></div>`;
   // 6 · Sincronizzazione: si ripete nel tempo, resta una sezione a sé
   if(keys.length)h+=`<div class="card"><h2>6. Sincronizzazione con Jira</h2><p class="small muted" style="margin:0 0 10px">Rilegge da Jira tutto ciò che Trama ha creato: stato, Principale e titoli. Quello che è stato eliminato o rinominato a mano in Jira viene riconosciuto e Trama si riallinea (i ticket eliminati tornano in bozza, pronti da ricreare).</p>
-    <div class="toolbar">${JB("syncJira","Sincronizza con Jira")}${T.sync?`<span class="small muted">Ultima sincronizzazione ${new Date(T.sync.at).toLocaleTimeString("it-IT")} · ${T.sync.total} elementi letti</span>`:""}</div>
+    <div class="toolbar">${JB("syncJira","Sincronizza con Jira")}${T.sync?`<span class="small muted">Ultima sincronizzazione ${new Date(T.sync.at).toLocaleTimeString(LOCALE())} · ${T.sync.total} elementi letti</span>`:""}</div>
     ${T.sync&&!T.sync.empty?`<div class="stat" style="margin-top:12px"><div><b>${T.sync.total-T.sync.deleted.length}</b><span>presenti in Jira</span></div><div><b style="color:${T.sync.deleted.length?"var(--err)":"inherit"}">${T.sync.deleted.length}</b><span>eliminati in Jira</span></div><div><b style="color:${T.sync.parentDiff.length?"var(--warn)":"inherit"}">${T.sync.parentDiff.length}</b><span>con epica diversa</span></div><div><b style="color:${T.sync.renamed.length?"var(--warn)":"inherit"}">${T.sync.renamed.length}</b><span>rinominati</span></div></div>
     ${Object.keys(T.sync.status).length?`<p class="small" style="margin:10px 0 0">Stato: ${Object.entries(T.sync.status).map(([k2,v])=>`<span class="pill">${esc(k2)} · ${v}</span>`).join(" ")}</p>`:""}
     ${T.sync.deleted.length?`<div class="msg warn small" style="margin-top:10px"><b>Eliminati in Jira, tornati in bozza:</b> ${T.sync.deleted.slice(0,12).map(esc).join(" · ")}${T.sync.deleted.length>12?" …":""}</div>`:""}
@@ -844,14 +846,14 @@ function bridgePanel(){const st=caps.sample;
   const health=`<div class="health"><div class="health-h"><b>Pronto per la demo?</b><button type="button" data-act="healthCheck" ${hb?.running?"disabled":""}>${hb?.running?"Verifica in corso…":done?"Verifica di nuovo":"Verifica tutto"}</button></div>
    ${hb?.running?`<p class="small muted" style="margin:8px 0 0">Controllo ponte, Claude, Jira e dati…</p>`:""}
    ${done?`<ul class="health-l">${hb.items.map(i=>`<li class="${i.ok?"ok":"ko"}">${ICO(i.ok?"i-check":"i-alert")}<span class="hl">${i.label}</span><span class="hd">${i.detail}</span></li>`).join("")}</ul>
-   <div class="msg ${ko?"err":"ok"} small" style="margin:10px 0 0">${ko?`${ko===1?"Manca 1 controllo":`Mancano ${ko} controlli`}: risolvi le voci in rosso, poi verifica di nuovo.`:"Tutto pronto: ponte, Claude, Jira e dati rispondono."} <span class="muted">Verificato alle ${new Date(hb.at).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})}.</span></div>`:""}</div>`;
+   <div class="msg ${ko?"err":"ok"} small" style="margin:10px 0 0">${ko?`${ko===1?"Manca 1 controllo":`Mancano ${ko} controlli`}: risolvi le voci in rosso, poi verifica di nuovo.`:"Tutto pronto: ponte, Claude, Jira e dati rispondono."} <span class="muted">Verificato alle ${new Date(hb.at).toLocaleTimeString(LOCALE(),{hour:"2-digit",minute:"2-digit"})}.</span></div>`:""}</div>`;
   return`<div class="card bridge-panel" id="bridgePanel"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Collegamenti</h2><button type="button" class="link" data-act="bridgePanel">Chiudi</button></div>${health}${done?"":head}${bridgeSettings()}</div>`}
 /* Verifica prima della demo: ponte, risposta di Claude (con il tempo), accesso a Jira, salvataggio dei dati. */
 async function healthCheck(){T.health={running:true,at:Date.now(),items:[]};render();const items=[],add=(ok,label,detail)=>items.push({ok,label,detail});
   const host=esc(BS.bridgeUrl().replace(/^https?:\/\//,""));let h=null;try{h=await BS.checkBridge()}catch{}
   const bst=!h?"off":h.loggedIn===false?"login":"ok";
   add(bst!=="off","Ponte Claude attivo",bst==="off"?`non risponde su ${host} · <a href="/installazione" target="_blank" rel="noopener">Come si avvia</a>`:host);
-  if(bst==="ok"){const t0=performance.now();try{await BS.sample("Rispondi solo con la parola: ok");add(true,"Claude risponde",`risposta in ${((performance.now()-t0)/1000).toLocaleString("it-IT",{maximumFractionDigits:1})} s`)}catch(e){add(false,"Claude risponde",esc(jiraOrAi(e)))}}
+  if(bst==="ok"){const t0=performance.now();try{await BS.sample("Rispondi solo con la parola: ok");add(true,"Claude risponde",`risposta in ${((performance.now()-t0)/1000).toLocaleString(LOCALE(),{maximumFractionDigits:1})} s`)}catch(e){add(false,"Claude risponde",esc(jiraOrAi(e)))}}
   else add(false,"Claude risponde",bst==="login"?`Claude Code non è autenticato: in un terminale esegui <span class="mono">claude</span> e accedi`:"serve il ponte attivo");
   if(MCP){try{await jira("getAccessibleAtlassianResources",{});add(true,"Jira raggiungibile",P().key?`progetto ${esc(P().key)}`:"progetto non ancora collegato (passo 1)")}catch(e){add(false,"Jira raggiungibile",`${esc(jiraOrAi(e))} · <a href="/api/auth/login">Rientra</a>`)}}
   else add(false,"Jira raggiungibile",`accesso Atlassian non disponibile · <a href="/api/auth/login">Rientra</a>`);
@@ -900,7 +902,7 @@ function qualityPanel(){if(lazy(S.quality)){want("meta","quality");return'<p cla
     <div class="toolbar" style="margin:10px 0 0">${B("qClarify","Aggiungi ai «Points to clarify»",{data:{id:x.id}})}${B("qIgnore","Ignora",{cls:"link",data:{id:x.id}})}</div></div>`;
   return   `<p class="small muted" style="margin:10px 0">Claude rilegge i ticket e segnala: ticket troppo grandi, criteri di accettazione vaghi, dipendenze mancanti, possibili duplicati, ambiti poco chiari. Non modifica nulla da solo: decidi tu cosa applicare.</p>
    <div class="toolbar">${AIB("qualityCheck",f.length?"Analizza di nuovo":"Analizza il backlog",{cls:"primary",dis:!ticketList().length})}${f.length?B("clearQuality","Svuota",{cls:"danger"}):""}</div>
-   ${q.at?`<p class="small muted" style="margin:0 0 10px">Analisi del ${new Date(q.at).toLocaleString("it-IT")} su ${q.count} ticket</p>`:""}
+   ${q.at?`<p class="small muted" style="margin:0 0 10px">Analisi del ${new Date(q.at).toLocaleString(LOCALE())} su ${q.count} ticket</p>`:""}
    ${open.length?`<div class="row" style="gap:6px;margin:0 0 10px">${[["high","alta","err"],["medium","media","warn"],["low","bassa",""]].map(([s0,l,c])=>{const n=open.filter(x=>x.severity===s0).length;return n?`<span class="pill ${c}">${n} ${l}</span>`:""}).join("")}</div>`:""}
     ${open.length?`<div class="list">${[...open].sort((a,b)=>SEV_ORD[a.severity]-SEV_ORD[b.severity]).map(row).join("")}</div>`:f.length?'<p class="empty">Nessun problema aperto.</p>':""}`}
 A.qualityCheck=()=>run("qualityCheck","Claude sta leggendo…",async()=>{const ts=ticketList();if(!ts.length)return;const refs=new Set(ts.map(t=>t.ref)),all=ts.map(t=>`${t.ref} ${fullTitle(t)} (${t.type}, epica ${t.epic||"-"})`).join("\n");const findings=[];
@@ -993,7 +995,7 @@ async function extract(file){const n=file.name.toLowerCase(),buf=()=>file.arrayB
   return[/\.csv$/.test(n)?"CSV":/\.(md|markdown)$/.test(n)?"Markdown":"Testo",await file.text()]}
 async function addFiles(files){if(READONLY)return;for(const f of files){const u={name:f.name,s:"run",note:"estrazione del testo…"};T.uploads.push(u);scheduleRender();
   try{const[kind,txt]=await extract(f);const text=String(txt||"").replace(/\u0000/g,"").trim();if(!text)throw{message:"Nessun testo trovato. Se è un PDF scansionato, caricalo come immagine."};
-    const id=uid();await put("docs",id,{name:f.name,kind,text:text.slice(0,MAXCH),chars:Math.min(text.length,MAXCH),truncated:text.length>MAXCH,at:Date.now()});u.s="ok";u.note=text.length.toLocaleString("it-IT")+" caratteri"}
+    const id=uid();await put("docs",id,{name:f.name,kind,text:text.slice(0,MAXCH),chars:Math.min(text.length,MAXCH),truncated:text.length>MAXCH,at:Date.now()});u.s="ok";u.note=text.length.toLocaleString(LOCALE())+" caratteri"}
   catch(e){u.s="err";u.note=e?.code?aiMsg(e):(e?.message||"estrazione non riuscita")}scheduleRender()}}
 A.pasteDoc=()=>{const n=$("#pasteName").value.trim()||"Testo incollato "+today(),t=$("#pasteText").value.trim();if(!t){toast("Incolla un testo prima di aggiungerlo.");return}put("docs",uid(),{name:n,kind:"Testo",text:t.slice(0,MAXCH),chars:Math.min(t.length,MAXCH),truncated:t.length>MAXCH,at:Date.now()});$("#pasteText").value="";$("#pasteName").value="";toast("Testo aggiunto ai documenti.")};
 A.delDoc=el=>arm("doc"+el.dataset.id,el,()=>del("docs",el.dataset.id));
@@ -1101,7 +1103,7 @@ REQUISITI:
 ${reqs.map(reqLine).join("\n")}
 
 Rispondi SOLO con JSON: {"tickets":[{"tmp":"a1","req":"ID requisito","type":"Story|UX Story|Task|Bug","area":"be|web|mobile|fw|ux-web|ux-mobile|ux-both","title":"","epic":"","work":"","labels":[],"description":"","links":[{"type":"blocks|relates","to":"tmp di un altro ticket di questa risposta"}],"assumptions":[""]}]}`;
-  let out;try{out=await ask(prompt,{onText:({text})=>{const b=$('[data-act="genTickets"]');if(b)b.textContent=`Claude scrive… ${text.length.toLocaleString("it-IT")} caratteri`}})}catch(e){throw{ai:1,e}}
+  let out;try{out=await ask(prompt,{onText:({text})=>{const b=$('[data-act="genTickets"]');if(b)b.textContent=`Claude scrive… ${text.length.toLocaleString(LOCALE())} caratteri`}})}catch(e){throw{ai:1,e}}
   const list=out?.tickets||[];let n=nextRef();const map={};const made=[];
   list.forEach(x=>{const req=reqs.find(r=>r.code===x.req)||reqs[0];const ref=fmtRef(n++);if(x.tmp)map[x.tmp]=ref;made.push([x,ticketFromAI(x,ref,req)])});
   for(const[x,t]of made){t.links=(x.links||[]).map(l=>({type:l.type==="blocks"?"blocks":"relates",to:map[l.to]})).filter(l=>l.to&&l.to!==t.ref);await put("tickets",uid(),t)}
@@ -1118,7 +1120,7 @@ A.exportTickets=()=>{const k=K();exportCsv("backlog.csv",["Ref","Requisito","Tip
 
 /* passo 7 */
 let logTimer=null;
-function logLine(s){T.log.push(new Date().toLocaleTimeString("it-IT")+"  "+s);scheduleRender();
+function logLine(s){T.log.push(new Date().toLocaleTimeString(LOCALE())+"  "+s);scheduleRender();
   clearTimeout(logTimer);logTimer=setTimeout(()=>{if(!READONLY)saveMeta("runlog",{at:Date.now(),lines:T.log.slice(-300)})},800)}
 let EXT_TYPE={};
 async function fetchExisting(){const p=P(),ex={};EXT_TYPE={};let token,pages=0;do{const r=await jira("searchJiraIssuesUsingJql",{cloudId:p.cloudId,jql:`project = "${p.key}" ORDER BY created DESC`,maxResults:100,fields:["summary","issuetype"],...(token?{nextPageToken:token}:{})});
@@ -1436,13 +1438,13 @@ function actCard(t,a,i){const st=a.status||"open",v=st==="open"?actionView(a):{t
   const tail=st==="applied"?`<span class="chip ok">Applicata</span>`:st==="skipped"?`<span class="chip plain">Scartata</span>`:v.error?`<span class="small" style="color:var(--err)">${esc(v.error)}</span>`:`<button type="button" class="primary" data-apply="${esc(t.id)}:${i}"${READONLY?" disabled":""}>Applica</button><button type="button" data-skip="${esc(t.id)}:${i}">Scarta</button>`;
   return`<div class="act${st!=="open"?" done":""}"><div class="act-t">${ICO("i-sparkle")} ${esc(v.title)}</div>${(v.lines||[]).map(l=>`<div class="act-l">${esc(l)}</div>`).join("")}<div class="row act-b">${tail}</div></div>`}
 function turnHtml(t,idx){
-  if(t.role==="user")return`<div class="bub u">${esc(t.content)}</div>`;
+  if(t.role==="user")return`<div class="bub u" data-no-i18n>${esc(t.content)}</div>`;
   if(t.role==="note")return`<div class="bub n">${esc(t.content)}</div>`;
-  return`<div class="bub a">${md(t.content)}${(t.meta?.actions||[]).map((a,i)=>actCard(t,a,i)).join("")}<div class="bub-foot"><button type="button" class="link" data-copy="${idx}">Copia</button></div></div>`}
+  return`<div class="bub a"><div data-no-i18n>${md(t.content)}</div>${(t.meta?.actions||[]).map((a,i)=>actCard(t,a,i)).join("")}<div class="bub-foot"><button type="button" class="link" data-copy="${idx}">Copia</button></div></div>`}
 function renderChat(){const turns=S.chat?.turns||[];const log=$("#chatLog");const keep=log.scrollTop,atBottom=!log.children.length||log.scrollHeight-keep-log.clientHeight<80;
   log.innerHTML=(turns.length?"":`<div class="bub n">Chiedi a Claude qualsiasi cosa sul progetto: conosce documenti, requisiti, kit, backlog e decisioni, sa a che passo sei e ricorda le conversazioni precedenti.${SAMPLE?" Può proporti modifiche: le applichi tu con un clic.":""}</div>`)+
    turns.map(turnHtml).join("")+
-   (chatPending?`<div class="bub u">${esc(chatPending.q)}</div><div class="bub a" id="liveBub">${chatPending.a?md(chatPending.a):'<span class="muted">Claude sta pensando…</span>'}</div>`:"");
+   (chatPending?`<div class="bub u" data-no-i18n>${esc(chatPending.q)}</div><div class="bub a" id="liveBub">${chatPending.a?`<div data-no-i18n>${md(chatPending.a)}</div>`:'<span class="muted">Claude sta pensando…</span>'}</div>`:"");
   if(atBottom)log.scrollTop=log.scrollHeight;else log.scrollTop=keep;$("#chatFab").classList.toggle("busy",!!chatPending);$("#chatSend").disabled=!!chatPending||!SAMPLE;$("#chatStop").hidden=!chatPending;
   $("#chatImgLbl").hidden=!(SAMPLE&&LIM?.images);$("#chatIn").placeholder=SAMPLE?"Chiedi a Claude: un dubbio sul requisito, una decisione da registrare, un ticket da correggere…":caps.sample==="login"?"Claude Code non è autenticato: esegui «claude» nel terminale e accedi.":"Per usare Claude, avvia il ponte sul tuo computer (guida nella pagina Installazione)";
   renderSugg();renderMem()}
@@ -1461,7 +1463,7 @@ function chatContext(){const k=K(),p=P(),ts=ticketList(),id=STEPS[cur].id,wantDo
   return`${RULES}
 
 COME RISPONDERE
-Rispondi in ${k.lang.po||"italiano"}, in modo breve e concreto, citando gli ID (REQ-…, T-…) quando ti riferisci a qualcosa. Stai lavorando dentro "Trama", uno strumento con ${STEPS.filter(x=>!x.aux).length} passi: ${STEPS.filter(x=>!x.aux).map((s,i)=>`${i+1} ${s.short}`).join(", ")}, più il Registro delle decisioni, sempre consultabile, e una pagina con le Regole del playbook. Hai sempre davanti lo stato completo del progetto e la memoria delle conversazioni: non chiedere all'utente informazioni che puoi leggere da lì.
+Rispondi in ${window.I18N?.lang==="en"?"inglese (l'interfaccia è in inglese)":(k.lang.po||"italiano")}, in modo breve e concreto, citando gli ID (REQ-…, T-…) quando ti riferisci a qualcosa. Stai lavorando dentro "Trama", uno strumento con ${STEPS.filter(x=>!x.aux).length} passi: ${STEPS.filter(x=>!x.aux).map((s,i)=>`${i+1} ${s.short}`).join(", ")}, più il Registro delle decisioni, sempre consultabile, e una pagina con le Regole del playbook. Hai sempre davanti lo stato completo del progetto e la memoria delle conversazioni: non chiedere all'utente informazioni che puoi leggere da lì.
 Non puoi creare ticket in Jira dalla chat: la creazione avviene solo al passo 6, dopo la conferma del PO.
 Se una modifica è utile (registrare una decisione, correggere un requisito, correggere una bozza di ticket non ancora in Jira), PROPONILA chiudendo la risposta con questo blocco esatto, una sola volta e solo alla fine:
 <<<TRAMA
@@ -1536,7 +1538,7 @@ function showGate(kind,note){GATE=kind;document.body.classList.add("gate");docum
     ${note?`<div class="msg warn">${esc(note)}</div>`:""}<div class="toolbar"><a class="btn primary" href="/api/auth/login" style="text-decoration:none;background:var(--primary);color:var(--on-primary);border-color:var(--primary)">Accedi con Atlassian</a><a href="/">Scopri come funziona</a></div><p class="small muted" style="margin-top:18px">Accedendo accetti il trattamento dei dati descritto nell'<a href="/privacy">informativa privacy</a>.</p></div>`;return}
   renderPicker(note)}
 function renderPicker(note){const ps=PROJECTS||[];const siteName=id=>(SITES.find(s=>s.id===id)||{}).name||"";
-  const day=d=>{const x=new Date(d),t=new Date();const diff=Math.round((new Date(t.toDateString())-new Date(x.toDateString()))/864e5);return diff===0?"oggi":diff===1?"ieri":"il "+x.toLocaleDateString("it-IT")};
+  const day=d=>{const x=new Date(d),t=new Date();const diff=Math.round((new Date(t.toDateString())-new Date(x.toDateString()))/864e5);return diff===0?"oggi":diff===1?"ieri":"il "+x.toLocaleDateString(LOCALE())};
   const showForm=T.npOpen||(PROJECTS&&!ps.length);
   const form=`<div class="card np-card"><h2>${ps.length?"Nuovo progetto":"Crea il tuo primo progetto"}</h2><div class="grid">${F("Nome del progetto",`<input id="npName" placeholder="Lumio · Release 1">`)}${F("Sito Atlassian",`<select id="npSite">${SITES.map(s=>`<option value="${esc(s.id)}">${esc(s.name)} · ${esc(s.url.replace(/^https:\/\//,""))}</option>`).join("")}</select>`)}</div>
    <div class="toolbar" style="margin-top:12px"><button class="primary" data-act="createProject" ${busy.createProject?"disabled":""}>${busy.createProject?"Creazione…":"Crea progetto"}</button>${ps.length?`<button type="button" data-act="npToggle">Annulla</button>`:""}</div></div>`;
@@ -1561,6 +1563,7 @@ A.createProject=async()=>{const name=$("#npName").value.trim(),cloudId=$("#npSit
 A.forgetMe=el=>{arm("forgetMe",el,async()=>{try{await BS.api("/api/me",{method:"DELETE"});location.href="/?dati=eliminati"}catch(e){toast(e.message||"Cancellazione non riuscita: riprova tra poco.")}});if(GATE==="picker")renderPicker()};
 A.deleteProject=el=>{const id=el.dataset.id,k="dp"+id;if(T.arm[k]){delete T.arm[k];closeMenus();(async()=>{try{await BS.api("/api/projects/"+encodeURIComponent(id),{method:"DELETE"});toast("Progetto eliminato.");loadProjects()}catch(e){toast(e.message)}})()}else{T.arm[k]=1;renderPicker();setTimeout(()=>{if(T.arm[k]){delete T.arm[k];if(GATE==="picker")renderPicker()}},4000)}};
 const _scheduleRender=scheduleRender;scheduleRender=function(){if(GATE==="picker"){renderPicker();return}if(GATE)return;_scheduleRender()};
+A.setLang=async el=>{const l=el.dataset.lang;if(l===window.I18N?.lang){closeMenus();return}window.I18N?.set(l);try{await window.BS?.writesDone?.()}catch{}location.reload()};
 /* menu a tendina della barra: progetto e account */
 function closeMenus(except){document.querySelectorAll(".dd").forEach(d=>{if(d===except)return;const b=d.querySelector(".dd-btn"),m=d.querySelector(".dd-menu");if(m&&!m.hidden){m.hidden=true;b.setAttribute("aria-expanded","false")}})}
 document.addEventListener("click",e=>{const b=e.target.closest(".dd-btn");if(b){const d=b.closest(".dd"),m=d.querySelector(".dd-menu"),open=m.hidden;closeMenus(d);m.hidden=!open;b.setAttribute("aria-expanded",String(open));if(open){if(d.id==="pmenu"&&PROJECTS===null&&ME){PROJECTS=[];BS.api("/api/projects").then(r=>{PROJECTS=r.projects||[];renderChrome()}).catch(()=>{})}m.querySelector("a,button")?.focus()}return}if(!e.target.closest(".dd-menu"))closeMenus()});
