@@ -17,7 +17,8 @@
     "key": "node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
     "seo": "node scripts/seo/build.mjs",
     "bridge:pack": "node scripts/pack-bridge.mjs",
-    "test:visual": "playwright test --project=visual"
+    "test:visual": "playwright test --project=visual",
+    "perf": "node scripts/misura-prestazioni.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0"

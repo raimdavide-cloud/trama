@@ -23,6 +23,7 @@ test("Requisiti: aggiunta a mano, modifica nel pannello, salvata dopo il ricaric
   await title.press("Tab"); // il campo si salva quando lo lasci
   await expect.poll(() => count(page, () => reqList().length)).toBe(before + 1);
 
+  await page.evaluate(() => BS.writesDone()); // il salvataggio è arrivato al server
   await page.reload(); // salvato sul server, non solo nella pagina
   await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
   await goToStep(page, "Requisiti");
@@ -200,4 +201,52 @@ test("pagine pubbliche: ogni collegamento interno porta a una pagina che esiste"
   }
   expect(broken).toEqual([]);
   expect(seen.size).toBeGreaterThan(4);
+});
+
+test("salvataggio in blocco: rinominare una release aggiorna decine di elementi con una sola richiesta, salvata sul server", async ({ page, request }) => {
+  await openStudio(page);
+  const writes = [];
+  page.on("request", (r) => { if (["PUT", "POST", "DELETE"].includes(r.method()) && r.url().includes("/api/projects/")) writes.push(`${r.method()} ${new URL(r.url()).pathname.split("/").slice(3).join("/")}`); });
+  await goToStep(page, "Kit di progetto");
+  const old = await page.evaluate(() => K().releases[0].name);
+  const touched = await page.evaluate((o) => reqList().filter((x) => x.release === o).length + ticketList().filter((x) => x.release === o).length, old);
+  expect(touched).toBeGreaterThan(20);
+  await openSec(page, "Release (= Fasi in Jira)");
+  const name = page.locator('[data-bind="meta:kit:releases.0.name"]');
+  await name.fill(`${old} bis`);
+  await name.press("Tab");
+  await page.evaluate(() => BS.writesDone());
+  expect(writes.filter((w) => w.startsWith("POST") && w.endsWith("/batch")).length, writes.join("\n")).toBe(1);
+  expect(writes.length, "nessuna richiesta per singolo elemento").toBeLessThanOrEqual(2);
+  const saved = (await (await request.get("/api/projects/progetto-prova")).json()).items;
+  expect(saved.filter((i) => (i.col === "reqs" || i.col === "tickets") && i.data.release === old)).toHaveLength(0);
+  expect(saved.filter((i) => (i.col === "reqs" || i.col === "tickets") && i.data.release === `${old} bis`)).toHaveLength(touched);
+});
+
+test("sincronizzazione: ogni 6 secondi mentre si lavora, ogni 30 dopo 2 minuti fermi, subito al ritorno", async ({ page }) => {
+  await page.clock.install();
+  const polls = [];
+  page.on("request", (r) => { if (/\/api\/projects\/[^/]+\?since=/.test(r.url())) polls.push(r.url()); });
+  await page.goto("/studio?p=progetto-prova");
+  await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
+  // il tempo finto avanza a passi di 3 secondi, lasciando alle richieste vere il tempo di rispondere
+  const during = async (ms) => { const n = polls.length; for (let t = 0; t < ms; t += 3000) { await page.clock.runFor(3000); await page.waitForTimeout(40); } return polls.length - n; };
+  expect(await during(60_000)).toBeGreaterThanOrEqual(9); // primo minuto: rapido
+  await during(70_000); // si supera la soglia dei 2 minuti
+  expect(await during(60_000)).toBeLessThanOrEqual(2); // da fermo: ogni 30 secondi
+  const n = polls.length;
+  await page.keyboard.press("Shift"); // si torna a lavorare: sincronizza subito
+  await page.clock.runFor(100);
+  await expect.poll(() => polls.length).toBeGreaterThan(n);
+  expect(await during(30_000)).toBeGreaterThanOrEqual(4);
+});
+
+test("chi chiude la scheda mentre un salvataggio è in corso riceve l'avviso del browser", async ({ page }) => {
+  await openStudio(page);
+  await page.route("**/api/projects/*/items/**", async (route) => { await new Promise((r) => setTimeout(r, 1500)); await route.continue(); }); // server lento
+  await page.evaluate(() => { const [id, d] = Object.entries(S.reqs)[0]; put("reqs", id, { ...d, title: d.title + " (modificato)" }); });
+  await page.waitForTimeout(100);
+  const dialog = page.waitForEvent("dialog");
+  await page.close({ runBeforeUnload: true });
+  expect((await dialog).type()).toBe("beforeunload");
 });

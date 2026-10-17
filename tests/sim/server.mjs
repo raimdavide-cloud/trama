@@ -74,6 +74,15 @@ createServer(async (req, res) => {
       else if (store.has(key)) Object.assign(store.get(key), { deleted: true, data: {}, at: Date.now() });
       return send(res, 200, { ok: true });
     }
+    if ((m = p.match(/^\/api\/projects\/([^/]+)\/batch$/)) && req.method === "POST") {
+      const { ops } = JSON.parse(raw);
+      for (const o of ops) {
+        const key = `${o.col}/${o.id}`;
+        if (o.data === null) { if (store.has(key)) Object.assign(store.get(key), { deleted: true, data: {}, at: Date.now() }); }
+        else store.set(key, { col: o.col, id: o.id, data: o.data, deleted: false, at: Date.now() });
+      }
+      return send(res, 200, { ok: true, saved: ops.length });
+    }
     if ((m = p.match(/^\/api\/jira\/([^/]+)$/)) && req.method === "POST") {
       const op = m[1];
       if (!Object.hasOwn(ops, op)) return send(res, 200, { ok: false, code: "bad_request", message: "Operazione Jira sconosciuta." });
