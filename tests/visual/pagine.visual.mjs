@@ -32,7 +32,7 @@ for (const [i, name] of STEPS.entries()) {
     await page.goto(PROJECT);
     await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
     await page.locator("#stepList .st", { hasText: name }).click();
-    if (name === "Crea su Jira") await expect(page.locator("#ackBox")).toBeVisible({ timeout: 20_000 });
+    if (name === "Crea su Jira") await expect(page.locator('#main details.sec[data-sec="create:controllo-prima-della-creazione"] .sec-go')).toHaveAttribute("aria-disabled", "false", { timeout: 20_000 }); // controllo finito
     await page.evaluate(() => document.fonts.ready);
     await expect(page.locator("#main")).toHaveScreenshot(`studio-${i + 1}.png`, { ...shot });
   });
@@ -48,4 +48,12 @@ test("studio · regole, barra in alto e pannello Collegamenti", async ({ page })
   await page.locator("#capChips button").click();
   await expect(page.locator(".app > header")).toHaveScreenshot("studio-barra.png", shot);
   await expect(page.locator("#bridgePanel")).toHaveScreenshot("studio-collegamenti.png", shot);
+});
+
+test("studio · riepilogo a destra", async ({ page }) => {
+  await page.goto(PROJECT);
+  await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
+  await page.locator("#stepList .st", { hasText: "Kit di progetto" }).click();
+  await page.evaluate(() => document.fonts.ready);
+  await expect(page.locator("#recap")).toHaveScreenshot("studio-riepilogo.png", shot);
 });

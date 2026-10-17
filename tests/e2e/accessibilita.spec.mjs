@@ -36,7 +36,7 @@ test("accessibilità: ogni passo dello studio, pannello e Regole", async ({ page
   await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
   for (const name of ["Progetto Jira", "Requisiti", "Domande di apertura", "Kit di progetto", "Backlog", "Crea su Jira", "Registro decisioni"]) {
     await page.locator("#stepList .st", { hasText: name }).click();
-    if (name === "Crea su Jira") await expect(page.locator("#ackBox")).toBeVisible({ timeout: 20_000 });
+    if (name === "Crea su Jira") await expect(page.locator('#main details.sec[data-sec="create:controllo-prima-della-creazione"] .sec-go')).toHaveAttribute("aria-disabled", "false", { timeout: 20_000 }); // controllo finito
     await audit(page, name);
   }
   await page.locator("#stepList .st", { hasText: "Requisiti" }).click();
