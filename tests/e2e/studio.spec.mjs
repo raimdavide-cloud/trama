@@ -348,3 +348,31 @@ test("sblocco progressivo: in uno studio nuovo gli step si sbloccano uno dopo l'
   await expect(page.locator(".sp")).toBeVisible();
   await expect(locked).toHaveCount(0);
 });
+
+test("assegnazione rapida della release: un tasto per requisito, poi tutti i rimanenti con conferma", async ({ page }) => {
+  await openStudio(page);
+  await goToStep(page, "Requisiti");
+  const left = () => page.evaluate(() => reqList().filter((x) => !x.release).length);
+  const before = await left();
+  expect(before).toBeGreaterThan(2);
+  await page.locator("[data-act=relQuick]").click();
+  const panel = page.locator('.sp[data-panel="relq:all"]');
+  await expect(panel.locator(".rq-qr")).toHaveCount(before);
+  await expect(panel.locator(".rq-qr").first()).toBeFocused();
+  await page.keyboard.press("1"); // prima release alla prima riga, poi passa alla successiva
+  await page.keyboard.press("2");
+  await expect.poll(left).toBe(before - 2);
+  await expect(panel.locator(".rq-qr").nth(1).locator(".rq-qc.on")).toContainText(await page.evaluate(() => K().releases[1].name));
+  await panel.locator(".rq-qr").first().locator(".rq-qc.on").click(); // un secondo clic toglie la release
+  await expect.poll(left).toBe(before - 1);
+  const last = await page.evaluate(() => K().releases.at(-1).name);
+  await page.selectOption("#relqAll", last);
+  const all = panel.locator("[data-act=relqAll]");
+  await all.click(); // primo clic: chiede conferma
+  await expect(all).toContainText(`Conferma: «${last}»`);
+  await all.click();
+  await expect.poll(left).toBe(0);
+  await expect(panel.locator(".sp-t")).toContainText(`${before} di ${before} assegnati`);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("[data-act=relQuick]")).toHaveCount(0); // nessun requisito resta senza release
+});
