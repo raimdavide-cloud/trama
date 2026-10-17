@@ -87,7 +87,7 @@ SEQ_JIRA = seq("seq-jira", "Creazione su Jira, idempotente",
     (0, 1, "verifica: rilegge ogni ticket e i suoi campi", ""),
     (0, 0, "«Cerca in Jira» riconcilia un ticket incerto senza crearne un altro", "n"),
   ],
-  "La descrizione viaggia in wiki markup (API v2) per restare leggibile in Jira; il resto usa la v3. Un 401 provoca un rinnovo del token e un secondo tentativo; 429 e 5xx tornano come errori temporanei.")
+  "La descrizione viaggia in wiki markup (API v2) per restare leggibile in Jira; il resto usa la v3. Un 401 provoca un rinnovo del token e un secondo tentativo; su 429 e 5xx letture e ricerche JQL si riprovano fino a 3 volte (<code>Retry-After</code> o attesa esponenziale), le creazioni tornano subito come errori temporanei.")
 
 # ---------- pagina ----------
 def table(head, rows, cls="ax-t"):
@@ -150,7 +150,7 @@ LIMITS = [
   ("Ultima scrittura vincente", "Due persone sullo stesso documento nello stesso intervallo: vince l'ultima. Possibile evoluzione: versione per documento e conflitto esplicito."),
   ("Stato completo all'apertura", "Il progetto si carica intero (circa 270 KB nel progetto di prova), testo dei documenti compreso. Possibile evoluzione: testo dei documenti su richiesta."),
   ("Polling invece di push", "Fino a 30 secondi per vedere le modifiche di un collega fermo da più di 2 minuti."),
-  ("Limiti di Jira gestiti in modo semplice", "429 e 5xx tornano come errori temporanei; non c'è un'attesa esponenziale automatica tra un tentativo e l'altro."),
+  ("Creazioni in Jira senza nuovi tentativi automatici", "Letture e ricerche JQL si riprovano da sole su 429 e 5xx (al massimo 3 tentativi; <code>Retry-After</code> rispettato fino a 10 s, altrimenti attesa esponenziale con margine casuale; 20 s di attesa in tutto). Creazioni di ticket e collegamenti no, per non creare doppioni: un esito incerto si chiarisce con la riconciliazione di Trama e «Cerca in Jira»."),
   ("Eliminazioni logiche mai ripulite", "Le righe eliminate restano marcate in <code>items</code>; servirà una pulizia periodica."),
 ]
 
@@ -249,8 +249,8 @@ page = f'''<!doctype html>
   </div>
   <div class="ax-two">
     <div class="ax-card"><h3>Test a ogni modifica</h3><ul class="ax-list">
-      <li><b>32 unitari</b>: router, sessioni e cifratura, API dei dati con database finto, operazioni Jira, segnalazioni CSP.</li>
-      <li><b>54 end-to-end</b> con Playwright su un simulatore completo: Trama vera, API in memoria, Jira finto con guasti su richiesta (risposta persa dopo la creazione, 500 prima della creazione).</li>
+      <li><b>40 unitari</b>: router, sessioni e cifratura, API dei dati con database finto, operazioni Jira e limiti di Jira (429, 5xx, <code>Retry-After</code>), segnalazioni CSP.</li>
+      <li><b>54 end-to-end</b> con Playwright su un simulatore completo: Trama vera, API in memoria, Jira finto con guasti su richiesta (risposta persa dopo la creazione, 500 prima della creazione, 429 con <code>Retry-After</code>, 503).</li>
       <li><b>Accessibilità</b> WCAG 2.2 AA con axe, anche in modalità scura; allineamento delle icone misurato; nessuna violazione della CSP su pagine e passi.</li>
       <li><b>25 confronti visivi</b> pixel per pixel, in locale.</li>
     </ul></div>

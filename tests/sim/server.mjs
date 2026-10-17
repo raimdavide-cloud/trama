@@ -62,7 +62,7 @@ createServer(async (req, res) => {
     if (p === "/__sim/state") return send(res, 200, { issues: [...sim.issues.values()].map((i) => ({ key: i.key, type: i.type, summary: i.summary, parent: i.parent || null, labels: i.fields?.labels || [], fixVersions: (i.fields?.fixVersions || []).map((v) => v.name) })), links: sim.links || [], calls: sim.calls });
     if (p === "/__sim/reset") { sim.reset(); sim.links = []; cspReports.length = 0; resetStore(); return send(res, 200, { ok: true }); }
     if (p === "/__sim/csp") return send(res, 200, { reports: cspReports });
-    if (p === "/__sim/fault") { const b = JSON.parse(raw); sim.faults[b.kind][b.type] = b.times; return send(res, 200, sim.faults); }
+    if (p === "/__sim/fault") { const b = JSON.parse(raw); sim.faults[b.kind][b.type] = b.times; if ("retryAfter" in b) sim.retryAfter = b.retryAfter; return send(res, 200, sim.faults); }
 
     // API di Trama
     if (p === "/api/csp-report" && req.method === "POST") { try { cspReports.push(JSON.parse(raw)); } catch {} res.writeHead(204, Object.fromEntries(SECURITY)); return res.end(); }
