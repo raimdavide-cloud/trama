@@ -130,7 +130,7 @@ body{background:var(--bg)}
   <div class="spec col">
     <div class="grid">
       <label class="f">Release<input value="MVP (pilota)"></label>
-      <label class="f">Tipo<select><option>Story</option><option>Spike</option><option>Task</option></select></label>
+      <label class="f">Tipo<select><option>Story</option><option>UX Story</option><option>Task</option></select></label>
       <label class="f wide">Descrizione (punto di vista dell'utente)<textarea rows="3">L'ortolano chiede un lotto e, se è pieno, entra in lista d'attesa.</textarea></label>
     </div>
     <label class="row small"><input type="checkbox" checked> Design già pronto</label>
@@ -189,7 +189,7 @@ body{background:var(--bg)}
     <li><b>Italiano</b> nello studio; <b>inglese</b> nei ticket (titoli e descrizioni), come nei team di sviluppo. I codici restano come sono: <span class="key">RF-012</span>, <span class="key">COM-904</span>.</li>
     <li>Maiuscola solo all'inizio della frase e nei nomi propri: «Crea su Jira», non «Crea Su Jira».</li>
     <li>Pulsanti: verbo + oggetto, senza punto finale. Messaggi e testi d'aiuto: frasi complete con il punto.</li>
-    <li>Errori: cosa è successo, poi cosa fare. «Il tipo «Spike» non esiste nel progetto: scegli un tipo valido nel kit.»</li>
+    <li>Errori: cosa è successo, poi cosa fare. «Il tipo «UX Story» non esiste nel progetto: scegli un tipo valido nel kit.»</li>
     <li>Stati vuoti: un invito, non una scusa. «Nessun requisito ancora. Estraili con Claude o aggiungili a mano.»</li>
     <li>Numeri e singolari: «1 requisito», «3 requisiti»; date come «16/10/2026», orari «10:42».</li>
     <li>Lo strumento non dice «io»: parla Claude solo nella chat.</li>
@@ -198,10 +198,10 @@ body{background:var(--bg)}
   <h3>Glossario</h3>
   <table class="gl"><thead><tr><th scope="col">Termine</th><th scope="col">Significato</th><th scope="col">Da non usare</th></tr></thead><tbody>
     <tr><td>Requisito</td><td>Una cosa che il prodotto deve fare, dal punto di vista dell'utente, con un ID stabile</td><td>Requirement, user story</td></tr>
-    <tr><td>Ticket</td><td>Un elemento di lavoro in Jira (Story, Spike, Task, Bug)</td><td>Issue, card</td></tr>
+    <tr><td>Ticket</td><td>Un elemento di lavoro in Jira (Story, UX Story, Task, Bug)</td><td>Issue, card</td></tr>
     <tr><td>Kit di progetto</td><td>Le regole e gli identificativi comuni a tutti i ticket (K1–K9)</td><td>Configurazione, settings</td></tr>
     <tr><td>Fase, Epica, Project</td><td>I livelli della struttura Jira: Project › Fase › Epica › ticket</td><td>Milestone, gruppo</td></tr>
-    <tr><td>Spike</td><td>Ticket di analisi o design che precede le storie</td><td>Ricerca, task UX</td></tr>
+    <tr><td>UX Story</td><td>Ticket di design (flussi, schermate, stati) che precede le storie di sviluppo; assegnato a UX</td><td>Spike, task UX</td></tr>
     <tr><td>Ipotesi</td><td>Una scelta fatta al posto del PO, da confermare</td><td>Assunzione, default</td></tr>
     <tr><td>Registro delle decisioni</td><td>L'elenco delle decisioni con fonte e impatto</td><td>Log, storico</td></tr>
     <tr><td>Ponte</td><td>Il programma sul computer che collega lo studio a Claude Code</td><td>Bridge, connettore</td></tr>

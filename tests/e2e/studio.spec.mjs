@@ -145,6 +145,8 @@ test("Crea su Jira: anteprima a colonne, poi struttura completa e collegata", as
   const byType = state.issues.reduce((m, i) => ((m[i.type] = (m[i.type] || 0) + 1), m), {});
   expect(byType.Project).toBe(1);
   expect(byType.Fase).toBeGreaterThanOrEqual(1);
+  expect(byType["UX Story"], "i ticket di design nascono in Jira come UX Story").toBeGreaterThan(0);
+  expect(byType.Spike).toBeUndefined();
   expect(state.issues.length).toBeGreaterThan(40);
   const keys = new Set(state.issues.map((i) => i.key));
   for (const i of state.issues) if (i.type !== "Project") expect(keys.has(i.parent), `${i.key} senza padre`).toBe(true);
@@ -241,4 +243,18 @@ test("Kit: cambiare la release (= Fase) di un'epica la sposta in Jira con i suoi
   }
   await goToStep(page, "Registro decisioni");
   await expect(page.locator("#main table")).toContainText("Diario colturale");
+});
+
+test("niente più Spike: i ticket di design sono UX Story, anche nei progetti creati prima", async ({ page }) => {
+  await openStudio(page); // i dati di prova hanno ancora ticket «Spike»: lo studio li converte all'apertura
+  for (const name of ["Progetto Jira", "Requisiti", "Domande di apertura", "Kit di progetto", "Backlog", "Crea su Jira", "Registro decisioni"]) {
+    await page.locator("#stepList .st", { hasText: name }).click();
+    await expect(page.locator("#main"), name).not.toContainText(/spike/i);
+  }
+  await page.locator("#stepList .st", { hasText: "Kit di progetto" }).click();
+  await expect(page.locator('select[data-bind="meta:kit:types.UX Story"]')).toHaveValue("UX Story");
+  await page.locator("#stepList .st", { hasText: "Backlog" }).click();
+  expect(await page.locator("#main .dt .pill", { hasText: "UX Story" }).count()).toBeGreaterThan(0);
+  const types = await page.evaluate(() => [...new Set(ticketList().map((t) => t.type))]);
+  expect(types).not.toContain("Spike");
 });

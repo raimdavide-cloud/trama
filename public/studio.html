@@ -96,7 +96,7 @@ const AREAS={
   "ux-both":{label:"UX Web/Mobile",prefix:"[UX - Web/Mobile]",comp:["web","mobile"],team:"ux",work:"UX-UI"}};
 const COMP_LABEL={be:"Back-end / Cloud",web:"Web App",mobile:"Mobile App",fw:"Firmware"};
 const REQ_COMPS=["Web App","Mobile App","Back-end/Cloud","Firmware"];
-const TYPES=["Story","Spike","Task","Bug"];
+const TYPES=["Story","UX Story","Task","Bug"];
 const WORK=["Back-End","UI","Logic","UX-UI"];
 const LABELS=["Back-End","UI","Logic","UX-UI","Automation_Test","Manual_Test","Android","iOS","NeedsDesignClarification"];
 const CANON=Object.fromEntries(LABELS.map(l=>[l.toLowerCase().replace(/[^a-z0-9]/g,""),l]));
@@ -104,7 +104,7 @@ const canonLabel=l=>CANON[String(l).toLowerCase().replace(/[^a-z0-9]/g,"")]||/^r
 const SECTIONS={
   Story:["## Context","## User story","## Scope / Action","## Dependencies","## Points to clarify","## Acceptance criteria","## References"],
   Bug:["## Context","## Steps to reproduce","## Expected result","## Actual result","## Evidence","## Acceptance criteria"],
-  Spike:["## Context","## Content to include","## Reference","## Points to define in the design","## Acceptance criteria"],
+  "UX Story":["## Context","## Content to include","## Reference","## Points to define in the design","## Acceptance criteria"],
   Task:["## Context","## Action","## Acceptance criteria","## Notes"]};
 const TEMPLATES={
 Story:`## Context
@@ -143,7 +143,7 @@ Screenshots, logs, error messages.
 
 ## Acceptance criteria
 * The fix, plus the regression checks.`,
-Spike:`## Context
+"UX Story":`## Context
 The requirement and the platforms involved.
 
 ## Content to include
@@ -173,7 +173,7 @@ const STD_QUESTIONS={
 "Strumenti":["Progetto nel tracker esistente o da creare? Campi custom obbligatori?","Dove vivono i design e la documentazione?"]};
 const DECISION_TYPES=["Organizzazione del backlog","Valori e limiti di prodotto","Vincoli di dominio","Ambienti e rilasci","Perimetro funzionale","Processo","Altro"];
 function defaultKit(){return{productName:"",components:{be:"",web:"",mobile:"",fw:""},releases:[],epics:[],
-  team:{be:{},web:{},mobile:{},fw:{},ux:{},qa:{}},types:{Story:"Story",Spike:"Spike",Task:"Task",Bug:"Bug",Epic:"Epic"},
+  team:{be:{},web:{},mobile:{},fw:{},ux:{},qa:{}},types:{Story:"Story","UX Story":"UX Story",Task:"Task",Bug:"Bug",Epic:"Epic"},
   links:{relates:"",blocks:""},custom:{},extraLabels:"",glossary:"",constraints:"",envs:"",
   lang:{po:"Italiano",tickets:"English",client:"English, registro formale"},autoAssign:true,
   hier:{enabled:true,projectType:"",phaseType:"",examples:{project:"",phase:"",epic:""},project:{key:"",name:""},phases:[]}}}
@@ -183,8 +183,8 @@ REGOLE:
 - Il PO decide; tu proponi, scrivi, segnali ipotesi e punti aperti. Dichiara sempre ogni ipotesi.
 - Fase 0: un requisito per riga con ID stabile, titolo, descrizione dal punto di vista dell'utente, componenti (Web App, Mobile App, Back-end/Cloud, Firmware), release, note UI/UX (sulla riga giusta: attenzione alle colonne sfalsate), dipendenze esterne e interne, domande aperte. Le domande di apertura si chiudono prima di creare ticket; dove manca la risposta si scrive un'ipotesi esplicita.
 - Kit: identificativi del tracker; per ogni release un nome e una label Release1, Release2… (ogni release è una Fase in Jira); epiche per area funzionale più "Cross-cutting polish" per infrastruttura, CI e rifiniture; label canoniche (Back-End, UI, Logic, UX-UI, Automation_Test, Manual_Test, Android, iOS, NeedsDesignClarification) sempre scritte uguali; prefissi titoli [BE], [FE - Web], [FE - Mobile], [UX - Web], [UX - Mobile], [UX - Web/Mobile], [FW]; glossario; lingua; vincoli già decisi.
-- Scomposizione di ogni requisito: epica dell'area nella release giusta; se c'è interfaccia e il design non è pronto, una Spike UX per ogni componente con UI; a design pronto una Story BE (dati, API, regole), una FE Web e una FE Mobile secondo i componenti; due storie BE se il back-end ha due lavori distinti; un ticket FW collegato come bloccante se servono firmware o librerie nuove; ogni ticket collegato al requisito e ai fratelli (relates, oppure blocks se uno attende l'altro).
-- Tipi: Story = valore per l'utente con esito verificabile; Spike = definire un concetto prima di implementarlo; Bug = comportamento diverso dall'atteso in una funzione consegnata; Task = lavoro tecnico circoscritto senza valore diretto.
+- Scomposizione di ogni requisito: epica dell'area nella release giusta; se c'è interfaccia e il design non è pronto, una UX Story per ogni componente con UI; a design pronto una Story BE (dati, API, regole), una FE Web e una FE Mobile secondo i componenti; due storie BE se il back-end ha due lavori distinti; un ticket FW collegato come bloccante se servono firmware o librerie nuove; ogni ticket collegato al requisito e ai fratelli (relates, oppure blocks se uno attende l'altro).
+- Tipi: Story = valore per l'utente con esito verificabile; UX Story = progettare l'interfaccia (flussi, schermate, stati) prima dello sviluppo; Bug = comportamento diverso dall'atteso in una funzione consegnata; Task = lavoro tecnico circoscritto senza valore diretto.
 - Metadati obbligatori su ogni ticket: epica, label di release, label di tipo lavoro, campi custom obbligatori di Jira, prefisso nel titolo. Componente e assegnatario sono facoltativi: nella strutturazione del backlog non servono, si impostano più avanti quando esistono in Jira.
 - I ticket si scrivono sempre in inglese con i modelli standard; "Points to clarify" rende visibili le decisioni che spettano a PO o cliente.
 - Ciclo per ogni richiesta: capire l'input; guardare lo stato reale prima di scrivere; chiedere quando sbagliare costa caro, altrimenti procedere dichiarando l'ipotesi; scrivere applicando il kit; creare, poi collegare con le chiavi reali, poi verificare; rispondere in breve (cosa è stato fatto, scelte fatte al posto del PO, cosa resta da decidere, ticket corrispondenti su altri componenti).
@@ -494,6 +494,12 @@ async function epicMoveRun(){const mv=T.epicMove;if(!mv)return;const p=P(),k=K()
     T.epicMove=null;
     setMsg("kit",fails.length||!parentOk||labOk<targets.length?"warn":"ok",`${parentOk?`Epica «${e.name}» spostata nella Fase ${ph.key}`:`L'epica «${e.name}» non risulta sotto la Fase ${ph.key}: controlla in Jira`}; label di release verificate su ${labOk} di ${targets.length} elementi.${fails.length?" Non aggiornati: "+fails.slice(0,4).join("; ")+(fails.length>4?" …":""):""}`)}
   finally{progEnd("epicMove")}}
+/* Gli Spike non esistono più: i ticket di design sono UX Story, come il tipo di Jira.
+   All'apertura di un progetto creato prima, i ticket «Spike» e la mappatura del kit passano a «UX Story» (una volta sola). */
+let SPIKE_DONE=false;
+function migrateSpike(loaded){if(SPIKE_DONE||READONLY||!loaded.has("meta")||!loaded.has("tickets"))return;SPIKE_DONE=true;
+  if(S.kit?.types&&"Spike" in S.kit.types)editKit(k=>{const was=k.types.Spike;delete k.types.Spike;if(!k.types["UX Story"])k.types["UX Story"]=!was||was==="Spike"||was==="Task"?"UX Story":was});
+  arr("tickets").filter(t=>t.type==="Spike").forEach(t=>{const{id,...d}=t;put("tickets",id,{...d,type:"UX Story"})})}
 function docsView(){const d=arr("docs").sort((a,b)=>(a.at||0)-(b.at||0));
   let h=`<label class="drop" id="drop"><input type="file" id="fileIn" multiple accept=".docx,.pdf,.xlsx,.xls,.csv,.txt,.md,.markdown,.json,image/png,image/jpeg,image/webp,image/gif" ${READONLY?"disabled":""}><b>Trascina qui i file o scegli dal computer</b><span class="small muted">Word (.docx), PDF, Excel (.xlsx, .xls), CSV, testo, Markdown, immagini</span></label>`;
   if(T.uploads.length)h+=`<div class="list" style="margin-top:10px">${T.uploads.map(u=>`<div class="row small"><span class="pill ${u.s==="ok"?"ok":u.s==="err"?"err":"acc"}">${u.s==="ok"?"Caricato":u.s==="err"?"Errore":"In lavorazione"}</span><b>${esc(u.name)}</b><span class="muted">${esc(u.note||"")}</span></div>`).join("")}</div>`;
@@ -599,8 +605,8 @@ function nextRef(){const n=ticketList().reduce((m,t)=>Math.max(m,+(String(t.ref)
 const fmtRef=n=>"T-"+String(n).padStart(3,"0");
 const linksText=t=>(t.links||[]).map(l=>`${l.type}: ${l.to}`).join(", ");
 STEPS.push({id:"backlog",phase:"Creazione",short:"Backlog",sub:"Scomposizione e metadati",title:"Scomponi i requisiti in ticket",
- goal:"Claude scompone ogni requisito della release secondo le regole (spike UX, storie BE/FE, ticket FW, collegamenti) e scrive i ticket in inglese con i modelli. Lo strumento controlla i metadati obbligatori prima della creazione.",
- rules:["Epica dell'area funzionale nella release giusta.","Spike UX per ogni componente con UI, assegnata a UX; si salta se il design esiste già.","A design pronto: una storia BE per dati, API e regole; una FE Web e una FE Mobile. Due storie BE se ci sono due lavori distinti.","Firmware e librerie: un ticket per quel team, collegato come bloccante.","Tracciabilità: ogni ticket è collegato al requisito d'origine e ai fratelli.","Metadati obbligatori: epica, label di release, label di tipo lavoro, campi custom obbligatori di Jira, prefisso (1.4). Componente e assegnatario sono facoltativi: si impostano quando esistono in Jira.","Ticket in inglese con la stessa struttura; «Points to clarify» rende visibili le decisioni di PO e cliente."],
+ goal:"Claude scompone ogni requisito della release secondo le regole (UX Story, storie BE/FE, ticket FW, collegamenti) e scrive i ticket in inglese con i modelli. Lo strumento controlla i metadati obbligatori prima della creazione.",
+ rules:["Epica dell'area funzionale nella release giusta.","Una UX Story per ogni componente con UI, assegnata a UX; si salta se il design esiste già.","A design pronto: una storia BE per dati, API e regole; una FE Web e una FE Mobile. Due storie BE se ci sono due lavori distinti.","Firmware e librerie: un ticket per quel team, collegato come bloccante.","Tracciabilità: ogni ticket è collegato al requisito d'origine e ai fratelli.","Metadati obbligatori: epica, label di release, label di tipo lavoro, campi custom obbligatori di Jira, prefisso (1.4). Componente e assegnatario sono facoltativi: si impostano quando esistono in Jira.","Ticket in inglese con la stessa struttura; «Points to clarify» rende visibili le decisioni di PO e cliente."],
  checks:()=>{const ts=ticketList();const errs=ts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;
   return[{t:"Ticket generati per i requisiti",ok:ts.length>0},{t:"Nessun ticket con errori di metadati",ok:ts.length>0&&errs===0}]},
  view(){const k=K(),rs=reqList(),ts=ticketList();const rels=k.releases.map(r=>r.name);if(!T.rel||!rels.includes(T.rel)&&T.rel!=="*")T.rel=rels[0]||"*";
@@ -872,12 +878,12 @@ async function readConfig(){const p=P();if(!p.key)return;const cloudId=p.cloudId
   const required=fields.filter(f=>f.required&&String(f.fieldId||f.key).startsWith("customfield_")).map(f=>({key:f.fieldId||f.key,name:f.name,allowed:(f.allowedValues||[]).map(v=>v.value||v.name).filter(Boolean)}));
   const sprint=fields.find(f=>String(f.schema?.custom||"").includes("gh-sprint")),sp=fields.find(f=>/story point/i.test(f.name||""));
   saveMeta("jira",{key:p.key,readAt:Date.now(),types:types.filter(t=>!t.subtask).map(t=>({id:t.id,name:t.name,level:t.level})),links,components:comps,required,sprintField:sprint?.fieldId||sprint?.key||"",spField:sp?.fieldId||sp?.key||"",storyTypeId:story?.id||""});
-  editKit(k=>{const names=types.filter(t=>!t.subtask).map(t=>t.name);const ALT={Story:["Story","Task"],Spike:["Spike","Task","Story"],Task:["Task","Story"],Bug:["Bug","Task","Story"],Epic:["Epic"]};
+  editKit(k=>{const names=types.filter(t=>!t.subtask).map(t=>t.name);const ALT={Story:["Story","Task"],"UX Story":["UX Story","Story","Task"],Task:["Task","Story"],Bug:["Bug","Task","Story"],Epic:["Epic"]};
     Object.keys(k.types).forEach(t=>{const cand=[k.types[t],...(ALT[t]||[t])];let m=null;for(const c of cand){m=names.find(n=>n.toLowerCase()===String(c).toLowerCase());if(m)break}if(m)k.types[t]=m});
     if(!links.some(l=>l.name===k.links.relates))k.links.relates=links.find(l=>/relat/i.test(l.name))?.name||"";
     if(!links.some(l=>l.name===k.links.blocks))k.links.blocks=links.find(l=>/block/i.test(l.name))?.name||""});
   if(K().hier?.enabled)autoStructure();
-  const kk=K(),need=[...new Set([kk.types.Story,kk.types.Task,kk.types.Bug,kk.types.Spike,kk.types.Epic,kk.hier?.enabled?kk.hier.projectType:"",kk.hier?.enabled?kk.hier.phaseType:""].filter(Boolean))];
+  const kk=K(),need=[...new Set([kk.types.Story,kk.types.Task,kk.types.Bug,kk.types["UX Story"],kk.types.Epic,kk.hier?.enabled?kk.hier.projectType:"",kk.hier?.enabled?kk.hier.phaseType:""].filter(Boolean))];
   const reqByType={};for(const name of need){const ty=types.find(t=>t.name===name&&!t.subtask);if(!ty)continue;
     try{const fm=await jira("getJiraIssueTypeMetaWithFields",{cloudId,projectIdOrKey:p.key,issueTypeId:ty.id,requiredFieldsOnly:false,maxResults:100});
       reqByType[name]=(fm?.fields||[]).filter(f=>f.required&&!["project","issuetype","summary","reporter","description"].includes(f.fieldId||f.key)).map(f=>({key:f.fieldId||f.key,name:f.name}))}
@@ -977,25 +983,25 @@ A.proposeKit=()=>run("proposeKit","Claude sta pensando…",async()=>{const ans=a
   setMsg("kit","warn","",`<b>Kit proposto da Claude.</b> Ho compilato solo i campi vuoti. Ipotesi da verificare:<ul>${(out.assumptions||[]).map(a=>`<li>${esc(a)}</li>`).join("")||"<li>nessuna dichiarata</li>"}</ul>`)});
 
 /* passo 6 */
-function ticketFromAI(x,ref,req){const area=AREAS[x.area]?x.area:"be";const type=TYPES.includes(x.type)?x.type:"Story";
+function ticketFromAI(x,ref,req){const area=AREAS[x.area]?x.area:"be";const type=TYPES.includes(x.type)?x.type:/spike/i.test(x.type||"")?"UX Story":"Story";
   return{ref,req:req?.code||x.req||"",type,area,title:String(x.title||"").replace(/^\s*\[[^\]]+\]\s*/,"").trim(),epic:K().epics.some(e=>e.name===x.epic)?x.epic:"",release:req?.release||"",work:WORK.includes(x.work)?x.work:AREAS[area].work,
    labels:(x.labels||[]).map(canonLabel).filter(l=>!WORK.includes(l)&&!/^Release\d+$/.test(l)),desc:String(x.description||TEMPLATES[type]),links:[],assumptions:(x.assumptions||[]).map(String),state:"draft",order:Date.now()}}
 async function genFor(reqs){const k=K();const prompt=`${RULES}
 
 COMPITO: scomponi i requisiti seguenti in ticket Jira applicando le regole di scomposizione (1.2) e di scelta del tipo (1.3).
-- Requisito con interfaccia e design NON pronto: una Spike per ogni piattaforma con UI (area ux-web, ux-mobile oppure ux-both se identica), più la Story BE se servono dati o API. Le storie FE si fanno a design pronto.
+- Requisito con interfaccia e design NON pronto: una UX Story per ogni piattaforma con UI (area ux-web, ux-mobile oppure ux-both se identica), più la Story BE se servono dati o API. Le storie FE si fanno a design pronto.
 - Requisito con design pronto: Story BE (area be), Story FE Web (web), Story FE Mobile (mobile) secondo i componenti.
 - Firmware o librerie nuove: Task o Story in area fw che BLOCCA i ticket che la attendono.
-- Collega i fratelli: "relates" tra ticket dello stesso requisito, "blocks" quando uno attende l'altro (la BE che fornisce le API blocca le FE; la spike UX blocca le FE).
+- Collega i fratelli: "relates" tra ticket dello stesso requisito, "blocks" quando uno attende l'altro (la BE che fornisce le API blocca le FE; la UX Story blocca le FE).
 - Titolo in inglese, breve, SENZA prefisso (il prefisso viene aggiunto dall'area).
 - Epica: SOLO uno dei nomi elencati; se nessuna è adatta, lascia vuoto e spiegalo in assumptions.
-- work: Back-End per area be, UI o Logic per FE e FW, UX-UI per le spike UX.
+- work: Back-End per area be, UI o Logic per FE e FW, UX-UI per le UX Story.
 - labels: solo extra canoniche (Android, iOS, Manual_Test, Automation_Test, NeedsDesignClarification) quando servono.
 - description: in ${k.lang.tickets||"English"}, in Markdown, con ESATTAMENTE le sezioni del modello del tipo:
 STORY:
 ${TEMPLATES.Story}
-SPIKE:
-${TEMPLATES.Spike}
+UX STORY:
+${TEMPLATES["UX Story"]}
 TASK:
 ${TEMPLATES.Task}
   Nella sezione References cita l'ID del requisito d'origine. In "Points to clarify" metti le decisioni che spettano al PO o al cliente. Non citare chiavi Jira: non esistono ancora.
@@ -1008,7 +1014,7 @@ Vincoli già decisi: ${k.constraints||"-"}
 REQUISITI:
 ${reqs.map(reqLine).join("\n")}
 
-Rispondi SOLO con JSON: {"tickets":[{"tmp":"a1","req":"ID requisito","type":"Story|Spike|Task|Bug","area":"be|web|mobile|fw|ux-web|ux-mobile|ux-both","title":"","epic":"","work":"","labels":[],"description":"","links":[{"type":"blocks|relates","to":"tmp di un altro ticket di questa risposta"}],"assumptions":[""]}]}`;
+Rispondi SOLO con JSON: {"tickets":[{"tmp":"a1","req":"ID requisito","type":"Story|UX Story|Task|Bug","area":"be|web|mobile|fw|ux-web|ux-mobile|ux-both","title":"","epic":"","work":"","labels":[],"description":"","links":[{"type":"blocks|relates","to":"tmp di un altro ticket di questa risposta"}],"assumptions":[""]}]}`;
   let out;try{out=await ask(prompt,{onText:({text})=>{const b=$('[data-act="genTickets"]');if(b)b.textContent=`Claude scrive… ${text.length.toLocaleString("it-IT")} caratteri`}})}catch(e){throw{ai:1,e}}
   const list=out?.tickets||[];let n=nextRef();const map={};const made=[];
   list.forEach(x=>{const req=reqs.find(r=>r.code===x.req)||reqs[0];const ref=fmtRef(n++);if(x.tmp)map[x.tmp]=ref;made.push([x,ticketFromAI(x,ref,req)])});
@@ -1481,10 +1487,10 @@ $("#main").innerHTML='<p class="empty" style="padding-top:10vh">Caricamento…</
   SERVER_PROJECT=st.project;document.title=st.project.name+" · Trama";
   DB=BS.createDB(PID,st);caps.db="ok";MCP=BS.mcp;caps.mcp="ok";LIM=await BS.sample.limits();DL=BS.downloads;
   await checkBridge();setInterval(()=>{if(!document.hidden)checkBridge()},10000);
-  DB.collection("meta").onSnapshot(s=>{s.docs.forEach(d=>{if(d.exists)S[d.id]=d.data()});S.kit={...defaultKit(),...(S.kit||{}),team:{...defaultKit().team,...(S.kit?.team||{})}};renderChat();scheduleRender()});
-  // alla prima lettura di domande e registro si riallineano le decisioni nate dalle domande (anche quelle scritte da versioni precedenti)
   const LOADED=new Set();
-  COLS.forEach(c=>DB.collection(c).onSnapshot(s=>{const o={};s.docs.forEach(d=>{if(d.exists)o[d.id]=d.data()});S[c]=o;if(!LOADED.has(c)){LOADED.add(c);if(LOADED.has("questions")&&LOADED.has("decisions")&&!LOADED.has("qsync")){LOADED.add("qsync");queueMicrotask(syncQDecisions)}}scheduleRender()}));
+  DB.collection("meta").onSnapshot(s=>{if(!LOADED.has("meta")){LOADED.add("meta");queueMicrotask(()=>migrateSpike(LOADED))}s.docs.forEach(d=>{if(d.exists)S[d.id]=d.data()});S.kit={...defaultKit(),...(S.kit||{}),team:{...defaultKit().team,...(S.kit?.team||{})}};renderChat();scheduleRender()});
+  // alla prima lettura di domande e registro si riallineano le decisioni nate dalle domande (anche quelle scritte da versioni precedenti)
+  COLS.forEach(c=>DB.collection(c).onSnapshot(s=>{const o={};s.docs.forEach(d=>{if(d.exists)o[d.id]=d.data()});S[c]=o;if(!LOADED.has(c)){LOADED.add(c);if(c==="tickets")queueMicrotask(()=>migrateSpike(LOADED));if(LOADED.has("questions")&&LOADED.has("decisions")&&!LOADED.has("qsync")){LOADED.add("qsync");queueMicrotask(syncQDecisions)}}scheduleRender()}));
   setTimeout(()=>{const p=P();if(p.cloudId!==SERVER_PROJECT.cloudId||p.siteUrl!==SERVER_PROJECT.siteUrl)editProject(q=>{q.cloudId=SERVER_PROJECT.cloudId;q.siteUrl=SERVER_PROJECT.siteUrl;if(!q.name)q.name=SERVER_PROJECT.name})},60);
   render();renderChat();if(STEPS[cur].id==="create")A.go({dataset:{i:cur}})})();
 </script>
