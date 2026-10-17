@@ -1,4 +1,4 @@
-// Confronto visivo degli stati che non si vedono aprendo i passi: pannelli, studio nuovo, dopo la creazione,
+// Confronto visivo degli stati che non si vedono aprendo i passi: pannelli, progetto nuovo, dopo la creazione,
 // finestra media, modalità scura, menu e chat. Solo in locale, come pagine.visual.mjs.
 import { test, expect } from "@playwright/test";
 import { PROJECT, openStudio, goToStep, openSec, toAck, runCreate, DONE, emptyReqs } from "../e2e/aiuti.mjs";
@@ -38,7 +38,7 @@ test("assegnazione rapida della release", async ({ page }) => {
   await expect(page).toHaveScreenshot("stato-release-rapida.png", shot);
 });
 
-test("studio nuovo: Requisiti senza documenti, step bloccati", async ({ page }) => {
+test("progetto nuovo: Requisiti senza documenti, step bloccati", async ({ page }) => {
   await openStudio(page);
   await goToStep(page, "Requisiti");
   await emptyReqs(page);

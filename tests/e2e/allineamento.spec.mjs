@@ -1,4 +1,4 @@
-// Icone allineate al testo accanto, in tutte le pagine e negli stati principali dello studio.
+// Icone allineate al testo accanto, in tutte le pagine e negli stati principali di Trama.
 // La regola sta in allineamento.mjs: centro sulla prima riga o sul blocco di testo (riquadri della home: in alto).
 import { test, expect } from "@playwright/test";
 import { misalignedIcons } from "./allineamento.mjs";
@@ -21,7 +21,7 @@ test("icone allineate: pagine pubbliche", async ({ page }) => {
   }
 });
 
-test("icone allineate: passi, pannelli, menu e chat dello studio", async ({ page }) => {
+test("icone allineate: passi, pannelli, menu e chat di Trama", async ({ page }) => {
   test.setTimeout(120_000);
   await openStudio(page);
   for (const name of ["Progetto Jira", "Requisiti", "Domande di apertura", "Kit di progetto", "Backlog", "Crea su Jira", "Registro decisioni"]) {
@@ -40,7 +40,7 @@ test("icone allineate: passi, pannelli, menu e chat dello studio", async ({ page
   await page.keyboard.press("Escape");
   await emptyReqs(page);
   await expect(page.locator("#main details.sec.locked")).toHaveCount(2);
-  await check(page, "studio nuovo con step bloccati");
+  await check(page, "progetto nuovo con step bloccati");
   await page.locator("#rulesBtn").click();
   await check(page, "Regole del playbook");
   await page.locator("[data-act=closeRules]").click();

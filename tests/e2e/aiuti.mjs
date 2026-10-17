@@ -1,4 +1,4 @@
-// Aiuti comuni ai test e2e e visivi dello studio (non è un file di test).
+// Aiuti comuni ai test e2e e visivi di Trama (non è un file di test).
 import { expect } from "@playwright/test";
 
 export const PROJECT = "/studio?p=progetto-prova";
@@ -33,6 +33,6 @@ export async function runCreate(page) {
   await run.click();
 }
 export const DONE = /Verifica: \d+ di \d+ ticket con tutti i campi salvati/;
-// uno studio «appena creato»: senza documenti e senza requisiti
+// un progetto «appena creato»: senza documenti e senza requisiti
 export const emptyReqs = (page) => page.evaluate(() => { for (const c of ["docs", "reqs"]) for (const k of Object.keys(S[c])) del(c, k); });
 export const simState = async (request) => (await request.get("/__sim/state")).json();

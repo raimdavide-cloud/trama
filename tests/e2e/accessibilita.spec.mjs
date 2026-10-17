@@ -1,4 +1,4 @@
-// Accessibilità WCAG 2.2 AA controllata con axe su tutte le pagine e su ogni passo dello studio.
+// Accessibilità WCAG 2.2 AA controllata con axe su tutte le pagine e su ogni passo di Trama.
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
@@ -30,7 +30,7 @@ test("accessibilità: pagina dei progetti", async ({ page }) => {
   await audit(page, "progetti");
 });
 
-test("accessibilità: ogni passo dello studio, pannello e Regole", async ({ page }) => {
+test("accessibilità: ogni passo di Trama, pannello e Regole", async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto(PROJECT);
   await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
@@ -50,7 +50,7 @@ test("accessibilità: ogni passo dello studio, pannello e Regole", async ({ page
   await audit(page, "pannello Collegamenti");
 });
 
-test("accessibilità: studio nuovo, pannelli, assegnazione rapida, menu e chat", async ({ page }) => {
+test("accessibilità: progetto nuovo, pannelli, assegnazione rapida, menu e chat", async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto(PROJECT);
   await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
@@ -65,7 +65,7 @@ test("accessibilità: studio nuovo, pannelli, assegnazione rapida, menu e chat",
   await page.keyboard.press("Escape");
   await page.evaluate(() => { for (const c of ["docs", "reqs"]) for (const k of Object.keys(S[c])) del(c, k); });
   await expect(page.locator("#main details.sec.locked")).toHaveCount(2);
-  await audit(page, "studio nuovo con step bloccati");
+  await audit(page, "progetto nuovo con step bloccati");
   await page.locator("#projBtn").click();
   await audit(page, "menu del progetto");
   await page.keyboard.press("Escape");
@@ -82,7 +82,7 @@ test.describe("modalità scura", () => {
       await audit(page, `${path} (scuro)`);
     });
   }
-  test("accessibilità in modalità scura: passi dello studio", async ({ page }) => {
+  test("accessibilità in modalità scura: passi di Trama", async ({ page }) => {
     test.setTimeout(120_000);
     await page.goto(PROJECT);
     await expect(page.locator(".progress b")).toContainText("di 6 passi completati");

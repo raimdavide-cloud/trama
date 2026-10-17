@@ -1,11 +1,11 @@
 // Ponte locale Claude Code: fa usare a Trama il tuo abbonamento Claude Code.
 // Avvio: npm run claude   (dal progetto) oppure   node trama-ponte.mjs   (file scaricato da /installazione).
-// Lascia aperto il terminale mentre usi lo studio.
+// Lascia aperto il terminale mentre usi Trama.
 //
 // Ascolta solo su 127.0.0.1 e accetta richieste solo dal sito indicato in APP_URL
 // (e da http://localhost:8888 per lo sviluppo). Ogni richiesta lancia `claude -p`
 // senza strumenti, in una cartella temporanea vuota, e inoltra la risposta in streaming
-// con lo stesso formato di eventi dell'API Messages, che lo studio sa già leggere.
+// con lo stesso formato di eventi dell'API Messages, che Trama sa già leggere.
 import http from "node:http";
 import { spawn, execFile } from "node:child_process";
 import { mkdtempSync, readFileSync, existsSync } from "node:fs";
@@ -225,6 +225,6 @@ server.listen(PORT, "127.0.0.1", async () => {
   console.log(`Origini consentite: ${[...ORIGINS].join(", ")}`);
   console.log(`Claude Code: ${CLAUDE}`);
   if (loggedIn === false) console.log("Attenzione: Claude Code non è autenticato. In un altro terminale esegui `claude` e accedi.");
-  console.log(TOKEN ? "Token del ponte attivo: lo studio lo deve conoscere (campo «Token» nelle impostazioni del ponte)." : "Nessun token impostato (BRIDGE_TOKEN): il ponte accetta solo questo computer. Imposta un token se lo esponi con un tunnel.");
-  console.log("Lascia aperto questo terminale mentre usi lo studio. Ctrl+C per fermarlo.");
+  console.log(TOKEN ? "Token del ponte attivo: Trama lo deve conoscere (campo «Token» nelle impostazioni del ponte)." : "Nessun token impostato (BRIDGE_TOKEN): il ponte accetta solo questo computer. Imposta un token se lo esponi con un tunnel.");
+  console.log("Lascia aperto questo terminale mentre usi Trama. Ctrl+C per fermarlo.");
 });

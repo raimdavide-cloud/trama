@@ -1,4 +1,4 @@
-// Flussi dello studio non coperti dal percorso principale: modifiche a mano, salvataggio, Domande, Kit, Backlog,
+// Flussi di Trama non coperti dal percorso principale: modifiche a mano, salvataggio, Domande, Kit, Backlog,
 // esportazioni, resilienza della creazione su Jira, chat e collegamenti delle pagine pubbliche.
 import { test, expect } from "@playwright/test";
 import { openStudio, goToStep, openSec, toAck, runCreate, DONE, simState } from "./aiuti.mjs";
@@ -104,7 +104,7 @@ test("Backlog: un ticket a mano mostra cosa manca, si corregge nel pannello e si
   await epic.selectOption({ index: 1 });
   await expect(errs).toHaveCount(0); // «cosa manca» si aggiorna mentre si compila, senza uscire dal pannello
   expect(e0).toBeGreaterThan(0);
-  // esco dai campi: lo studio fa ora il ridisegno rimandato, così la conferma non scade durante un ridisegno lento (CI)
+  // esco dai campi: Trama fa ora il ridisegno rimandato, così la conferma non scade durante un ridisegno lento (CI)
   await panel.locator(".sp-t").click();
   await expect(panel.locator('select[data-bind$=":epic"]')).toHaveValue(await epic.inputValue());
   const del = panel.locator("[data-act=delTicket]");
@@ -134,7 +134,7 @@ test("Esportazioni CSV: requisiti, ticket e decisioni con intestazione e una rig
   expect(dec.lines.length).toBe((await count(page, () => arr("decisions").length)) + 1);
 });
 
-test("Crea su Jira: se Jira crea un'epica ma la risposta si perde, lo studio la ritrova e non la duplica", async ({ page, request }) => {
+test("Crea su Jira: se Jira crea un'epica ma la risposta si perde, Trama la ritrova e non la duplica", async ({ page, request }) => {
   test.setTimeout(180_000);
   await request.post("/__sim/fault", { data: { kind: "afterCreate500", type: "Feature Epic", times: 2 } });
   await openStudio(page);
