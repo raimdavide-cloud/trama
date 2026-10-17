@@ -98,6 +98,18 @@ Test end-to-end di Trama con Playwright contro un **simulatore** (`tests/sim/ser
 
 Il simulatore accetta guasti su richiesta (`POST /__sim/fault`), per provare cosa succede quando Jira risponde con un errore o perde la risposta.
 
+## Lingua dell'interfaccia
+
+Trama è in italiano e in inglese: lo switch con la bandiera sta nell'header e la scelta resta salvata nel browser. I testi restano scritti in italiano nel codice; in inglese `public/i18n.js` li sostituisce con il dizionario `public/i18n-en.js` (testo esatto, oppure modelli con `{n}` numeri, `{q}` nomi tra «», `{k}` chiavi, `{*}` testo libero). I dati del progetto non si traducono; la chat risponde nella lingua scelta.
+
+Dopo aver aggiunto o cambiato testi dell'interfaccia:
+
+```bash
+npm run i18n:mancanti
+```
+
+elenca i testi senza traduzione (attraversa tutti gli stati di Trama sul simulatore); il test `tests/e2e/lingua.spec.mjs` fallisce finché ne manca uno.
+
 ```bash
 npm run perf
 ```

@@ -98,3 +98,14 @@ test("menu del progetto e dell'account, chat aperta", async ({ page }) => {
   await expect(page.locator("#chat")).toHaveClass(/open/);
   await expect(page.locator("#chat")).toHaveScreenshot("stato-chat.png", shot);
 });
+
+test("in inglese: Requisiti e menu della lingua", async ({ page, context }) => {
+  await context.addInitScript(() => { try { localStorage.setItem("trama:lang", "en"); } catch {} });
+  await page.goto(PROJECT);
+  await expect(page.locator(".progress b")).toHaveText(/steps completed/);
+  await goToStep(page, "Requirements");
+  await ready(page);
+  await expect(page).toHaveScreenshot("stato-inglese-requisiti.png", shot);
+  await page.locator("#langBtn").click();
+  await expect(page).toHaveScreenshot("stato-menu-lingua.png", { ...shot, clip: { x: 900, y: 0, width: 540, height: 260 } });
+});

@@ -18,7 +18,8 @@
     "seo": "node scripts/seo/build.mjs",
     "bridge:pack": "node scripts/pack-bridge.mjs",
     "test:visual": "playwright test --project=visual",
-    "perf": "node scripts/misura-prestazioni.mjs"
+    "perf": "node scripts/misura-prestazioni.mjs",
+    "i18n:mancanti": "node scripts/i18n/raccogli.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0"
