@@ -5,7 +5,7 @@ import { json, fail, getUser, sql, siteIds, sameOrigin, randomId } from "../lib/
 export default async (req) => {
   const user = await getUser(req);
   if (!user) return fail("unauthenticated", "Accedi con Atlassian.", 401);
-  if (!sameOrigin(req)) return fail("forbidden", "Richiesta non consentita.", 403);
+  if (!sameOrigin(req)) return fail("forbidden", "Richiesta non consentita: ricarica la pagina e riprova.", 403);
   const sites = siteIds(user);
 
   if (req.method === "GET") {

@@ -6,7 +6,7 @@ export default async (req, context) => {
   if (req.method !== "POST") return fail("method", "Usa POST.", 405);
   const user = await getUser(req);
   if (!user) return fail("unauthenticated", "Accedi con Atlassian.", 401);
-  if (!sameOrigin(req)) return fail("forbidden", "Richiesta non consentita.", 403);
+  if (!sameOrigin(req)) return fail("forbidden", "Richiesta non consentita: ricarica la pagina e riprova.", 403);
   const op = context.params?.op;
   if (!Object.hasOwn(ops, op)) return fail("bad_request", "Operazione Jira sconosciuta.");
   const input = await req.json().catch(() => ({}));

@@ -95,7 +95,7 @@ const STD_QUESTIONS={
 "Persone e decisioni":["Chi decide lato cliente su priorità, UX e release?","Chi è il riferimento tecnico lato cliente?","Chi compone il team interno, con quali ruoli e quali componenti?"],
 "Processo":["Durata degli sprint e giorno di planning.","Ambienti disponibili e a cosa serve ciascuno.","Chi fa QA manuale e automatico, su quale ambiente.","Cadenza di rilascio e chi dà il via libera."],
 "Comunicazione":["Lingua dei ticket e della documentazione.","Lingua e tono verso il cliente.","Frequenza e formato degli status update."],
-"Strumenti":["Progetto nel tracker esistente o da creare? Campi custom obbligatori?","Dove vivono i design e la documentazione?"]};
+"Strumenti":["Progetto nel tracker esistente o da creare? Campi personalizzati obbligatori?","Dove vivono i design e la documentazione?"]};
 const DECISION_TYPES=["Organizzazione del backlog","Valori e limiti di prodotto","Vincoli di dominio","Ambienti e rilasci","Perimetro funzionale","Processo","Altro"];
 function defaultKit(){return{productName:"",components:{be:"",web:"",mobile:"",fw:""},releases:[],epics:[],
   team:{be:{},web:{},mobile:{},fw:{},ux:{},qa:{}},types:{Story:"Story","UX Story":"UX Story",Task:"Task",Bug:"Bug",Epic:"Epic"},
@@ -110,11 +110,11 @@ REGOLE:
 - Kit: identificativi del tracker; per ogni release un nome e una label Release1, Release2… (ogni release è una Fase in Jira); epiche per area funzionale più "Cross-cutting polish" per infrastruttura, CI e rifiniture; label canoniche (Back-End, UI, Logic, UX-UI, Automation_Test, Manual_Test, Android, iOS, NeedsDesignClarification) sempre scritte uguali; prefissi titoli [BE], [FE - Web], [FE - Mobile], [UX - Web], [UX - Mobile], [UX - Web/Mobile], [FW]; glossario; lingua; vincoli già decisi.
 - Scomposizione di ogni requisito: epica dell'area nella release giusta; se c'è interfaccia e il design non è pronto, una UX Story per ogni componente con UI; a design pronto una Story BE (dati, API, regole), una FE Web e una FE Mobile secondo i componenti; due storie BE se il back-end ha due lavori distinti; un ticket FW collegato come bloccante se servono firmware o librerie nuove; ogni ticket collegato al requisito e ai fratelli (relates, oppure blocks se uno attende l'altro).
 - Tipi: Story = valore per l'utente con esito verificabile; UX Story = progettare l'interfaccia (flussi, schermate, stati) prima dello sviluppo; Bug = comportamento diverso dall'atteso in una funzione consegnata; Task = lavoro tecnico circoscritto senza valore diretto.
-- Metadati obbligatori su ogni ticket: epica, label di release, label di tipo lavoro, campi custom obbligatori di Jira, prefisso nel titolo. Componente e assegnatario sono facoltativi: nella strutturazione del backlog non servono, si impostano più avanti quando esistono in Jira.
+- Metadati obbligatori su ogni ticket: epica, label di release, label di tipo lavoro, campi personalizzati obbligatori di Jira, prefisso nel titolo. Componente e assegnatario sono facoltativi: nella strutturazione del backlog non servono, si impostano più avanti quando esistono in Jira.
 - I ticket si scrivono sempre in inglese con i modelli standard; "Points to clarify" rende visibili le decisioni che spettano a PO o cliente.
 - Ciclo per ogni richiesta: capire l'input; guardare lo stato reale prima di scrivere; chiedere quando sbagliare costa caro, altrimenti procedere dichiarando l'ipotesi; scrivere applicando il kit; creare, poi collegare con le chiavi reali, poi verificare; rispondere in breve (cosa è stato fatto, scelte fatte al posto del PO, cosa resta da decidere, ticket corrispondenti su altri componenti).
 - Ogni decisione che cambia prodotto, processo o classificazione va nel registro (data, decisione al presente, chi, fonte, impatto, regola del kit). Una decisione che ne contraddice un'altra aggiunge una riga e indica quale sostituisce.
-- Sicurezza: cita solo chiavi di ticket esistenti; usa i nomi esatti dei tipi di collegamento; non correggere dati del PO senza chiedere; di' cosa lo strumento non può fare (non crea progetti, componenti, versioni o sprint); fermati prima di azioni irreversibili o costose; segnala subito problemi di sicurezza.
+- Sicurezza: cita solo chiavi di ticket esistenti; usa i nomi esatti dei tipi di collegamento; non correggere dati del PO senza chiedere; di' cosa Trama non può fare (non crea progetti, componenti, versioni o sprint); fermati prima di azioni irreversibili o costose; segnala subito problemi di sicurezza.
 - Verso il cliente: registro formale, frasi brevi, prima la cosa più importante, mai promettere date non confermate.`;
 
 /* ================= stato ================= */
@@ -135,7 +135,7 @@ let wchain=Promise.resolve();
 // i salvataggi partono subito: il runtime li raggruppa e li invia in ordine, un gruppo alla volta
 function queue(fn){const p=Promise.resolve().then(fn).catch(dbErr);wchain=wchain.then(()=>p);return p}
 function dbErr(e){const c=e?.code;
-  if(c==="invalid_argument"){READONLY=true;toast("Non hai i permessi per modificare questo progetto: lo strumento resta in sola lettura.")}
+  if(c==="invalid_argument"){READONLY=true;toast("Non hai i permessi per modificare questo progetto: lo vedi in sola lettura.")}
   else if(c==="quota_exceeded")toast("Spazio dati esaurito: elimina documenti o ticket non più necessari.");
   else if(c==="resource_exhausted")toast("Troppe modifiche in poco tempo: attendi qualche secondo.");
   else if(c==="revoked")toast("L'accesso ai dati condivisi è stato revocato.");
@@ -189,7 +189,7 @@ function jiraMsg(e){const c=e?.code;return({
   forbidden_site:"Il tuo account non ha accesso a questo sito Atlassian. Esci e accedi di nuovo per aggiornare i siti.",
   server_unavailable:"Jira non risponde in questo momento. Riprova tra poco.",
   tool_error:"Jira ha rifiutato l'operazione: "+(e?.message||"").slice(0,400),
-  bad_request:"Operazione Jira non supportata.",
+  bad_request:"Operazione Jira non supportata: ricarica la pagina e riprova.",
   cancelled:"Operazione annullata."}[c]||("Operazione Jira non riuscita ("+(c||"errore")+")."))}
 const LIFECYCLE=["no_mcp","needs_reauth","unauthenticated","forbidden_site","bad_request"];
 function findKey(p){if(p&&typeof p.key==="string")return p.key;const m=JSON.stringify(p??"").match(/"key"\s*:\s*"([A-Z][A-Z0-9_]+-\d+)"/);return m?m[1]:""}
@@ -199,9 +199,9 @@ const browse=k=>P().siteUrl?`<a href="${esc(P().siteUrl)}/browse/${esc(k)}" targ
 /* ================= Claude ================= */
 function aiMsg(e){const c=e?.code;return({
   not_granted:"Claude non è disponibile per questo account.",
-  sampling_disabled:"Claude non è configurato su questo sito: manca o non è valida la chiave API.",
+  sampling_disabled:"Claude non è disponibile: avvia il ponte Claude sul tuo computer e riprova.",
   unauthenticated:"La sessione è scaduta: accedi di nuovo con Atlassian.",
-  invalid_request:"Richiesta non valida per Claude"+(e?.message?": "+String(e.message).slice(0,200):"."),
+  invalid_request:"Claude non ha accettato la richiesta"+(e?.message?": "+String(e.message).slice(0,200):": riprova con meno contenuto."),
   rate_limited:"Troppe richieste a Claude in poco tempo. Riprova tra qualche minuto.",
   prompt_too_large:"Troppo testo in una sola richiesta. Seleziona meno documenti o requisiti.",
   invalid_json:"La risposta di Claude non era nel formato atteso. Riprova.",
@@ -211,8 +211,8 @@ function aiMsg(e){const c=e?.code;return({
   image_rejected:"Immagine non accettata: usa PNG, JPEG, WebP o GIF più piccoli.",
   images_unavailable:"Questa vista non può inviare immagini a Claude.",
   cancelled:"Richiesta fermata.",
-  no_ai:"Claude non è collegato: avvia il ponte Claude Code sul tuo computer (istruzioni su /installazione), poi riprova.",
-  bridge_offline:"Il ponte Claude Code non risponde: avvialo sul Mac con «npm run claude» e riprova.",
+  no_ai:"Claude non è collegato: avvia il ponte sul tuo computer (guida nella pagina Installazione) e riprova.",
+  bridge_offline:"Il ponte Claude non risponde: avvialo sul tuo computer (guida in Installazione) e riprova.",
   bridge_token:"Il ponte richiede un token: inseriscilo nelle impostazioni del ponte.",
   bridge_forbidden:"Il ponte non accetta richieste da questo sito: controlla APP_URL nel .env del ponte.",
   bridge_login:"Claude Code non è autenticato: nel terminale esegui «claude», accedi con il tuo account, poi riprova."}[c]||"Richiesta a Claude non riuscita ("+(c||"errore")+"). Riprova.")}
@@ -235,7 +235,7 @@ function renderChrome(){
   // Si vedono solo gli stati che chiedono attenzione; Claude resta sempre raggiungibile (apre il pannello del ponte).
   const db=caps.db==="ok"?(READONLY?ch("warn","Sola lettura"):""):caps.db==="loading"?"":caps.db==="warn"?ch("warn","Sincronizzazione in pausa"):ch("err","Dati non salvati");
   const jr=caps.mcp==="ok"?(p.key||!Object.keys(S.project||{}).length?"":ch("warn","Jira da collegare")):caps.mcp==="loading"?"":ch("err","Jira non disponibile");
-  const cs=caps.sample,cl=cs==="ok"?"ok":cs==="loading"?"":cs==="login"?"warn":"err",ct=cs==="ok"?"Claude collegato":cs==="loading"?"Claude…":cs==="login"?"Claude: accedi":"Claude spento";
+  const cs=caps.sample,cl=cs==="ok"?"ok":cs==="loading"?"":cs==="login"?"warn":"err",ct=cs==="ok"?"Claude collegato":cs==="loading"?"Claude…":cs==="login"?"Claude: accedi":"Claude non collegato";
   $("#capChips").innerHTML=db+jr+`<button type="button" class="chip ${cl}${cs==="ok"?" dot-only":""}" data-act="bridgePanel" aria-expanded="${!!T.bridgeOpen}" aria-label="${ct}: stato e impostazioni del ponte" title="${ct}">${cs==="ok"?"":ct}</button>`;
   renderStepper();
 }
@@ -309,24 +309,24 @@ function hierCard(k,j){const h=k.hier||defaultKit().hier;const types=(j.types||[
    ${pr.length?`<div class="msg warn small">Struttura incompleta: ${pr.map(esc).join("; ")}.</div>`:`<div class="msg ok small">Struttura completa: ogni epica ha una Fase e il Project è definito.</div>`}`:`<p class="small muted" style="margin:8px 0 0">Disattivata: le epiche vengono create direttamente nel progetto, senza Project e Fase.</p>`}</div>`}
 /* ---------- 1. Progetto Jira ---------- */
 STEPS.push({id:"jira",phase:"Avvio",short:"Progetto Jira",sub:"Collega e leggi Jira",title:"Collega il progetto Jira",
- goal:"Scegli il sito Atlassian e il progetto, poi leggi tipi di ticket, campi obbligatori e tipi di collegamento: il kit userà i nomi esatti configurati in Jira.",
- rules:["Leggere da Jira tipi di ticket, campi custom obbligatori e nomi dei tipi di collegamento, e salvarli nel kit (1.1, K1).","I nomi generici («Relates») vengono rifiutati se il nome reale è diverso: si usano quelli letti da Jira.","Dire cosa lo strumento non fa: non crea progetti, componenti, versioni o sprint; vanno creati a mano in Jira."],
+ goal:"Scegli sito e progetto Jira, poi leggi la configurazione: Trama userà i nomi esatti di tipi di ticket, campi obbligatori e collegamenti.",
+ rules:["Leggere da Jira tipi di ticket, campi personalizzati obbligatori e nomi dei tipi di collegamento, e salvarli nel kit (1.1, K1).","I nomi generici («Relates») vengono rifiutati se il nome reale è diverso: si usano quelli letti da Jira.","Dire cosa Trama non fa: non crea progetti, componenti, versioni o sprint; vanno creati a mano in Jira."],
  checks:()=>[{t:"Sito Atlassian collegato",ok:!!P().cloudId},{t:"Progetto Jira selezionato",ok:!!P().key},{t:"Configurazione letta: tipi di ticket, campi, collegamenti",ok:!!S.jira.readAt&&S.jira.key===P().key}],
  view(){const p=P(),j=S.jira;
   let h=`<div class="card"><div class="grid">${F("Nome del progetto (cliente o prodotto)",bind("meta:project:name",p.name,{ph:"Es. Smart Lighting Release 1"}))}</div></div>`;
-  h+=`<div class="card"><h2>1. Sito Atlassian</h2>${p.cloudId?`<p>Il progetto lavora sul sito <a href="${esc(p.siteUrl||"#")}" target="_blank" rel="noopener"><b>${esc((p.siteUrl||p.cloudId).replace(/^https:\/\//,""))}</b></a>, scelto alla creazione. Le operazioni su Jira usano il tuo account Atlassian (${esc(ME?.name||"")}).</p>`:`<p class="muted">Sto caricando il sito del progetto…</p>`}</div>`;
+  h+=`<div class="card"><h2>1. Sito Atlassian</h2>${p.cloudId?`<p>Il progetto lavora sul sito <a href="${esc(p.siteUrl||"#")}" target="_blank" rel="noopener"><b>${esc((p.siteUrl||p.cloudId).replace(/^https:\/\//,""))}</b></a>, scelto alla creazione. Le operazioni su Jira usano il tuo account Atlassian (${esc(ME?.name||"")}).</p>`:`<p class="muted">Caricamento del sito del progetto…</p>`}</div>`;
   if(p.cloudId){h+=`<div class="card"><h2>2. Progetto</h2>
-   <div class="card note small">Il progetto è da creare? Crealo in Jira (Progetti › Crea progetto › modello Scrum; per usare componenti e versioni scegli un progetto gestito dall'azienda), poi torna qui e cercalo. Lo strumento non può creare progetti.</div>
+   <div class="card note small">Il progetto è da creare? Crealo in Jira (Progetti › Crea progetto › modello Scrum; per usare componenti e versioni scegli un progetto gestito dall'azienda), poi torna qui e cercalo. Trama non crea progetti Jira.</div>
    ${p.key?`<p>Progetto selezionato: <span class="key">${esc(p.key)}</span> ${esc(p.jiraName||"")}</p>`:""}
    <div class="row" style="max-width:520px"><input id="projSearch" placeholder="Cerca per nome o chiave" value="${esc(T.projQ||"")}">${JB("jiraProjects","Cerca progetti")}</div>
-   ${T.projects?`<div class="tw" style="margin-top:10px"><table><thead><tr><th>Chiave</th><th>Nome</th><th></th></tr></thead><tbody>${T.projects.map(x=>`<tr><td><span class="key">${esc(x.key)}</span></td><td>${esc(x.name)}</td><td>${B("pickProject",x.key===p.key?"Selezionato":"Usa questo",{data:{key:x.key},dis:x.key===p.key})}</td></tr>`).join("")||'<tr><td colspan="3" class="muted">Nessun progetto trovato. Se l\'hai appena creato, attendi qualche secondo e cerca di nuovo.</td></tr>'}</tbody></table></div>`:""}</div>`}
-  if(p.key){h+=`<div class="card"><h2>3. Configurazione del progetto</h2><div class="toolbar">${JB("readConfig",j.readAt&&j.key===p.key?"Rileggi da Jira":"Leggi configurazione")}${j.readAt?`<span class="small muted">Letta il ${new Date(j.readAt).toLocaleString("it-IT")}</span>`:""}</div>
+   ${T.projects?`<div class="tw" style="margin-top:10px"><table><thead><tr><th>Chiave</th><th>Nome</th><th></th></tr></thead><tbody>${T.projects.map(x=>`<tr><td><span class="key">${esc(x.key)}</span></td><td>${esc(x.name)}</td><td>${B("pickProject",x.key===p.key?"Selezionato":"Usa questo progetto",{data:{key:x.key},dis:x.key===p.key})}</td></tr>`).join("")||'<tr><td colspan="3" class="muted">Nessun progetto trovato. Se l\'hai appena creato, attendi qualche secondo e cerca di nuovo.</td></tr>'}</tbody></table></div>`:""}</div>`}
+  if(p.key){h+=`<div class="card"><h2>3. Configurazione del progetto</h2><div class="toolbar">${JB("readConfig",j.readAt&&j.key===p.key?"Rileggi da Jira":"Leggi la configurazione")}${j.readAt?`<span class="small muted">Letta il ${new Date(j.readAt).toLocaleString("it-IT")}</span>`:""}</div>
    ${j.readAt&&j.key===p.key?`<div class="grid small">
      <div><b>Tipi di ticket</b><br>${(j.types||[]).map(t=>`<span class="pill">${esc(t.name)}</span>`).join(" ")}</div>
      <div><b>Tipi di collegamento</b><br>${(j.links||[]).slice(0,8).map(l=>`<span class="pill">${esc(l.name)}</span>`).join(" ")}${(j.links||[]).length>8?` <span class="muted">+${j.links.length-8}</span>`:""}</div>
      <div><b>Campi obbligatori custom</b><br>${(j.required||[]).map(f=>`<span class="pill warn">${esc(f.name)}</span>`).join(" ")||'<span class="muted">nessuno</span>'}</div></div>`:""}</div>`}
   return h},
- ask:["Come creo il progetto in Jira perché funzioni con componenti e versioni?","Cosa non può fare lo strumento su Jira?"]});
+ ask:["Come creo il progetto in Jira perché funzioni con componenti e versioni?","Cosa non può fare Trama su Jira?"]});
 
 /* ---------- 2. Documenti ---------- */
 /* Filtri dei requisiti: ricerca per ID o titolo, «Mostra» e «Release». */
@@ -475,7 +475,7 @@ function secSpec(id,raw,memo={}){const r=x=>raw.includes(x),pill=(c,t)=>`<span c
     return{num:String(cats.indexOf(raw)+1),title:raw,ok:!open,todo:open>0,status:plain(n1(qs.length,"domanda","domande"))+(open?pill("err",n1(open,"aperta","aperte")):pill("ok","tutte chiuse"))}}
   if(id==="kit"){const k=K(),j=S.jira;
     if(r("K1")){const ok=!!(k.links.relates&&k.links.blocks)&&(j.required||[]).every(f=>k.custom?.[f.key]);return{num:"K1",title:"Identificativi del tracker",ok,todo:!ok,status:ok?plain("tipi, collegamenti e campi a posto"):pill("warn","da completare")}}
-    if(r("K2")){const n=k.releases.length,ok=n>0&&k.releases.every(x=>x.name&&x.label);return{num:"K2",title:"Release (= Fasi in Jira)",ok,todo:!ok,status:n?plain(n1(n,"release","release")):pill("warn","nessuna release")}}
+    if(r("K2")){const n=k.releases.length,ok=n>0&&k.releases.every(x=>x.name&&x.label);return{num:"K2",title:"Release (= Fase)",ok,todo:!ok,status:n?plain(n1(n,"release","release")):pill("warn","nessuna release")}}
     if(r("K3")){const n=k.epics.length,miss=k.hier?.enabled?k.epics.filter(e=>!e.release).length:0;return{num:"K3",title:"Epiche",ok:n>0&&!miss,todo:!n||miss>0||!!T.epicMove,status:plain(n1(n,"epica","epiche"))+(miss?pill("err",miss+" senza release"):"")+(T.epicMove?pill("acc","Jira da aggiornare"):"")}}
     if(r("K4")){const h=k.hier,pr=hierProblems();return{num:"K4",title:"Struttura gerarchica Jira",ok:!pr.length,todo:!!h?.enabled&&pr.length>0,status:!h?.enabled?plain("disattivata"):pr.length?pill("err",n1(pr.length,"problema","problemi")):pill("ok","completa")}}
     if(r("K5"))return{num:"K5–6",title:"Label e prefissi",todo:false,status:pill("","facoltativo")};
@@ -497,13 +497,13 @@ function secSpec(id,raw,memo={}){const r=x=>raw.includes(x),pill=(c,t)=>`<span c
    sequenziale (le risposte arrivano in ordine sparso) e il Registro non ha sezioni. */
 function secFlow(id,memo){const done=t=>t;
   if(id==="jira"){const p=P(),j=S.jira;return{"Sito Atlassian":{gate:!!p.cloudId,unlock:"il sito Atlassian è collegato"},"Progetto Jira":{gate:!!p.key,unlock:"scegli il progetto Jira"},"Configurazione del progetto":{gate:true}}}
-  if(id==="reqs"){const d=arr("docs").length,r=reqList().length;return{"Documenti":{gate:d>0||r>0,unlock:"carichi almeno un documento",action:B("addReq","Non ho documenti: aggiungo i requisiti a mano",{cls:"link"})},"Estrazione dei requisiti":{gate:r>0,has:r>0,unlock:"estrai i requisiti dai documenti"},"Requisiti":{gate:true,has:r>0}}}
+  if(id==="reqs"){const d=arr("docs").length,r=reqList().length;return{"Documenti":{gate:d>0||r>0,unlock:"carichi almeno un documento",action:B("addReq","Non hai documenti? Aggiungi i requisiti a mano",{cls:"link"})},"Estrazione dei requisiti":{gate:r>0,has:r>0,unlock:"estrai i requisiti dai documenti"},"Requisiti":{gate:true,has:r>0}}}
   if(id==="kit"){const k=K(),j=S.jira,pr=hierProblems();return{"Identificativi del tracker":{gate:!!(k.links.relates&&k.links.blocks)&&(j.required||[]).every(f=>k.custom?.[f.key]),unlock:"scegli i tipi di collegamento e compili i campi obbligatori"},
-    "Release (= Fasi in Jira)":{gate:k.releases.length>0&&k.releases.every(x=>x.name&&x.label),has:k.releases.length>0,unlock:"aggiungi almeno una release con la sua label"},
+    "Release (= Fase)":{gate:k.releases.length>0&&k.releases.every(x=>x.name&&x.label),has:k.releases.length>0,unlock:"aggiungi almeno una release con la sua label"},
     "Epiche":{gate:k.epics.length>0&&(!k.hier?.enabled||k.epics.every(e=>e.release)),has:k.epics.length>0,unlock:"aggiungi le epiche e la loro release"},
     "Struttura gerarchica Jira":{gate:!k.hier?.enabled||!pr.length,unlock:"completi la struttura Project › Fase › Epica"},
     "Label e prefissi":{opt:true,has:!!k.extraLabels},"Glossario, comunicazione, vincoli":{opt:true,has:!!(k.glossary||k.constraints||k.envs)}}}
-  if(id==="backlog"){const n=ticketList().length;return{"Scomposizione in ticket":{gate:n>0,unlock:"generi i ticket",action:B("addTicket","Aggiungo un ticket a mano",{cls:"link"})},"Ticket per requisito":{gate:true,has:n>0}}}
+  if(id==="backlog"){const n=ticketList().length;return{"Scomposizione in ticket":{gate:n>0,unlock:"generi i ticket",action:B("addTicket","Preferisci scriverli tu? Aggiungi un ticket a mano",{cls:"link"})},"Ticket per requisito":{gate:true,has:n>0}}}
   if(id==="create"){const pl=memo.pl||(memo.pl=planOf()),ts=memo.ts||(memo.ts=ticketList()),ck=memo.ck||(memo.ck=T.pre?computeChecks(pl):[]),made=ts.some(t=>t.state==="created"),errs=ck.filter(c=>c.lvl==="err"&&!(c.t==="Elementi da creare o collegare"&&made)).length;
     return{"Controllo prima della creazione":{gate:made||(!!T.pre&&!errs),unlock:"il controllo è eseguito e nulla blocca la creazione"},"Anteprima":{gate:true,has:made},"Ipotesi e scelte fatte al tuo posto":{gate:made||!!T.ack,has:made,unlock:"confermi le ipotesi"},"Crea su Jira":{gate:true,has:made},"Esito della creazione":{gate:true,has:made}}}
   return null}
@@ -537,7 +537,7 @@ function sectionize(main,step){if(step.aux)return;const prev=main.__secEarly?new
     const nx=secs[i+1];if(!nx)return;const f=d.__f,go=(!!f.gate||!!f.opt)&&!nx.__locked,lead=go&&(d.__ok||!!f.opt)&&!nx.__f.opt; // verso le sezioni facoltative «Continua» non è il pulsante principale
     const why=go?"":nx.__locked&&f.gate?flow[blocker?.__title]?.unlock:f.unlock;
     d.classList.toggle("ready",lead);
-    d.querySelector(".sec-b").insertAdjacentHTML("beforeend",`<div class="sec-foot">${!go&&f.action?`<span class="sec-alt">oppure ${f.action}</span>`:""}<span class="sec-why" id="why-${esc(d.dataset.sec)}">${why?"Per continuare: "+esc(why)+".":""}</span><button type="button" class="sec-go${lead?" primary":""}" data-act="secNext" data-next="${esc(nx.dataset.sec)}" aria-disabled="${!go}"${why?` aria-describedby="why-${esc(d.dataset.sec)}"`:""}>Continua ${ICO("i-arrow")}</button></div>`)});
+    d.querySelector(".sec-b").insertAdjacentHTML("beforeend",`<div class="sec-foot">${!go&&f.action?`<span class="sec-alt">${f.action}</span>`:""}<span class="sec-why" id="why-${esc(d.dataset.sec)}">${why?"«Continua» si attiva quando "+esc(why)+".":""}</span><button type="button" class="sec-go${lead?" primary":""}" data-act="secNext" data-next="${esc(nx.dataset.sec)}" aria-disabled="${!go}"${why?` aria-describedby="why-${esc(d.dataset.sec)}"`:""}>Continua ${ICO("i-arrow")}</button></div>`)});
   // prima la scelta di chi usa Trama, poi lo step già aperto (non si chiude da solo mentre lo guardi), poi quello di base
   const act=SECACT[step.id];let pick=act===""?null:act?unl.find(d=>d.dataset.sec===act):undefined;
   if(pick===undefined)pick=unl.find(d=>prev.has(d.dataset.sec));
@@ -568,7 +568,7 @@ function docsView(){const d=arr("docs").sort((a,b)=>(a.at||0)-(b.at||0));
 
 /* ---------- 3. Requisiti ---------- */
 STEPS.push({id:"reqs",phase:"Preparazione",short:"Requisiti",sub:"Carica, estrai, valida",title:"Carica i documenti ed estrai i requisiti",
- goal:"Carica i documenti (Word, PDF, Excel, testo, immagini) e lascia che Claude ne estragga i requisiti: ognuno diventa una riga con ID stabile, release, componenti, note UI/UX, dipendenze e domande aperte. Tu correggi la lista e la validi. Un requisito si può anche aggiungere a mano.",
+ goal:"Carica i documenti (Word, PDF, Excel, testo, immagini): Claude ne estrae i requisiti, ognuno con ID, release, componenti, note UX, dipendenze e domande. Tu correggi e validi la lista. Puoi anche aggiungere requisiti a mano.",
  rules:["Leggere tutto il materiale prima di scrivere (2.1, passo 1).","Il documento da solo non basta: decisioni, vincoli, bug e input esterni arriveranno dopo e andranno nel registro delle decisioni.","Verificare che ogni nota UI/UX sia sulla riga giusta: le colonne sfalsate sono un errore frequente nei fogli del cliente.","ID requisito: codice univoco e stabile, serve per la tracciabilità verso i ticket.","Titolo e descrizione dal punto di vista dell'utente.","Componenti: decidono quante storie nasceranno. Release: in quale release (o wave) deve uscire.","Dipendenze esterne (firmware, hardware, librerie di terzi) indicano un altro team; dipendenze interne determinano l'ordine degli sprint.","Domande aperte: ciò che il documento non dice, alimentano le domande di apertura.","Output della Fase 0: lista completa e validata dal PO."],
  checks:()=>{const r=reqList();return[{t:"Requisiti presenti (da documento o a mano)",ok:r.length>0},{t:"Ogni requisito ha una release",ok:r.length>0&&r.every(x=>x.release)},{t:"Lista validata dal PO",ok:!!P().reqsValidatedAt&&r.length>0,opt:true}]},
  view(){const r=reqList(),docs=arr("docs"),rf=reqFilter(r);const rels=[...new Set([...K().releases.map(x=>x.name),...r.map(x=>x.release).filter(Boolean)])];
@@ -591,7 +591,7 @@ STEPS.push({id:"reqs",phase:"Preparazione",short:"Requisiti",sub:"Carica, estrai
 
 /* ---------- 4. Domande di apertura ---------- */
 STEPS.push({id:"questions",phase:"Preparazione",short:"Domande di apertura",sub:"Risposte o ipotesi",title:"Chiudi le domande di apertura",
- goal:"Poni le domande al cliente e al PO prima di creare ticket. Dove manca la risposta, scrivi un'ipotesi esplicita. Risposte e ipotesi entrano da sole nel registro delle decisioni.",
+ goal:"Fai le domande a cliente e PO prima di creare i ticket. Se manca la risposta, scrivi un'ipotesi esplicita. Risposte e ipotesi entrano da sole nel Registro decisioni.",
  rules:["Ogni risposta mancante oggi diventa una riclassificazione di ticket domani.","Dove manca la risposta si scrive un'ipotesi esplicita (0.3).","Aprire il registro delle decisioni con le decisioni prese in Fase 0 (checklist della prima settimana)."],
  checks:()=>{const q=arr("questions");return[{t:"Domande di apertura caricate",ok:q.length>0},{t:"Ogni domanda ha una risposta o un'ipotesi",ok:q.length>0&&q.every(x=>x.answer?.trim()||x.hypothesis?.trim())}]},
  view(){const q=arr("questions").sort((a,b)=>(a.order??0)-(b.order??0));const open=q.filter(x=>!x.answer?.trim()&&!x.hypothesis?.trim());
@@ -608,8 +608,8 @@ STEPS.push({id:"questions",phase:"Preparazione",short:"Domande di apertura",sub:
 /* ---------- 5. Kit ---------- */
 function usedAreas(){const s=new Set();reqList().forEach(r=>(r.components||[]).forEach(c=>{if(c==="Web App")s.add("web");if(c==="Mobile App")s.add("mobile");if(c==="Back-end/Cloud")s.add("be");if(c==="Firmware")s.add("fw")}));return s}
 STEPS.push({id:"kit",phase:"Preparazione",short:"Kit di progetto",sub:"Release, epiche, label",title:"Compila il kit di progetto",
- goal:"Il kit è l'insieme di regole e identificativi che rende ogni ticket coerente con gli altri. È salvato con il progetto e vale per tutto il team.",
- rules:["K1: tipi di collegamento e campi custom con i nomi esatti letti da Jira.","K2: ogni release ha un nome e una label (Release1, Release2) ed è una Fase della struttura Jira.","K3: un'epica per area funzionale; infrastruttura, CI e rifiniture trasversali in un'epica dedicata («Cross-cutting polish»).","K4: struttura Cliente › Project › Fase › Feature Epic › ticket: ogni livello sta sotto il proprio Principale.","K5: label sempre scritte allo stesso modo: una variante crea un filtro diverso.","K6: ogni titolo inizia con il prefisso dell'area ([BE], [FE - Web], [FE - Mobile], [UX - …], [FW]).","K7–K8: glossario di dominio e lingue di lavoro, uguali in tutti i ticket.","K9: ogni decisione tecnica che i ticket futuri devono rispettare, con il ticket di riferimento."],
+ goal:"Regole e identificativi che rendono coerenti tutti i ticket: release, epiche, struttura, label. Valgono per tutto il team del progetto.",
+ rules:["K1: tipi di collegamento e campi personalizzati con i nomi esatti letti da Jira.","K2: ogni release ha un nome e una label (Release1, Release2) ed è una Fase della struttura Jira.","K3: un'epica per area funzionale; infrastruttura, CI e rifiniture trasversali in un'epica dedicata («Cross-cutting polish»).","K4: struttura Cliente › Project › Fase › Feature Epic › ticket: ogni livello sta sotto il proprio Principale.","K5: label sempre scritte allo stesso modo: una variante crea un filtro diverso.","K6: ogni titolo inizia con il prefisso dell'area ([BE], [FE - Web], [FE - Mobile], [UX - …], [FW]).","K7–K8: glossario di dominio e lingue di lavoro, uguali in tutti i ticket.","K9: ogni decisione tecnica che i ticket futuri devono rispettare, con il ticket di riferimento."],
  checks:()=>{const k=K();return[
   {t:"Tipi di collegamento scelti con il nome esatto (K1)",ok:!!(k.links.relates&&k.links.blocks)},
   {t:"Campi obbligatori del progetto valorizzati (K1)",ok:(S.jira.required||[]).every(f=>k.custom?.[f.key])},
@@ -624,12 +624,12 @@ STEPS.push({id:"kit",phase:"Preparazione",short:"Kit di progetto",sub:"Release, 
     ${F("Collegamento di correlazione",linkOpts.length?sel("meta:kit:links.relates",k.links.relates,linkOpts,{empty:"Scegli…"}):bind("meta:kit:links.relates",k.links.relates,{ph:"Leggi la configurazione al passo 1"}))}
     ${F("Collegamento di blocco",linkOpts.length?sel("meta:kit:links.blocks",k.links.blocks,linkOpts,{empty:"Scegli…"}):bind("meta:kit:links.blocks",k.links.blocks,{ph:"Leggi la configurazione al passo 1"}))}
     ${(j.required||[]).map(f=>F(`${esc(f.name)} <span class="mono">${esc(f.key)}</span> · obbligatorio`,f.allowed?.length?sel("meta:kit:custom."+f.key,k.custom?.[f.key],f.allowed):bind("meta:kit:custom."+f.key,k.custom?.[f.key]))).join("")}</div></div>`;
-  h+=`<div class="card"><h2>K2 · Release (= Fasi in Jira)</h2><p class="small muted" style="margin:0 0 10px">Ogni release è una Fase della struttura Jira (Project › Fase › Epica): epiche e ticket di una release stanno sotto la sua Fase.</p><div class="tw"><table><thead><tr><th>Release (= Fase)</th><th>Label</th><th>Data</th><th></th></tr></thead><tbody>${k.releases.map((r,i)=>`<tr><td>${bind("meta:kit:releases."+i+".name",r.name)}</td><td>${bind("meta:kit:releases."+i+".label",r.label,{ph:"Release1"})}</td><td>${bind("meta:kit:releases."+i+".date",r.date,{type:"date"})}</td><td>${B("delRelease","Rimuovi",{cls:"link",data:{i}})}</td></tr>`).join("")||'<tr><td colspan="4" class="muted">Nessuna release. Aggiungine una per ogni release concordata con il cliente.</td></tr>'}</tbody></table></div><div class="toolbar" style="margin-top:10px">${B("addRelease","Aggiungi release")}</div></div>`;
+  h+=`<div class="card"><h2>K2 · Release (= Fase)</h2><p class="small muted" style="margin:0 0 10px">Ogni release è una Fase della struttura Jira (Project › Fase › Epica): epiche e ticket di una release stanno sotto la sua Fase.</p><div class="tw"><table><thead><tr><th>Release (= Fase)</th><th>Label</th><th>Data</th><th></th></tr></thead><tbody>${k.releases.map((r,i)=>`<tr><td>${bind("meta:kit:releases."+i+".name",r.name)}</td><td>${bind("meta:kit:releases."+i+".label",r.label,{ph:"Release1"})}</td><td>${bind("meta:kit:releases."+i+".date",r.date,{type:"date"})}</td><td>${B("delRelease","Rimuovi",{cls:"link",data:{i}})}</td></tr>`).join("")||'<tr><td colspan="4" class="muted">Nessuna release. Aggiungine una per ogni release concordata con il cliente.</td></tr>'}</tbody></table></div><div class="toolbar" style="margin-top:10px">${B("addRelease","Aggiungi release")}</div></div>`;
   h+=`<div class="card"><h2>K3 · Epiche</h2>${epicMoveCard()}<div class="tw"><table><thead><tr><th>Epica (area funzionale)</th><th>Release (= Fase)</th><th>Chiave Jira</th><th></th></tr></thead><tbody>${k.epics.map((e,i)=>`<tr><td>${bind("meta:kit:epics."+i+".name",e.name)}</td><td>${sel("meta:kit:epics."+i+".release",e.release,k.releases.map(r=>r.name),{empty:k.hier?.enabled?"Scegli…":"Tutte"})}</td><td>${e.key?browse(e.key):'<span class="muted small">si crea al passo Crea su Jira</span>'}</td><td>${B("delEpic","Rimuovi",{cls:"link",data:{i}})}</td></tr>`).join("")||'<tr><td colspan="4" class="muted">Nessuna epica. Un\'epica per area funzionale, più «Cross-cutting polish».</td></tr>'}</tbody></table></div><div class="toolbar" style="margin-top:10px">${B("addEpic","Aggiungi epica")}${!k.epics.some(e=>/cross-cutting/i.test(e.name))?B("addPolish","Aggiungi «Cross-cutting polish»"):""}</div>
     <p class="small muted">Se le epiche di una release chiusa non si riusano nella successiva, crea nuove epiche con il nome della release (es. «Notifiche (Release 2)»).</p></div>`;
   h+=hierCard(k,j);
   h+=`<details class="item" data-k="kit-adv" style="margin-top:12px"><summary><span class="ttl">Regole avanzate: label, prefissi, glossario, lingue, vincoli</span><span class="pill">facoltativo</span></summary><div class="in">`;
-  h+=`<div class="card"><h2>K5 · Label e K6 · Prefissi</h2><p class="small">Vocabolario fisso: ${LABELS.map(l=>`<span class="key">${l}</span>`).join(" ")} più le label di release del K2. Lo strumento corregge le varianti (es. «UX/UI» → «UX-UI»).</p>
+  h+=`<div class="card"><h2>K5 · Label e K6 · Prefissi</h2><p class="small">Vocabolario fisso: ${LABELS.map(l=>`<span class="key">${l}</span>`).join(" ")} più le label di release del K2. Trama corregge le varianti (es. «UX/UI» → «UX-UI»).</p>
     <div class="grid">${F("Label aggiuntive ammesse (separate da virgola)",bind("meta:kit:extraLabels",k.extraLabels))}</div>
     <div class="tw" style="margin-top:10px"><table><thead><tr><th>Prefisso</th><th>Uso</th></tr></thead><tbody>${Object.values(AREAS).map(a=>`<tr><td class="mono">${a.prefix}</td><td>${a.label}</td></tr>`).join("")}</tbody></table></div></div>`;
   h+=`<div class="card"><h2>K7 · Glossario, K8 · Comunicazione, K9 · Vincoli</h2><div class="grid">
@@ -666,8 +666,8 @@ function nextRef(){const n=ticketList().reduce((m,t)=>Math.max(m,+(String(t.ref)
 const fmtRef=n=>"T-"+String(n).padStart(3,"0");
 const linksText=t=>(t.links||[]).map(l=>`${l.type}: ${l.to}`).join(", ");
 STEPS.push({id:"backlog",phase:"Creazione",short:"Backlog",sub:"Scomposizione e metadati",title:"Scomponi i requisiti in ticket",
- goal:"Claude scompone ogni requisito della release secondo le regole (UX Story, storie BE/FE, ticket FW, collegamenti) e scrive i ticket in inglese con i modelli. Lo strumento controlla i metadati obbligatori prima della creazione.",
- rules:["Epica dell'area funzionale nella release giusta.","Una UX Story per ogni componente con UI, assegnata a UX; si salta se il design esiste già.","A design pronto: una storia BE per dati, API e regole; una FE Web e una FE Mobile. Due storie BE se ci sono due lavori distinti.","Firmware e librerie: un ticket per quel team, collegato come bloccante.","Tracciabilità: ogni ticket è collegato al requisito d'origine e ai fratelli.","Metadati obbligatori: epica, label di release, label di tipo lavoro, campi custom obbligatori di Jira, prefisso (1.4). Componente e assegnatario sono facoltativi: si impostano quando esistono in Jira.","Ticket in inglese con la stessa struttura; «Points to clarify» rende visibili le decisioni di PO e cliente."],
+ goal:"Claude scompone ogni requisito in ticket (UX Story, storie BE e FE, ticket FW) e li scrive in inglese con i modelli del kit. Trama controlla i metadati obbligatori prima della creazione.",
+ rules:["Epica dell'area funzionale nella release giusta.","Una UX Story per ogni componente con UI, assegnata a UX; si salta se il design esiste già.","A design pronto: una storia BE per dati, API e regole; una FE Web e una FE Mobile. Due storie BE se ci sono due lavori distinti.","Firmware e librerie: un ticket per quel team, collegato come bloccante.","Tracciabilità: ogni ticket è collegato al requisito d'origine e ai fratelli.","Metadati obbligatori: epica, label di release, label di tipo lavoro, campi personalizzati obbligatori di Jira, prefisso (1.4). Componente e assegnatario sono facoltativi: si impostano quando esistono in Jira.","Ticket in inglese con la stessa struttura; «Points to clarify» rende visibili le decisioni di PO e cliente."],
  checks:()=>{const ts=ticketList();const errs=ts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;
   return[{t:"Ticket generati per i requisiti",ok:ts.length>0},{t:"Nessun ticket con errori di metadati",ok:ts.length>0&&errs===0}]},
  view(){const k=K(),rs=reqList(),ts=ticketList();const rels=k.releases.map(r=>r.name);if(!T.rel||!rels.includes(T.rel)&&T.rel!=="*")T.rel=rels[0]||"*";
@@ -696,7 +696,7 @@ function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.rele
    return`<tbody><tr class="dt-g"><th colspan="6" scope="rowgroup"><div class="dt-gh">${r?`<span class="key">${esc(r.code)}</span><span class="dt-t">${esc(r.title)}</span>`:`<span>Ticket senza requisito</span>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")}):""}</div></th></tr>${shown.map(ticketRow).join("")}</tbody>`}).join("");
   T.panelIds=ids;
   h+=bodies?`<div class="dt-wrap"><table class="dt"><colgroup><col style="width:calc(92px*var(--colk,1))"><col style="width:calc(96px*var(--colk,1))"><col><col style="width:calc(180px*var(--colk,1))"><col style="width:calc(150px*var(--colk,1))"><col style="width:calc(160px*var(--colk,1))"></colgroup>
-   <thead><tr><th scope="col">Rif.</th><th scope="col">Tipo</th><th scope="col">Titolo</th><th scope="col">Epica</th><th scope="col">Problemi</th><th scope="col">Stato</th></tr></thead>${bodies}</table></div>`:(ts.length?'<p class="empty">Nessun ticket corrisponde al filtro.</p>':'<p class="empty">Nessun ticket ancora. Scegli la release e premi «Genera ticket».</p>');
+   <thead><tr><th scope="col">Rif.</th><th scope="col">Tipo</th><th scope="col">Titolo</th><th scope="col">Epica</th><th scope="col">Problemi</th><th scope="col">Stato</th></tr></thead>${bodies}</table></div>`:(ts.length?'<p class="empty">Nessun ticket corrisponde al filtro.</p>':'<p class="empty">Nessun ticket ancora. Scegli la release e fai generare i ticket a Claude, oppure aggiungili a mano.</p>');
   h+="</div>";
   if(T.panel?.kind==="ticket"){const t=ticketList().find(x=>x.id===T.panel.id);if(t)h+=sidePanel("ticket",t.id,`<span class="key">${esc(t.ref)}</span><span class="pill acc">${esc(t.type)}</span><span>${esc(fullTitle(t))}</span>`,ticketForm(t))}
   return h}
@@ -771,15 +771,15 @@ function planOf0(){const ts=ticketList(),k=K();const ready=ts.filter(t=>t.state!
   return{ready,blocked,dup,epics,struct,links,omit:[...omit]}}
 function assumptionsAll(pl){const k=K(),out=[];
   const remap=[...new Set(pl.ready.filter(t=>(k.types[t.type]||t.type)!==t.type).map(t=>`${t.type} → ${k.types[t.type]}`))];
-  if(remap.length)out.push(`Tipi di ticket non presenti nel progetto Jira, uso un'alternativa: ${remap.join(", ")}.`);
-  const H=k.hier;if(H?.enabled){if(pl.struct.project)out.push(`Creo il Project «${H.project.name}» (tipo «${H.projectType}») nel progetto ${P().key}.`);else if(H.project?.key)out.push(`Uso il Project esistente ${H.project.key}.`);
-    if(pl.struct.phases.length)out.push(`Creo le Fasi (tipo «${H.phaseType}»): ${pl.struct.phases.map(f=>f.name).join(", ")}.`);
+  if(remap.length)out.push(`Tipi di ticket assenti nel progetto Jira, sostituiti: ${remap.join(", ")}.`);
+  const H=k.hier;if(H?.enabled){if(pl.struct.project)out.push(`Verrà creato il Project «${H.project.name}» (tipo «${H.projectType}») nel progetto ${P().key}.`);else if(H.project?.key)out.push(`Si usa il Project esistente ${H.project.key}.`);
+    if(pl.struct.phases.length)out.push(`Verranno create le Fasi (tipo «${H.phaseType}»): ${pl.struct.phases.map(f=>f.name).join(", ")}.`);
     if(pl.epics.length)out.push("Le epiche (Feature Epic) vengono create sotto la loro Fase; storie, task e bug sotto la loro epica.");
     if(pl.struct.link.length)out.push(`${pl.struct.link.length} epiche già create in Jira senza Fase vengono collegate alla loro Fase (campo «Principale»); il loro tipo non cambia.`)}
-  if(pl.dup.length&&!T.createDup)out.push(`Salto ${pl.dup.length} ticket con lo stesso titolo di un ticket già presente in Jira.`);
+  if(pl.dup.length&&!T.createDup)out.push(`${pl.dup.length===1?"1 ticket verrà saltato":pl.dup.length+" ticket verranno saltati"}: in Jira esiste già un ticket con lo stesso titolo.`);
   pl.ready.forEach(t=>(t.assumptions||[]).forEach(a=>out.push(`${t.ref}: ${a}`)));return out}
 STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e conferma",title:"Crea il backlog su Jira",
- goal:"Prima rileggi lo stato reale di Jira, poi conferma le ipotesi. Lo strumento crea le epiche e i ticket, li collega con le chiavi reali e rilegge ogni ticket per verificare che i campi siano stati salvati.",
+ goal:"Trama rilegge Jira, ti mostra cosa creerà e aspetta la tua conferma. Poi crea struttura e ticket, li collega e rilegge ogni ticket per verificare i campi.",
  rules:["Leggere lo stato del tracker prima di scrivere: le epiche cambiano nome, ticket vengono cancellati da altri.","Cercare ticket simili o già esistenti, per non duplicare.","Fermarsi prima di azioni irreversibili o costose: la creazione parte solo dopo la tua conferma.","Creare i collegamenti solo dopo, usando le chiavi reali restituite dal tracker.","Rileggere i ticket per controllare che i campi siano stati salvati.","Rispondere in breve: cosa è stato creato, quali scelte sono state fatte, cosa resta da decidere, cosa fare a mano."],
  checks:()=>{const ts=ticketList(),c=ts.filter(t=>t.state==="created");const pend=ts.reduce((n,t)=>n+(t.links||[]).filter(l=>!(t.linksDone||[]).includes(l.type+":"+l.to)).length,0);
   return[{t:"Stato di Jira riletto prima di scrivere",ok:!!T.pre||c.length>0},{t:"Ipotesi lette e confermate",ok:T.ack||c.length>0},{t:"Tutti i ticket creati in Jira",ok:ts.length>0&&c.length===ts.length},{t:"Collegamenti creati con le chiavi reali",ok:c.length>0&&pend===0},{t:"Campi verificati rileggendo i ticket",ok:c.length>0&&c.every(t=>vOf(t)==="ok")}]},
@@ -799,7 +799,7 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
    <div class="card"><h2>4. Crea su Jira</h2>
    <p class="small muted" style="margin:0 0 10px">Un solo comando, nell'ordine giusto: Project › Fasi › epiche › ticket › collegamenti, poi rilegge Jira per verificare ogni livello.</p>
    <div class="toolbar">${T.running?B("stopRun","Ferma dopo il ticket in corso",{cls:"danger"}):JB("runCreate",T.arm.run?`Conferma: crea tutto (${(pl.struct.project?1:0)+pl.struct.phases.length+pl.epics.length+pl.ready.length-(T.createDup?0:pl.dup.length)} elementi)`:"Crea su Jira",{cls:T.arm.run?"armed":"primary",dis:!T.ack||errs.length>0})}</div>
-   ${(()=>{const why=T.running?"Una creazione è in corso: attendi che finisca (o premi «Ferma»).":errs.length?"Bloccato dal controllo: "+errs.map(e=>e.t).join("; ")+".":!T.ack?"Spunta «Ho letto le ipotesi e le confermo» nel riquadro 3 per attivare il pulsante.":"";return why?`<p class="small" style="margin:10px 0 0;color:var(--warn)">${esc(why)}</p>`:""})()}
+   ${(()=>{const why=T.running?"Una creazione è in corso: attendi che finisca, oppure fermala.":errs.length?"Bloccato dal controllo: "+errs.map(e=>e.t).join("; ")+".":!T.ack?"Per attivare il pulsante, conferma le ipotesi nello step 3.":"";return why?`<p class="small" style="margin:10px 0 0;color:var(--warn)">${esc(why)}</p>`:""})()}
    <details class="item" data-k="adv-create" style="margin-top:12px"><summary><span class="ttl">Azioni avanzate (singoli passaggi)</span></summary><div class="in"><div class="toolbar" style="margin-top:10px">${JB("runStruct",T.arm.struct?`Conferma: crea ${pl.struct.project?"1 Project, ":""}${pl.struct.phases.length} Fasi e collega ${pl.struct.link.length} epiche`:"Crea solo la struttura Jira",{cls:T.arm.struct?"armed":"",dis:T.running||!T.ack||!(pl.struct.phases.length||pl.struct.link.length||pl.epics.length)})}${JB("runLinks","Crea i collegamenti tra ticket",{dis:T.running||!pl.links})}${JB("runVerify","Verifica i ticket creati",{dis:T.running||!ts.some(t=>t.state==="created")})}</div></div></details>
    ${(()=>{if(!T.log.length&&lazy(S.runlog)){want("meta","runlog");return`<p class="small muted" style="margin:10px 0 4px">Ultimo log salvato (${new Date(S.runlog.at).toLocaleString("it-IT")}): caricamento…</p>`}const lines=T.log.length?T.log:(S.runlog?.lines||[]);return lines.length?`${T.log.length?"":`<p class="small muted" style="margin:10px 0 4px">Ultimo log salvato (${new Date(S.runlog.at).toLocaleString("it-IT")})</p>`}<div class="log">${esc(lines.join("\n"))}</div>`:""})()}</div>`}
   const odd=ts.filter(t=>t.state==="error"||t.state==="unknown"),keys=createdKeys(),created=ts.filter(t=>t.state==="created");
@@ -823,7 +823,7 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
 
 /* ---------- Registro delle decisioni (voce ausiliaria, non è un passo) ---------- */
 STEPS.push({id:"log",aux:true,phase:"Sempre a portata",short:"Registro decisioni",sub:"Con fonte e impatto",title:"Registro delle decisioni",
- goal:"Ogni decisione che cambia prodotto, processo o classificazione diventa una riga del registro. Le risposte alle domande di apertura entrano da sole; le altre le aggiungi qui o le chiedi alla chat.",
+ goal:"Una riga per ogni decisione su prodotto, processo o classificazione. Le risposte alle domande di apertura arrivano da sole; le altre aggiungile qui o chiedile alla chat.",
  rules:["Il registro si aggiorna nello stesso momento in cui si creano i ticket conseguenti.","Una decisione che ne contraddice un'altra non la cancella: aggiunge una riga e indica quale sostituisce.","I ticket toccati citano la decisione nella sezione Context."],
  checks:()=>[],
  view(){const d=arr("decisions").sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.at||0)-(b.at||0));const p=P();
@@ -839,7 +839,7 @@ STEPS.push({id:"log",aux:true,phase:"Sempre a portata",short:"Registro decisioni
 /* ================= impostazioni del ponte (anche da iPhone) ================= */
 /* Il pannello si apre dall'indicatore «Claude» nella barra in alto: le pagine dei passi restano libere. */
 function bridgePanel(){const st=caps.sample;
-  const head=st==="ok"?`<div class="msg ok small">Claude Code è collegato: le funzioni di Claude sono attive.</div>`:st==="login"?`<div class="msg warn small">Il ponte è attivo ma Claude Code non è autenticato: in un terminale esegui <span class="mono">claude</span> e accedi con il tuo account.</div>`:st==="loading"?`<div class="msg info small">Collegamento al ponte in corso…</div>`:`<div class="msg info small">Claude non è collegato. Avvia il ponte Claude Code sul tuo computer e lascia aperto il terminale: lo strumento si collega da solo entro qualche secondo. <a href="/installazione">Come si fa</a>.</div>`;
+  const head=st==="ok"?`<div class="msg ok small">Claude Code è collegato: le funzioni di Claude sono attive.</div>`:st==="login"?`<div class="msg warn small">Il ponte è attivo ma Claude Code non è autenticato: in un terminale esegui <span class="mono">claude</span> e accedi con il tuo account.</div>`:st==="loading"?`<div class="msg info small">Collegamento al ponte in corso…</div>`:`<div class="msg info small">Claude non è collegato. Avvia il ponte Claude Code sul tuo computer e lascia aperto il terminale: Trama si collega da sola entro qualche secondo. <a href="/installazione">Come si fa</a>.</div>`;
   const hb=T.health,done=hb&&!hb.running,ko=done?hb.items.filter(i=>!i.ok).length:0;
   const health=`<div class="health"><div class="health-h"><b>Pronto per la demo?</b><button type="button" data-act="healthCheck" ${hb?.running?"disabled":""}>${hb?.running?"Verifica in corso…":done?"Verifica di nuovo":"Verifica tutto"}</button></div>
    ${hb?.running?`<p class="small muted" style="margin:8px 0 0">Controllo ponte, Claude, Jira e dati…</p>`:""}
@@ -934,7 +934,7 @@ function progPaint(act){const el=document.querySelector(`.prog[data-prog="${act}
 function progBlock(act){const p=T.prog[act];if(!p)return"";const det=p.total>1,pct=det?Math.min(100,Math.round(p.done/p.total*100)):0;
   return`<div class="prog" data-prog="${act}" role="status" aria-live="polite"><div class="prog-h">${ICO("i-sparkle")}<span class="prog-t">${esc(p.label)}</span><span class="prog-e" data-since="${p.start}">${elapsed(p.start)}</span></div>
   <div class="track${det?"":" ind"}" ${det?`role="progressbar" aria-label="Avanzamento" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}"`:""}><i style="${det?`width:${Math.max(pct,3)}%`:""}"></i></div>
-  <div class="prog-f"><span class="small muted">${esc(p.detail||"")}</span>${p.stop?`<span class="small muted">Mi fermo dopo ${p.unit==="documento"?"questo documento":"questo gruppo"}…</span>`:`<button type="button" class="link" data-act="stopProg" data-prog="${act}">Ferma</button>`}</div>
+  <div class="prog-f"><span class="small muted">${esc(p.detail||"")}</span>${p.stop?`<span class="small muted">Si ferma dopo ${p.unit==="documento"?"questo documento":"questo gruppo"}…</span>`:`<button type="button" class="link" data-act="stopProg" data-prog="${act}">Ferma</button>`}</div>
   ${p.items.length?`<ul class="prog-items">${p.items.slice(-4).map(x=>`<li>${x.code?`<span class="key">${esc(x.code)}</span>`:""}<span class="tt">${esc(x.title)}</span></li>`).join("")}<li class="sk" aria-hidden="true"><i></i><i></i></li></ul>`:""}</div>`}
 const RX_FOUND=/(?:"sourceId"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*)?"title"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
 function progFound(act,text,ix,n,added){const p=T.prog[act];if(!p)return;const it=[];for(const m of text.matchAll(RX_FOUND)){let t=m[2];try{t=JSON.parse('"'+t+'"')}catch{}it.push({code:m[1]||"",title:t})}
@@ -947,7 +947,7 @@ function arm(key,el,fn){if(T.arm[key]){delete T.arm[key];fn()}else{const at=T.ar
 
 /* passo 1 */
 A.jiraSites=()=>run("jiraSites","Collegamento…",async()=>{const p=await jira("getAccessibleAtlassianResources",{});T.sites=(Array.isArray(p)?p:p?.resources||[]).map(s=>({id:s.id,url:s.url,name:s.name}));
-  if(T.sites.length===1)pickSite(T.sites[0]);setMsg("jira","ok",T.sites.length?"Siti letti da Atlassian.":"Nessun sito accessibile con questo account.")});
+  if(T.sites.length===1)pickSite(T.sites[0]);setMsg("jira","ok",T.sites.length?"Siti letti da Atlassian.":"Nessun sito Jira accessibile con questo account: chiedi l'accesso all'amministratore di Atlassian.")});
 function pickSite(s){editProject(p=>{if(p.cloudId&&p.cloudId!==s.id){p.key="";p.issueTypes=[]}p.cloudId=s.id;p.siteUrl=s.url});T.projects=null}
 A.pickSite=el=>{pickSite({id:el.dataset.id,url:el.dataset.url})};
 A.jiraProjects=()=>run("jiraProjects","Ricerca…",async()=>{T.projQ=$("#projSearch")?.value||"";const p=await jira("getVisibleJiraProjects",{cloudId:P().cloudId,maxResults:50,expandIssueTypes:true,action:"create",...(T.projQ?{searchString:T.projQ}:{})});
@@ -1066,7 +1066,7 @@ A.proposeKit=()=>run("proposeKit","Claude sta pensando…",async()=>{const ans=a
    if(!k.releases.length)k.releases=(out.releases||[]).filter(r=>r.name).map(r=>({name:r.name,label:r.label||"",date:/^\d{4}-\d{2}-\d{2}$/.test(r.date||"")?r.date:""}));
    if(!k.epics.length)k.epics=(out.epics||[]).filter(e=>e.name).map(e=>({name:e.name,release:e.release||"",key:""}));
    ["glossary","constraints","envs"].forEach(f=>{if(!k[f]&&out[f])k[f]=out[f]});});
-  setMsg("kit","warn","",`<b>Kit proposto da Claude.</b> Ho compilato solo i campi vuoti. Ipotesi da verificare:<ul>${(out.assumptions||[]).map(a=>`<li>${esc(a)}</li>`).join("")||"<li>nessuna dichiarata</li>"}</ul>`)});
+  setMsg("kit","warn","",`<b>Kit proposto da Claude.</b> Compilati solo i campi vuoti. Ipotesi da verificare:<ul>${(out.assumptions||[]).map(a=>`<li>${esc(a)}</li>`).join("")||"<li>nessuna dichiarata</li>"}</ul>`)});
 
 /* passo 6 */
 function ticketFromAI(x,ref,req){const area=AREAS[x.area]?x.area:"be";const type=TYPES.includes(x.type)?x.type:/spike/i.test(x.type||"")?"UX Story":"Story";
@@ -1135,7 +1135,7 @@ async function createOne(t){const p=P(),k=K();
   const input={cloudId:p.cloudId,projectKey:p.key,issueTypeName:k.types[t.type]||t.type,summary:fullTitle(t),description:t.desc,contentFormat:"markdown",additional_fields:fieldsFor(t)};
   try{const r=await jira("createJiraIssue",input);const key=findKey(r);if(!key)throw{code:"upstream_error",message:"chiave non restituita"};await put("tickets",t.id,{...S.tickets[t.id],state:"created",key,err:"",verify:""});logLine(`${t.ref} → ${key}  ${fullTitle(t)}`);return true}
   catch(e){if(e?.code==="tool_error"){await put("tickets",t.id,{...S.tickets[t.id],state:"error",err:jiraMsg(e)});logLine(`${t.ref} non creato: ${jiraMsg(e)}`);return true}
-   if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};await put("tickets",t.id,{...S.tickets[t.id],state:"unknown",err:"Esito incerto: Jira non ha risposto. Controlla in Jira prima di riprovare."});logLine(`${t.ref}: esito incerto, mi fermo.`);return false}}
+   if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};await put("tickets",t.id,{...S.tickets[t.id],state:"unknown",err:"Esito incerto: Jira non ha risposto. Usa «Cerca in Jira» prima di riprovare."});logLine(`${t.ref}: esito incerto, creazione fermata.`);return false}}
 // Se Jira risponde con un errore incerto ma il ticket è stato creato lo stesso, lo ritrova e lo riusa
 async function findCreated(type,summary,parentKey){const p=P();const q=String(summary).replace(/[\[\]"\\]/g," ").replace(/\s+/g," ").trim();if(!q)return"";
   try{const r=await jira("searchJiraIssuesUsingJql",{cloudId:p.cloudId,jql:`project = "${p.key}" AND issuetype = "${String(type).replace(/"/g,"")}" AND summary ~ "${q}" AND created >= -20m ORDER BY created DESC`,maxResults:10,fields:["summary","parent"]});
@@ -1143,12 +1143,12 @@ async function findCreated(type,summary,parentKey){const p=P();const q=String(su
 async function createNode(type,summary,description,parentKey,extra={}){const p=P();const f={...extra};if(parentKey)f.parent={key:parentKey};
   try{const r=await jira("createJiraIssue",{cloudId:p.cloudId,projectKey:p.key,issueTypeName:type,summary,contentFormat:"markdown",description,additional_fields:f});const key=findKey(r);if(!key)throw{code:"upstream_error",message:"Jira non ha restituito la chiave"};return key}
   catch(err){if(err?.code==="tool_error"||LIFECYCLE.includes(err?.code))throw err;
-    let key=await findCreated(type,summary,parentKey);if(key){logLine(`«${summary}»: Jira ha dato un errore (${err.code}) ma il ticket esiste già come ${key}: lo uso.`);return key}
-    logLine(`«${summary}»: risposta incerta di Jira (${err.code}${err.message?": "+String(err.message).slice(0,160):""}). Non risulta creato: riprovo una volta tra 4 secondi.`);await sleep(4000);
+    let key=await findCreated(type,summary,parentKey);if(key){logLine(`«${summary}»: Jira ha dato un errore (${err.code}) ma il ticket esiste già come ${key}: viene riusato.`);return key}
+    logLine(`«${summary}»: risposta incerta di Jira (${err.code}${err.message?": "+String(err.message).slice(0,160):""}). Non risulta creato: nuovo tentativo tra 4 secondi.`);await sleep(4000);
     key=await findCreated(type,summary,parentKey);if(key)return key;
     const r=await jira("createJiraIssue",{cloudId:p.cloudId,projectKey:p.key,issueTypeName:type,summary,contentFormat:"markdown",description,additional_fields:f});key=findKey(r);if(!key)throw{code:"upstream_error",message:"Jira non ha restituito la chiave"};return key}}
 async function createEpics(){const pl=planOf();const H0=K().hier;
-  const handle=(err,what)=>{if(err?.code==="tool_error"){logLine(`${what} non creato: ${jiraMsg(err)}`);return true}if(LIFECYCLE.includes(err?.code))throw{jira:1,...err};logLine(`${what}: esito incerto (${err?.code||"errore"}${err?.message?": "+String(err.message).slice(0,200):""}). Non risulta creato in Jira: mi fermo.`);return false};
+  const handle=(err,what)=>{if(err?.code==="tool_error"){logLine(`${what} non creato: ${jiraMsg(err)}`);return true}if(LIFECYCLE.includes(err?.code))throw{jira:1,...err};logLine(`${what}: esito incerto (${err?.code||"errore"}${err?.message?": "+String(err.message).slice(0,200):""}). Non risulta creato in Jira: creazione fermata.`);return false};
   if(H0?.enabled){
     if(pl.struct.project){try{const key=await createNode(H0.projectType,H0.project.name,`## Context\nProject container for the client delivery "${H0.project.name}".`,"");editKit(k=>k.hier.project.key=key);logLine(`Project «${H0.project.name}» → ${key}`)}catch(err){if(!handle(err,`Project «${H0.project.name}»`))return false}}
     for(const f of pl.struct.phases){if(T.stop)return false;const pk=K().hier.project.key;if(!pk){logLine(`Fase «${f.name}» saltata: manca il Project.`);continue}
@@ -1204,7 +1204,7 @@ A.runCreate=el=>arm("run",el,()=>run("runCreate","Creazione…",async()=>{T.runn
    addAutoDecision(`Backlog iniziale creato in Jira (${ticketList().filter(t=>t.state==="created").length} ticket).`,"Strumento (passo 6)")}
   catch(e){logLine(`Errore: ${e?.message||jiraMsg(e)}`);throw e}
   finally{T.running=false;T.arm={};}}));
-A.stopRun=()=>{T.stop=true;toast("Mi fermo dopo l'operazione in corso.")};
+A.stopRun=()=>{T.stop=true;toast("La creazione si ferma dopo l'operazione in corso.")};
 A.runStruct=el=>arm("struct",el,()=>run("runStruct","Creazione struttura…",async()=>{T.running=true;T.stop=false;T.log=[];logLine("Inizio creazione della struttura (Project, Fasi, epiche).");
   try{const ok=await createEpics();await verifyStructure();logLine(ok?"Struttura completata.":"Struttura interrotta: controlla Jira prima di riprovare.")}
   catch(e){logLine(`Errore: ${e?.message||jiraMsg(e)}`);throw e}
@@ -1214,7 +1214,7 @@ A.runVerify=()=>run("runVerify","Verifica…",async()=>{await verifyStructure();
 A.retryOne=el=>run("retryOne","Creazione…",async()=>{const t=ticketList().find(x=>x.id===el.dataset.id);if(t&&!issuesOf(t).e.length)await createOne(t);else toast("Correggi prima gli errori del ticket al passo 5.")});
 A.reconcile=el=>run("reconcile","Ricerca…",async()=>{const t=ticketList().find(x=>x.id===el.dataset.id);const p=P();const r=await jira("searchJiraIssuesUsingJql",{cloudId:p.cloudId,jql:`project = "${p.key}" AND summary ~ "${fullTitle(t).replace(/[\[\]"\\]/g," ").replace(/\s+/g," ").trim()}" ORDER BY created DESC`,maxResults:10,fields:["summary"]});
   const hit=findIssues(r).find(i=>String(i.fields?.summary).toLowerCase()===fullTitle(t).toLowerCase());
-  if(hit){await put("tickets",t.id,{...t,state:"created",key:hit.key,err:""});toast(`Trovato in Jira: ${hit.key}.`)}else{await put("tickets",t.id,{...t,state:"draft",err:""});toast("Non trovato in Jira: il ticket torna in bozza e verrà creato al prossimo giro.")}});
+  if(hit){await put("tickets",t.id,{...t,state:"created",key:hit.key,err:""});toast(`Trovato in Jira: ${hit.key}.`)}else{await put("tickets",t.id,{...t,state:"draft",err:""});toast("Non trovato in Jira: il ticket torna in bozza e verrà creato alla prossima creazione.")}});
 function createdKeys(){const k=K(),h=k.hier;const set=new Set();ticketList().forEach(t=>{if(t.state==="created"&&t.key)set.add(t.key)});k.epics.forEach(e=>e.key&&set.add(e.key));(h?.phases||[]).forEach(f=>f.key&&set.add(f.key));h?.project?.key&&set.add(h.project.key);
   return[...set].sort((a,b)=>(+a.split("-").pop())-(+b.split("-").pop()))}
 async function syncJira(){const k=K(),h=k.hier;const ts=ticketList().filter(t=>t.state==="created"&&t.key);const keys=createdKeys();
@@ -1246,7 +1246,7 @@ A.exportDecisions=()=>{const d=arr("decisions").sort((a,b)=>String(a.date).local
 /* export e copia */
 async function exportCsv(name,head,rows){const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;const csv="\ufeff"+[head,...rows].map(r=>r.map(q).join(",")).join("\r\n");
   if(DL){try{await DL.save({filename:name,data:new Blob([csv],{type:"text/csv"})});return}catch(e){if(e?.code==="cancelled")return}}
-  copyText(csv,null);toast("Download non disponibile qui: ho copiato il CSV negli appunti.")}
+  copyText(csv,null);toast("Download non disponibile qui: CSV copiato negli appunti.")}
 function copyText(t,el){const done=()=>{if(el){const o=el.textContent;el.textContent="Copiato";setTimeout(()=>el.textContent=o,1500)}};const fb=()=>{const x=document.createElement("textarea");x.value=t;document.body.appendChild(x);x.select();try{document.execCommand("copy");done()}catch(e){}x.remove()};
   try{navigator.clipboard.writeText(t).then(done,fb)}catch(e){fb()}}
 
@@ -1326,7 +1326,7 @@ function actionView(a){
   if(a.type==="add_decision")return{title:"Registrare una decisione",lines:[a.decision,a.who&&`Chi: ${a.who}`,a.replaces&&`Sostituisce: ${a.replaces}`].filter(Boolean)};
   const isReq=a.type==="update_requirement",o=isReq?reqList().find(x=>x.code===a.code):ticketList().find(x=>x.ref===a.ref),name=isReq?a.code:a.ref;
   if(!o)return{title:`Modificare ${name}`,error:isReq?"Requisito inesistente.":"Ticket inesistente."};
-  if(!isReq&&o.state==="created")return{title:`Modificare ${name}`,error:"Il ticket è già in Jira: va modificato in Jira."};
+  if(!isReq&&o.state==="created")return{title:`Modificare ${name}`,error:"Il ticket è già in Jira: modificalo direttamente lì."};
   return{title:`Modificare ${name}${o.title?" · "+String(o.title).slice(0,50):""}`,
     lines:Object.entries(a.fields).map(([k,v])=>k==="desc"?`desc: riscritta (${showVal(v).length} caratteri)`:`${k}: ${showVal(o[k]).slice(0,60)||"—"} → ${showVal(v).slice(0,100)}`)}}
 function applyAction(a){
@@ -1379,7 +1379,7 @@ function useSugg(l){const u=usedSugg();u[sKey(l)]=Date.now();ls.set("sugg:"+PID,
 const wordsOf=s=>new Set(norm(s).split(" ").filter(w=>w.length>3));
 function similar(a,b){const A=wordsOf(a),B=wordsOf(b);if(A.size<3||!B.size)return false;let n=0;A.forEach(w=>{if(B.has(w))n++});return n/A.size>=.8}
 const SUGG_MORE={
- jira:["Quali campi obbligatori ha il mio progetto Jira?","Come mappo i tipi di ticket di Jira su quelli del kit?","Cosa devo creare in Jira prima di usare lo strumento?"],
+ jira:["Quali campi obbligatori ha il mio progetto Jira?","Come mappo i tipi di ticket di Jira su quelli del kit?","Cosa devo creare in Jira prima di usare Trama?"],
  docs:["Quali requisiti sembrano contraddirsi tra i documenti?","Quali parti dei documenti sono ambigue o incomplete?","Elenca i vincoli non funzionali citati nei documenti"],
  reqs:["Aggiungi un requisito: …","Quali requisiti sono troppo grandi e conviene dividere?","Quali requisiti non sono testabili così come scritti?","Raggruppa i requisiti per area funzionale"],
  questions:["Quali domande sono più urgenti per il cliente?","Quali ipotesi hanno più rischio se sbagliate?","Riscrivi le domande aperte in modo più chiaro per il cliente"],
@@ -1403,7 +1403,7 @@ function suggList(){const turns=(S.chat?.turns||[]).filter(t=>t.role!=="note"),l
   return[...(ideas[s.id]||[]).map(q=>({label:q,prompt:q})),...follow,...dynSugg(),...stat].filter(x=>{const k=sKey(x.label);if(seen.has(k)||u[k])return false;seen.add(k);return true})}
 let SUGG_STALE=false;
 function renderSugg(){if(!$("#chat")?.classList.contains("open")){SUGG_STALE=true;return}SUGG_STALE=false;const l=suggList().slice(0,3);
-  $("#chatSugg").innerHTML=l.map(x=>`<button type="button" data-sugg="${esc(x.label)}" data-p="${esc(x.prompt)}">${esc(x.label)}</button>`).join("")+(SAMPLE?`<button type="button" class="ideas" data-ideas ${ideasBusy?"disabled":""}>${ideasBusy?"Sto pensando…":"✨ Nuove idee"}</button>`:"")}
+  $("#chatSugg").innerHTML=l.map(x=>`<button type="button" data-sugg="${esc(x.label)}" data-p="${esc(x.prompt)}">${esc(x.label)}</button>`).join("")+(SAMPLE?`<button type="button" class="ideas" data-ideas ${ideasBusy?"disabled":""}>${ideasBusy?"Claude sta pensando…":"Nuove idee"}</button>`:"")}
 async function newIdeas(){if(!SAMPLE||ideasBusy)return;ideasBusy=true;renderSugg();const sid=STEPS[cur].id;
   try{const used=Object.keys(usedSugg()).map(k=>k.split("|")[1]).slice(-20);
     const r=await ask(`${RULES}\n\n${digest()}\n\nRequisiti:\n${reqList().slice(0,30).map(reqLine).join("\n").slice(0,6000)}\n\nCOMPITO: proponi 4 domande brevi (massimo 90 caratteri l'una) che il Product Owner potrebbe fare adesso a Claude, al passo ${cur+1}, sul PROGETTO SPECIFICO (cita ID o argomenti reali). Non ripetere queste, già usate: ${JSON.stringify(used)}. Rispondi con un array JSON di stringhe.`,{modelTier:"quick"});
@@ -1444,7 +1444,7 @@ function renderChat(){const turns=S.chat?.turns||[];const log=$("#chatLog");cons
    turns.map(turnHtml).join("")+
    (chatPending?`<div class="bub u">${esc(chatPending.q)}</div><div class="bub a" id="liveBub">${chatPending.a?md(chatPending.a):'<span class="muted">Claude sta pensando…</span>'}</div>`:"");
   if(atBottom)log.scrollTop=log.scrollHeight;else log.scrollTop=keep;$("#chatFab").classList.toggle("busy",!!chatPending);$("#chatSend").disabled=!!chatPending||!SAMPLE;$("#chatStop").hidden=!chatPending;
-  $("#chatImgLbl").hidden=!(SAMPLE&&LIM?.images);$("#chatIn").placeholder=SAMPLE?"Chiedi a Claude: un dubbio sul requisito, una decisione da registrare, un ticket da correggere…":caps.sample==="login"?"Claude Code non è autenticato: esegui «claude» nel terminale e accedi.":"Per usare Claude avvia il ponte sul tuo computer (guida: /installazione)";
+  $("#chatImgLbl").hidden=!(SAMPLE&&LIM?.images);$("#chatIn").placeholder=SAMPLE?"Chiedi a Claude: un dubbio sul requisito, una decisione da registrare, un ticket da correggere…":caps.sample==="login"?"Claude Code non è autenticato: esegui «claude» nel terminale e accedi.":"Per usare Claude, avvia il ponte sul tuo computer (guida nella pagina Installazione)";
   renderSugg();renderMem()}
 $("#chatLog").addEventListener("click",e=>{
   const cp=e.target.closest("[data-copy]");
@@ -1532,7 +1532,7 @@ if(!ls.get("chatHinted",false)){ls.set("chatHinted",true);fabEl.classList.add("h
 function showGate(kind,note){GATE=kind;document.body.classList.add("gate");document.body.classList.remove("has-recap");$("#projName").textContent="";$("#pmenu").hidden=true;
   $("#capChips").innerHTML="";
   if(kind==="login"){$("#main").innerHTML=`<div style="padding:8vh 0 0;max-width:560px"><div class="eyebrow">Trama</div><h1>Accedi con il tuo account Atlassian</h1>
-    <p class="lead">Lo strumento lavora sul tuo Jira con i tuoi permessi: i ticket risultano creati da te e vedi solo i progetti dei siti a cui hai accesso.</p>
+    <p class="lead">Trama lavora sul tuo Jira con i tuoi permessi: i ticket risultano creati da te e vedi solo i progetti dei siti a cui hai accesso.</p>
     ${note?`<div class="msg warn">${esc(note)}</div>`:""}<div class="toolbar"><a class="btn primary" href="/api/auth/login" style="text-decoration:none;background:var(--primary);color:var(--on-primary);border-color:var(--primary)">Accedi con Atlassian</a><a href="/">Scopri come funziona</a></div><p class="small muted" style="margin-top:18px">Accedendo accetti il trattamento dei dati descritto nell'<a href="/privacy">informativa privacy</a>.</p></div>`;return}
   renderPicker(note)}
 function renderPicker(note){const ps=PROJECTS||[];const siteName=id=>(SITES.find(s=>s.id===id)||{}).name||"";
@@ -1555,10 +1555,10 @@ function renderPicker(note){const ps=PROJECTS||[];const siteName=id=>(SITES.find
    <button class="${T.arm.forgetMe?"armed":"danger"}" data-act="forgetMe">${T.arm.forgetMe?"Conferma: elimina i miei dati ed esci":"Elimina i miei dati da Trama"}</button></div></details>`;
   $$("#main details[data-k]").forEach(d=>{if(openSet.has(d.dataset.k))d.open=true})}
 A.npToggle=()=>{T.npOpen=!T.npOpen;renderPicker();if(T.npOpen)$("#npName")?.focus()};
-async function loadProjects(){try{PROJECTS=(await BS.api("/api/projects")).projects}catch(e){PROJECTS=[];toast(e.message||"Progetti non caricati.")}if(GATE==="picker")renderPicker()}
+async function loadProjects(){try{PROJECTS=(await BS.api("/api/projects")).projects}catch(e){PROJECTS=[];toast(e.message||"Progetti non caricati: ricarica la pagina.")}if(GATE==="picker")renderPicker()}
 A.createProject=async()=>{const name=$("#npName").value.trim(),cloudId=$("#npSite").value;if(!name){toast("Dai un nome al progetto.");return}
-  busy.createProject=1;renderPicker();try{const r=await BS.api("/api/projects",{method:"POST",body:{name,cloudId}});location.href="/studio?p="+encodeURIComponent(r.project.id)}catch(e){toast(e.message||"Progetto non creato.")}finally{delete busy.createProject;if(GATE==="picker")renderPicker()}};
-A.forgetMe=el=>{arm("forgetMe",el,async()=>{try{await BS.api("/api/me",{method:"DELETE"});location.href="/?dati=eliminati"}catch(e){toast(e.message||"Cancellazione non riuscita.")}});if(GATE==="picker")renderPicker()};
+  busy.createProject=1;renderPicker();try{const r=await BS.api("/api/projects",{method:"POST",body:{name,cloudId}});location.href="/studio?p="+encodeURIComponent(r.project.id)}catch(e){toast(e.message||"Progetto non creato: riprova tra poco.")}finally{delete busy.createProject;if(GATE==="picker")renderPicker()}};
+A.forgetMe=el=>{arm("forgetMe",el,async()=>{try{await BS.api("/api/me",{method:"DELETE"});location.href="/?dati=eliminati"}catch(e){toast(e.message||"Cancellazione non riuscita: riprova tra poco.")}});if(GATE==="picker")renderPicker()};
 A.deleteProject=el=>{const id=el.dataset.id,k="dp"+id;if(T.arm[k]){delete T.arm[k];closeMenus();(async()=>{try{await BS.api("/api/projects/"+encodeURIComponent(id),{method:"DELETE"});toast("Progetto eliminato.");loadProjects()}catch(e){toast(e.message)}})()}else{T.arm[k]=1;renderPicker();setTimeout(()=>{if(T.arm[k]){delete T.arm[k];if(GATE==="picker")renderPicker()}},4000)}};
 const _scheduleRender=scheduleRender;scheduleRender=function(){if(GATE==="picker"){renderPicker();return}if(GATE)return;_scheduleRender()};
 /* menu a tendina della barra: progetto e account */

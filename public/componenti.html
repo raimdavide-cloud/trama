@@ -192,9 +192,13 @@ body{background:var(--bg)}
     <li>Errori: cosa è successo, poi cosa fare. «Il tipo «UX Story» non esiste nel progetto: scegli un tipo valido nel kit.»</li>
     <li>Stati vuoti: un invito, non una scusa. «Nessun requisito ancora. Estraili con Claude o aggiungili a mano.»</li>
     <li>Numeri e singolari: «1 requisito», «3 requisiti»; date come «16/10/2026», orari «10:42».</li>
-    <li>Lo strumento non dice «io»: parla Claude solo nella chat.</li>
+    <li>Trama non dice «io»: in prima persona parla solo Claude, nella chat. Nei log e negli avvisi forme impersonali: «Verranno create le Fasi», «creazione fermata».</li>
+    <li>Il prodotto si chiama Trama: non «lo strumento», non «lo studio».</li>
+    <li>Spiegazione di un passo: al massimo due frasi, la cosa più importante per prima.</li>
+    <li>Un concetto, una parola: sempre «Release (= Fase)», «campi personalizzati», «ponte Claude».</li>
+    <li>Alternative dentro un passo come domanda + comando: «Non hai documenti? Aggiungi i requisiti a mano».</li>
   </ul>
-  <ul class="rules-no"><li>Numeri di sezione del playbook nei titoli, come «(0.2)» o «(1.4)».</li><li>«Per favore», «semplicemente», «con successo», punti esclamativi.</li><li>Nomi tecnici interni: «data-bind», «sync», «payload».</li></ul>
+  <ul class="rules-no"><li>Numeri di sezione del playbook nei titoli, come «(0.2)» o «(1.4)».</li><li>«Per favore», «semplicemente», «con successo», punti esclamativi.</li><li>Nomi tecnici interni: «data-bind», «sync», «payload».</li><li>Percorsi tecnici al posto dei nomi delle pagine: «/installazione» invece di «pagina Installazione».</li><li>Emoji nei pulsanti.</li></ul>
   <h3>Glossario</h3>
   <table class="gl"><thead><tr><th scope="col">Termine</th><th scope="col">Significato</th><th scope="col">Da non usare</th></tr></thead><tbody>
     <tr><td>Requisito</td><td>Una cosa che il prodotto deve fare, dal punto di vista dell'utente, con un ID stabile</td><td>Requirement, user story</td></tr>
@@ -205,6 +209,8 @@ body{background:var(--bg)}
     <tr><td>Ipotesi</td><td>Una scelta fatta al posto del PO, da confermare</td><td>Assunzione, default</td></tr>
     <tr><td>Registro delle decisioni</td><td>L'elenco delle decisioni con fonte e impatto</td><td>Log, storico</td></tr>
     <tr><td>Ponte</td><td>Il programma sul computer che collega Trama a Claude Code</td><td>Bridge, connettore</td></tr>
+    <tr><td>Campo personalizzato</td><td>Un campo aggiunto al progetto Jira, a volte obbligatorio</td><td>Campo custom</td></tr>
+    <tr><td>Trama</td><td>Il prodotto e la sua interfaccia, dove si lavora sul progetto</td><td>Studio, lo strumento, l'app</td></tr>
   </tbody></table>
 </section>
 

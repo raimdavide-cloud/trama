@@ -26,7 +26,7 @@ async function loadProject(user, id) {
 export default async (req, context) => {
   const user = await getUser(req);
   if (!user) return fail("unauthenticated", "Accedi con Atlassian.", 401);
-  if (!sameOrigin(req)) return fail("forbidden", "Richiesta non consentita.", 403);
+  if (!sameOrigin(req)) return fail("forbidden", "Richiesta non consentita: ricarica la pagina e riprova.", 403);
   const { id, col, item } = context.params || {};
   const project = await loadProject(user, id);
   if (!project) return fail("not_found", "Progetto inesistente o non accessibile con il tuo account.", 404);
@@ -66,7 +66,7 @@ export default async (req, context) => {
   }
   if (req.method === "PUT") {
     const text = await req.text();
-    if (text.length > MAX_BYTES) return fail("too_large", "Documento troppo grande (massimo 1 MB).", 413);
+    if (text.length > MAX_BYTES) return fail("too_large", "Documento troppo grande (massimo 1 MB): dividilo o accorcialo.", 413);
     let data;
     try { data = JSON.parse(text); } catch { return fail("invalid", "Il corpo deve essere JSON."); }
     if (!data || typeof data !== "object" || Array.isArray(data)) return fail("invalid", "Il documento deve essere un oggetto JSON.");
@@ -106,7 +106,7 @@ async function batch(req, user, id) {
     const del = o.data === null;
     if (!del && (!o.data || typeof o.data !== "object" || Array.isArray(o.data))) return fail("invalid", "Ogni documento deve essere un oggetto JSON.");
     if (!del && isPlaceholder(o.data)) return fail("placeholder", "Contenuto non caricato: il documento completo non è stato sovrascritto.", 409);
-    if (!del && JSON.stringify(o.data).length > MAX_BYTES) return fail("too_large", "Documento troppo grande (massimo 1 MB).", 413);
+    if (!del && JSON.stringify(o.data).length > MAX_BYTES) return fail("too_large", "Documento troppo grande (massimo 1 MB): dividilo o accorcialo.", 413);
     last.set(`${o.col}/${o.id}`, { col: o.col, id: o.id, data: del ? null : o.data });
   }
   const rows = [...last.values()];

@@ -78,7 +78,7 @@ test("Kit: rinominare una release la rinomina anche in epiche, requisiti e ticke
   const old = await page.evaluate(() => K().releases[1].name);
   const n = await page.evaluate((o) => ({ reqs: reqList().filter((x) => x.release === o).length, tickets: ticketList().filter((x) => x.release === o).length, epics: K().epics.filter((x) => x.release === o).length }), old);
   expect(n.reqs + n.tickets + n.epics).toBeGreaterThan(0);
-  await openSec(page, "Release (= Fasi in Jira)");
+  await openSec(page, "Release (= Fase)");
   const name = page.locator('[data-bind="meta:kit:releases.1.name"]');
   await name.fill(`${old} GA`);
   await name.press("Tab");
@@ -211,7 +211,7 @@ test("salvataggio in blocco: rinominare una release aggiorna decine di elementi 
   const old = await page.evaluate(() => K().releases[0].name);
   const touched = await page.evaluate((o) => reqList().filter((x) => x.release === o).length + ticketList().filter((x) => x.release === o).length, old);
   expect(touched).toBeGreaterThan(20);
-  await openSec(page, "Release (= Fasi in Jira)");
+  await openSec(page, "Release (= Fase)");
   const name = page.locator('[data-bind="meta:kit:releases.0.name"]');
   await name.fill(`${old} bis`);
   await name.press("Tab");

@@ -313,7 +313,7 @@ test("sblocco progressivo: in un progetto nuovo gli step si sbloccano uno dopo l
   await page.evaluate(({ id }) => del("docs", id), doc);
   await expect(locked).toHaveText(["Estrazione dei requisiti", "Requisiti"]);
   await openSec(page, "Documenti");
-  await page.getByRole("button", { name: "Non ho documenti: aggiungo i requisiti a mano" }).click(); // senza documenti si parte a mano
+  await page.getByRole("button", { name: "Non hai documenti? Aggiungi i requisiti a mano" }).click(); // senza documenti si parte a mano
   await expect(page.locator(".sp")).toBeVisible();
   await expect(locked).toHaveCount(0);
 });

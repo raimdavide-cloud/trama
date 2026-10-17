@@ -14,13 +14,13 @@
         signal,
       });
     } catch (e) {
-      throw { code: signal?.aborted ? "cancelled" : "server_unavailable", message: "Connessione non riuscita.", retryable: true };
+      throw { code: signal?.aborted ? "cancelled" : "server_unavailable", message: "Connessione non riuscita: controlla la rete e riprova.", retryable: true };
     }
     let data = {};
     try { data = await r.json(); } catch {}
     if (r.status === 401) {
       BS.onUnauthenticated?.(data.code);
-      throw { code: data.code === "needs_reauth" ? "needs_reauth" : "unauthenticated", message: data.message || "Sessione scaduta." };
+      throw { code: data.code === "needs_reauth" ? "needs_reauth" : "unauthenticated", message: data.message || "Sessione scaduta: accedi di nuovo con Atlassian." };
     }
     if (!r.ok || data.ok === false) {
       throw { code: data.code || "upstream_error", message: data.message || `HTTP ${r.status}`, retryable: !!data.retryable, status: r.status };
