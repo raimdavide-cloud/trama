@@ -20,6 +20,7 @@ function fakeSql() {
     if (/^select \* from projects where id = \? and cloud_id = any/.test(q)) { const p = db.projects[v[0]]; return p && v[1].includes(p.cloud_id) ? [p] : []; }
     if (/^select clock_timestamp/.test(q)) return [{ now: "2026-10-16T08:00:00.000Z" }];
     if (/^select col, id, data, deleted from items/.test(q)) return db.items.filter((i) => i.project_id === v[0]);
+    if (/^select data, deleted from items where project_id = \? and col = \? and id = \?$/.test(q)) return db.items.filter((i) => i.project_id === v[0] && i.col === v[1] && i.id === v[2]).slice(-1);
     if (/^insert into items .* jsonb_to_recordset/.test(q)) { for (const r of JSON.parse(v[2])) db.items.push({ project_id: v[0], col: r.col, id: r.id, data: r.data, deleted: r.data === null, by: v[1] }); return []; }
     if (/^insert into items .* 'meta', 'project'/.test(q)) { db.items.push({ project_id: v[0], col: "meta", id: "project", data: JSON.parse(v[1]), by: v[2] }); return []; }
     if (/^insert into items/.test(q)) { db.items.push({ project_id: v[0], col: v[1], id: v[2], data: JSON.parse(v[3]), by: v[4] }); return []; }
@@ -153,4 +154,67 @@ test("salvataggio in blocco: un'operazione non valida fa rifiutare tutto, nulla 
   assert.equal((await post({ ops: [{ col: "reqs", id: "r1", data: {} }] }, { origin: "https://malevolo.example" })).status, 403);
   assert.equal((await call("/api/projects/pAltro/batch", { method: "POST", body: { ops: [{ col: "reqs", id: "r1", data: {} }] } })).status, 404);
   assert.equal(db.items.length, 0);
+});
+
+/* ---------- apertura leggera: segnaposto nello stato, contenuto completo su richiesta ---------- */
+const { fingerprint } = await import("../../server/lib/lazy.mjs");
+const TEXT = "Il sistema deve permettere la prenotazione degli orti. ".repeat(400);
+const seed = () => db.items.push(
+  { project_id: "p1", col: "docs", id: "d1", data: { name: "Capitolato.docx", kind: "Word", text: TEXT, chars: TEXT.length, truncated: false, at: 1 } },
+  { project_id: "p1", col: "meta", id: "runlog", data: { at: 2, lines: ["riga 1", "riga 2", "riga 3"] } },
+  { project_id: "p1", col: "meta", id: "quality", data: { at: 3, count: 9, findings: [{ id: "f1", status: "open", severity: "high" }, { id: "f2", status: "open", severity: "low" }, { id: "f3", status: "ignored", severity: "high" }] } },
+  { project_id: "p1", col: "meta", id: "chat", data: { turns: [{ role: "user", content: "ciao" }] } },
+  { project_id: "p1", col: "reqs", id: "r1", data: { title: "Prenotazione" } },
+);
+
+test("lo stato del progetto arriva leggero: testo dei documenti, log e qualità sono segnaposto", async () => {
+  seed();
+  for (const path of ["/api/projects/p1", "/api/projects/p1?since=2026-10-16T07:00:00.000Z"]) {
+    const { items } = await (await call(path)).json();
+    const by = Object.fromEntries(items.map((i) => [`${i.col}/${i.id}`, i.data]));
+    assert.deepEqual(by["docs/d1"], { name: "Capitolato.docx", kind: "Word", chars: TEXT.length, truncated: false, at: 1, _lazy: { len: TEXT.length, v: fingerprint(db.items[0].data) } }, path);
+    assert.deepEqual(by["meta/runlog"], { at: 2, n: 3, _lazy: { len: by["meta/runlog"]._lazy.len, v: fingerprint(db.items[1].data) } });
+    assert.deepEqual(by["meta/quality"].sum, { n: 3, open: 2, high: 1 });
+    assert.equal(by["meta/quality"].findings, undefined);
+    assert.deepEqual(by["meta/chat"], db.items[3].data, "il resto arriva intero");
+    assert.deepEqual(by["reqs/r1"], { title: "Prenotazione" });
+    assert.ok(JSON.stringify(items).length < TEXT.length / 4);
+  }
+});
+
+test("un documento completo si legge da solo, con gli stessi controlli di accesso", async () => {
+  seed();
+  const r = await call("/api/projects/p1/items/docs/d1");
+  assert.equal(r.status, 200);
+  const { item } = await r.json();
+  assert.equal(item.data.text, TEXT);
+  const { items } = await (await call("/api/projects/p1")).json();
+  assert.equal(item.v, items.find((i) => i.id === "d1").data._lazy.v, "la versione coincide con quella del segnaposto");
+  assert.equal((await (await call("/api/projects/p1/items/meta/quality")).json()).item.data.findings.length, 3);
+  assert.equal((await call("/api/projects/p1/items/docs/d1", { sid: "c".repeat(64) })).status, 401);
+  assert.equal((await call("/api/projects/pAltro/items/docs/d1")).status, 404, "progetto di un sito non accessibile");
+  assert.equal((await call("/api/projects/p1/items/docs/nessuno")).status, 404);
+  assert.equal((await call("/api/projects/p1/items/segreti/d1")).status, 400);
+  db.items.push({ project_id: "p1", col: "docs", id: "d2", data: {}, deleted: true });
+  assert.equal((await call("/api/projects/p1/items/docs/d2")).status, 404, "eliminato");
+});
+
+test("un segnaposto non sovrascrive mai il contenuto completo", async () => {
+  seed();
+  const n = db.items.length;
+  const { items } = await (await call("/api/projects/p1")).json();
+  const ph = items.find((i) => i.id === "d1").data;
+  const r = await put("/api/projects/p1/items/docs/d1", ph);
+  assert.equal(r.status, 409);
+  assert.equal((await r.json()).code, "placeholder");
+  const b = await call("/api/projects/p1/batch", { method: "POST", body: { ops: [{ col: "reqs", id: "r1", data: { title: "x" } }, { col: "meta", id: "quality", data: items.find((i) => i.id === "quality").data }] } });
+  assert.equal(b.status, 409);
+  assert.equal(db.items.length, n, "nulla è stato scritto");
+  assert.equal(db.items[0].data.text, TEXT);
+});
+
+test("l'impronta non dipende dall'ordine delle chiavi (Postgres le riordina) ma cambia con il contenuto", () => {
+  assert.equal(fingerprint({ a: 1, b: { c: [1, "x"], d: null } }), fingerprint({ b: { d: null, c: [1, "x"] }, a: 1 }));
+  assert.notEqual(fingerprint({ text: "abc" }), fingerprint({ text: "abd" }));
+  assert.equal(fingerprint({ a: 1, u: undefined }), fingerprint({ a: 1 }));
 });

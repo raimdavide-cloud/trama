@@ -1,8 +1,9 @@
-// Misure di prestazione dello studio sul simulatore: tempi di ridisegno, modifiche, richieste di rete.
+// Misure di prestazione di Trama sul simulatore: peso dell'apertura, tempi di ridisegno, modifiche, richieste di rete.
 // Uso: npm run perf  (avvia da solo un simulatore sulla porta 8896; serve Chrome installato)
 //      npm run perf -- --idle   aggiunge 3 minuti da fermo per misurare la sincronizzazione
 import { spawn } from "node:child_process";
 import { chromium } from "@playwright/test";
+import { brotliCompressSync, gzipSync } from "node:zlib";
 
 const PORT = 8896, base = `http://127.0.0.1:${PORT}`, IDLE = process.argv.includes("--idle");
 const sim = spawn(process.execPath, ["tests/sim/server.mjs"], { env: { ...process.env, PORT: String(PORT) }, stdio: "ignore" });
@@ -25,7 +26,26 @@ const renderOf = (page, id) => page.evaluate(async (id) => {
   return t.sort((a, b) => a - b)[2];
 }, id);
 
-const out = { "Ridisegno di un passo (ms, mediana di 5)": {}, "Modifica di un ticket nel Backlog": {}, "Salvataggi in blocco": {} };
+const out = { "Peso dell'apertura del progetto di prova": {}, "Ridisegno di un passo (ms, mediana di 5)": {}, "Modifica di un ticket nel Backlog": {}, "Salvataggi in blocco": {} };
+// Peso dell'apertura: quanto scarica Trama dalle API dei dati per aprire il progetto di prova completo (con log e controllo
+// di qualità), fino a dati pronti. In produzione Vercel comprime il JSON: conta la colonna «brotli».
+{
+  await fetch(base + "/__sim/reset?completo=1");
+  const p = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const bodies = [];
+  p.on("response", (r) => { if (/^\/api\/projects\/progetto-prova(\/items\/.*)?$/.test(new URL(r.url()).pathname)) bodies.push(r.body()); });
+  const t0 = Date.now();
+  await p.goto(base + "/studio?p=progetto-prova");
+  await p.locator(".progress b").waitFor();
+  await p.waitForFunction(() => DATA_READY);
+  const tReady = Date.now() - t0;
+  await p.waitForTimeout(500);
+  const all = await Promise.all(bodies);
+  const kb = (n) => Math.round(n / 102.4) / 10;
+  const sum = (f) => all.reduce((a, b) => a + f(b), 0);
+  out["Peso dell'apertura del progetto di prova"]["Stato del progetto"] = { richieste: all.length, KB: kb(sum((b) => b.length)), "KB brotli": kb(sum((b) => brotliCompressSync(b).length)), "KB gzip": kb(sum((b) => gzipSync(b).length)), "ms a dati pronti": tReady };
+  await p.close();
+}
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 for (const mult of [1, 2, 4]) {
   await open(page, mult);

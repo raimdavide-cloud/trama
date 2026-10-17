@@ -11,6 +11,7 @@ const PORT = Number(process.env.PORT || 8899);
 const { sim } = await import("./fake-jira.mjs"); // installa il fetch finto prima di caricare le operazioni vere
 const { ops } = await import("../../server/lib/jira-ops.mjs");
 const { seal } = await import("../../server/lib/core.mjs");
+const { lighten, isPlaceholder, fingerprint } = await import("../../server/lib/lazy.mjs"); // stessa apertura leggera del server
 const fixture = JSON.parse(readFileSync(new URL("../fixtures/progetto-prova.json", import.meta.url)));
 
 sim.cloudId = fixture.project.cloud_id;
@@ -25,9 +26,11 @@ const user = {
 };
 
 // Scenario «progetto nuovo»: stessi documenti, requisiti e ticket, ma nulla è ancora stato creato in Jira.
+// Con /__sim/reset?completo=1 il progetto di prova resta com'è (già creato, con log e controllo di qualità).
 let store;
-function resetStore() {
+function resetStore(completo = false) {
   store = new Map(fixture.items.map((i) => [`${i.col}/${i.id}`, { col: i.col, id: i.id, data: structuredClone(i.data), deleted: false, at: Date.now() }]));
+  if (completo) return;
   const kit = store.get("meta/kit").data;
   if (kit.hier) { kit.hier.project.key = ""; kit.hier.phases.forEach((f) => (f.key = "")); }
   kit.epics.forEach((e) => { e.key = ""; delete e.linkedTo; });
@@ -60,7 +63,7 @@ createServer(async (req, res) => {
   try {
     // comandi del simulatore, usati dai test
     if (p === "/__sim/state") return send(res, 200, { issues: [...sim.issues.values()].map((i) => ({ key: i.key, type: i.type, summary: i.summary, parent: i.parent || null, labels: i.fields?.labels || [], fixVersions: (i.fields?.fixVersions || []).map((v) => v.name) })), links: sim.links || [], calls: sim.calls });
-    if (p === "/__sim/reset") { sim.reset(); sim.links = []; cspReports.length = 0; resetStore(); return send(res, 200, { ok: true }); }
+    if (p === "/__sim/reset") { sim.reset(); sim.links = []; cspReports.length = 0; resetStore(url.searchParams.has("completo")); return send(res, 200, { ok: true }); }
     if (p === "/__sim/csp") return send(res, 200, { reports: cspReports });
     if (p === "/__sim/fault") { const b = JSON.parse(raw); sim.faults[b.kind][b.type] = b.times; if ("retryAfter" in b) sim.retryAfter = b.retryAfter; return send(res, 200, sim.faults); }
 
@@ -71,17 +74,24 @@ createServer(async (req, res) => {
     let m;
     if ((m = p.match(/^\/api\/projects\/([^/]+)$/)) && req.method === "GET") {
       const since = Number(url.searchParams.get("since") ? Date.parse(url.searchParams.get("since")) : 0) - 3000;
-      const items = [...store.values()].filter((v) => (since > 0 ? v.at > since : !v.deleted)).map((v) => ({ col: v.col, id: v.id, data: v.deleted ? {} : v.data, deleted: v.deleted }));
+      const items = [...store.values()].filter((v) => (since > 0 ? v.at > since : !v.deleted)).map((v) => lighten({ col: v.col, id: v.id, data: v.deleted ? {} : v.data, deleted: v.deleted }));
       return send(res, 200, { ok: true, now: new Date().toISOString(), project: { id: fixture.project.id, name: fixture.project.name, cloudId: fixture.project.cloud_id, siteUrl: fixture.project.site_url, createdBy: user.account_id }, items });
     }
     if ((m = p.match(/^\/api\/projects\/([^/]+)\/items\/([^/]+)\/([^/]+)$/))) {
       const key = `${m[2]}/${decodeURIComponent(m[3])}`;
+      if (req.method === "GET") {
+        const v = store.get(key);
+        if (!v || v.deleted) return send(res, 404, { ok: false, code: "not_found", message: "Documento inesistente o eliminato." });
+        return send(res, 200, { ok: true, item: { col: v.col, id: v.id, data: v.data, v: fingerprint(v.data) } });
+      }
+      if (req.method === "PUT" && isPlaceholder(JSON.parse(raw))) return send(res, 409, { ok: false, code: "placeholder", message: "Contenuto non caricato: il documento completo non è stato sovrascritto." });
       if (req.method === "PUT") store.set(key, { col: m[2], id: decodeURIComponent(m[3]), data: JSON.parse(raw), deleted: false, at: Date.now() });
       else if (store.has(key)) Object.assign(store.get(key), { deleted: true, data: {}, at: Date.now() });
       return send(res, 200, { ok: true });
     }
     if ((m = p.match(/^\/api\/projects\/([^/]+)\/batch$/)) && req.method === "POST") {
       const { ops } = JSON.parse(raw);
+      if (ops.some((o) => isPlaceholder(o.data))) return send(res, 409, { ok: false, code: "placeholder", message: "Contenuto non caricato: il documento completo non è stato sovrascritto." });
       for (const o of ops) {
         const key = `${o.col}/${o.id}`;
         if (o.data === null) { if (store.has(key)) Object.assign(store.get(key), { deleted: true, data: {}, at: Date.now() }); }

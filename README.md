@@ -15,7 +15,7 @@ Dal documento di requisiti al backlog Jira, passo dopo passo, con Claude e le re
 | Runtime del browser | `public/studio-runtime.js` | Sincronizzazione dati, chiamate a Jira e a Claude |
 | API | `api/router.mjs` | Un'unica funzione Vercel che instrada `/api/*` verso i gestori in `server/functions` |
 | Login | `server/functions/auth-*.mjs` | OAuth 2.0 (3LO) Atlassian, sessione in cookie `HttpOnly` |
-| Dati | `server/functions/project*.mjs` | Progetti e documenti su Postgres (Neon), sincronizzati ogni 6 secondi |
+| Dati | `server/functions/project*.mjs`, `server/lib/lazy.mjs` | Progetti e documenti su Postgres (Neon), sincronizzati ogni 6 secondi; all'apertura il testo dei documenti, il log e il controllo di qualità arrivano come segnaposto e si caricano quando servono |
 | Jira | `server/functions/jira.mjs`, `server/lib/jira-ops.mjs` | API REST di Jira Cloud con il token dell'utente |
 | Claude | `scripts/claude-bridge.mjs` | Ponte locale: usa Claude Code sul tuo Mac con il tuo abbonamento |
 | Sicurezza | `vercel.json`, `server/functions/csp-report.mjs` | Intestazioni e Content-Security-Policy (per ora in sola segnalazione, violazioni nei log) |
