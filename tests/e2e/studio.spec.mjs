@@ -145,6 +145,11 @@ test("Crea su Jira: anteprima a colonne, poi struttura completa e collegata", as
   await expect(run).toContainText("Conferma");
   await run.click();
   await expect(page.locator("#main")).toContainText(/Verifica: \d+ di \d+ ticket con tutti i campi salvati/, { timeout: 150_000 });
+  // dopo la creazione: esito e sincronizzazione sono sezioni numerate, niente blocchi sparsi
+  await expect(page.locator("#main details.sec .sec-t")).toHaveText(["Controllo prima della creazione", "Anteprima", "Ipotesi e scelte fatte al tuo posto", "Crea su Jira", "Esito della creazione", "Sincronizzazione con Jira"]);
+  await expect(page.locator("#main > div.card")).toHaveCount(0);
+  const esito = page.locator('#main details.sec[data-sec="create:esito-della-creazione"]');
+  await expect(esito.locator(".sec-b details.item summary")).toContainText(["Riepilogo per il PO", "Struttura in Jira", "Ticket creati"]);
 
   const state = await (await request.get("/__sim/state")).json();
   const byType = state.issues.reduce((m, i) => ((m[i.type] = (m[i.type] || 0) + 1), m), {});
