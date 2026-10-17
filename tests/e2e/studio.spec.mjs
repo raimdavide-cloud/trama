@@ -12,6 +12,11 @@ async function openStudio(page) {
   await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
 }
 const goToStep = (page, name) => page.locator("#stepList .st", { hasText: name }).click();
+async function openSec(page, title) {
+  const sec = page.locator("#main details.sec", { has: page.locator("summary .sec-t", { hasText: title }) });
+  if (!(await sec.evaluate((d) => d.open))) await sec.locator("summary").click();
+  return sec;
+}
 
 test("la pagina dei progetti mostra le schede e le azioni nel menu", async ({ page }) => {
   await page.goto("/studio");
@@ -140,6 +145,11 @@ test("Crea su Jira: anteprima a colonne, poi struttura completa e collegata", as
   await expect(run).toContainText("Conferma");
   await run.click();
   await expect(page.locator("#main")).toContainText(/Verifica: \d+ di \d+ ticket con tutti i campi salvati/, { timeout: 150_000 });
+  // dopo la creazione: esito e sincronizzazione sono sezioni numerate, niente blocchi sparsi
+  await expect(page.locator("#main details.sec .sec-t")).toHaveText(["Controllo prima della creazione", "Anteprima", "Ipotesi e scelte fatte al tuo posto", "Crea su Jira", "Esito della creazione", "Sincronizzazione con Jira"]);
+  await expect(page.locator("#main > div.card")).toHaveCount(0);
+  const esito = page.locator('#main details.sec[data-sec="create:esito-della-creazione"]');
+  await expect(esito.locator(".sec-b details.item summary")).toContainText(["Riepilogo per il PO", "Struttura in Jira", "Ticket creati"]);
 
   const state = await (await request.get("/__sim/state")).json();
   const byType = state.issues.reduce((m, i) => ((m[i.type] = (m[i.type] || 0) + 1), m), {});
@@ -219,7 +229,8 @@ test("Kit: cambiare la release (= Fase) di un'epica la sposta in Jira con i suoi
 
   // 2. nel Kit un solo menu «Release (= Fase)»; la Fase non si sceglie più a parte
   await goToStep(page, "Kit di progetto");
-  await expect(page.locator("#main th", { hasText: "Release (= Fase)" }).first()).toBeVisible();
+  const epiche = await openSec(page, "Epiche");
+  await expect(epiche.locator("th", { hasText: "Release (= Fase)" })).toBeVisible();
   await expect(page.locator('#main select[data-bind$=".phase"]')).toHaveCount(0);
   const i = await page.evaluate(() => K().epics.findIndex((e) => e.name === "Diario colturale"));
   await page.locator(`select[data-bind="meta:kit:epics.${i}.release"]`).selectOption("Release 1.0");
@@ -257,4 +268,28 @@ test("niente più Spike: i ticket di design sono UX Story, anche nei progetti cr
   expect(await page.locator("#main .dt .pill", { hasText: "UX Story" }).count()).toBeGreaterThan(0);
   const types = await page.evaluate(() => [...new Set(ticketList().map((t) => t.type))]);
   expect(types).not.toContain("Spike");
+});
+
+test("sezioni apribili: stato nel titolo, apertura automatica, Apri tutto e memoria della scelta", async ({ page }) => {
+  await openStudio(page);
+  await goToStep(page, "Requisiti");
+  const secs = page.locator("#main details.sec");
+  await expect(secs).toHaveCount(3);
+  const reqSec = secs.nth(2);
+  await expect(reqSec).toHaveAttribute("open", "");
+  await expect(reqSec.locator("summary")).toContainText("senza release"); // stato nel titolo
+  await expect(secs.nth(1)).not.toHaveAttribute("open", ""); // estrazione già fatta: chiusa
+  const all = page.locator("[data-act=secAll]");
+  await expect(all).toHaveText("Apri tutto");
+  await all.click();
+  for (let i = 0; i < 3; i++) await expect(secs.nth(i)).toHaveAttribute("open", "");
+  await expect(all).toHaveText("Chiudi tutto");
+  await all.click();
+  await expect(reqSec).not.toHaveAttribute("open", "");
+  await page.reload(); // la scelta resta
+  await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
+  await expect(page.locator("#main details.sec").nth(2)).not.toHaveAttribute("open", "");
+  // livello 2: i documenti sono righe dentro la sezione, non schede
+  const docs = await openSec(page, "Documenti");
+  await expect(docs.locator(".sec-b details.item").first()).toBeVisible();
 });

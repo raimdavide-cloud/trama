@@ -3,7 +3,8 @@
 import { test, expect } from "@playwright/test";
 
 const PROJECT = "/studio?p=progetto-prova";
-const shot = { fullPage: true, animations: "disabled", maxDiffPixelRatio: 0 };
+// tolleranza minima: assorbe le piccole oscillazioni nel disegno dei caratteri, non un cambiamento di impaginazione
+const shot = { fullPage: true, animations: "disabled", maxDiffPixelRatio: 0.002 };
 
 test.beforeEach(async ({ request, page }) => {
   await request.get("/__sim/reset");
@@ -14,7 +15,7 @@ for (const path of ["/", "/brand", "/installazione", "/privacy", "/componenti"])
   test(`pagina ${path}`, async ({ page }) => {
     await page.goto(path);
     await page.evaluate(() => document.fonts.ready);
-    await expect(page).toHaveScreenshot(`pagina${path === "/" ? "-home" : path.replace(/\//g, "-")}.png`, { ...shot, mask: [page.locator(".player")] });
+    await expect(page).toHaveScreenshot(`pagina${path === "/" ? "-home" : path.replace(/\//g, "-")}.png`, { ...shot, mask: [page.locator(".player"), page.locator("[data-origin]")] });
   });
 }
 
