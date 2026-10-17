@@ -6,7 +6,7 @@ export default async (req) => {
   if (!user) return fail("unauthenticated", "Accedi con Atlassian.", 401);
   // Cancellazione dei propri dati personali (account, token, sessioni). I progetti restano, senza riferimento all'autore.
   if (req.method === "DELETE") {
-    if (!sameOrigin(req)) return fail("forbidden", "Richiesta non consentita.", 403);
+    if (!sameOrigin(req)) return fail("forbidden", "Richiesta non consentita: ricarica la pagina e riprova.", 403);
     const cookie = await destroySession(req);
     await erasePerson(user.account_id);
     return json({ ok: true }, 200, { "set-cookie": cookie });
