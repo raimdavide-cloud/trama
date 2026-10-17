@@ -150,7 +150,7 @@ ADR = [
 LIMITS = [
   ("CSP in sola segnalazione", "La Content-Security-Policy è attiva come <code>Report-Only</code>: le violazioni si registrano ma non si bloccano. Diventerà obbligatoria dopo qualche giorno di log puliti. Un ponte Claude su un indirizzo diverso da <code>127.0.0.1:8790</code> (per esempio Tailscale) andrà aggiunto a <code>connect-src</code>."),
   ("Ultima scrittura vincente", "Due persone sullo stesso documento nello stesso intervallo: vince l'ultima. Possibile evoluzione: versione per documento e conflitto esplicito."),
-  ("Descrizioni dei ticket all'apertura", "Testo dei documenti, log della creazione e controllo di qualità si caricano su richiesta, ma il grosso del peso resta: descrizioni e ipotesi dei ticket (circa metà dei 266 KB del progetto di prova) servono già all'apertura per la validazione. Possibile evoluzione: precalcolare sul server le sezioni presenti e caricare le descrizioni su richiesta."),
+  ("Ticket interi all'apertura", "Testo dei documenti, log e controllo di qualità si caricano su richiesta, così il peso dell'apertura non cresce più con i documenti caricati. Descrizioni e ipotesi dei ticket arrivano invece intere (circa metà dei 266 KB del progetto di prova, 46 KB compressi): la validazione dei ticket le legge già all'apertura. Caricarle su richiesta vorrebbe dire spostare o precalcolare sul server quel controllo: più rischio per pochi KB, finché Vercel comprime."),
   ("Polling invece di push", "Fino a 30 secondi per vedere le modifiche di un collega fermo da più di 2 minuti."),
   ("Creazioni in Jira senza nuovi tentativi automatici", "Letture e ricerche JQL si riprovano da sole su 429 e 5xx (al massimo 3 tentativi; <code>Retry-After</code> rispettato fino a 10 s, altrimenti attesa esponenziale con margine casuale; 20 s di attesa in tutto). Creazioni di ticket e collegamenti no, per non creare doppioni: un esito incerto si chiarisce con la riconciliazione di Trama e «Cerca in Jira»."),
   ("Eliminazioni logiche mai ripulite", "Le righe eliminate restano marcate in <code>items</code>; servirà una pulizia periodica."),
@@ -246,7 +246,7 @@ page = f'''<!doctype html>
     <div><b>9 ms</b><span>ridisegno del Backlog con 67 ticket (prima 675 ms)</span></div>
     <div><b>19 ms</b><span>ridisegno del Backlog con 268 ticket (prima 4,6 s)</span></div>
     <div><b>2</b><span>richieste per rinominare una release su 130 elementi (prima 133)</span></div>
-    <div><b>46 KB</b><span>apertura del progetto di prova, compressa (prima 55 KB; 266 KB non compressi, prima 309)</span></div>
+    <div><b>46 KB</b><span>apertura del progetto di prova, compressa, anche con 5 documenti da 100.000 caratteri (prima 55 e 192 KB)</span></div>
     <div><b>110–150 ms</b><span>risposta della funzione da Vercel fra1, senza database</span></div>
     <div><b>~40 ms</b><span>query a Neon dall'Italia; ~0,5 s al risveglio</span></div>
     <div><b>0,6 s</b><span>primo disegno della home su 4G simulato</span></div>

@@ -28,23 +28,36 @@ const renderOf = (page, id) => page.evaluate(async (id) => {
 
 const out = { "Peso dell'apertura del progetto di prova": {}, "Ridisegno di un passo (ms, mediana di 5)": {}, "Modifica di un ticket nel Backlog": {}, "Salvataggi in blocco": {} };
 // Peso dell'apertura: quanto scarica Trama dalle API dei dati per aprire il progetto di prova completo (con log e controllo
-// di qualità), fino a dati pronti. In produzione Vercel comprime il JSON: conta la colonna «brotli».
+// di qualità), fino a dati pronti; poi lo stesso progetto con 5 documenti in più da 100.000 caratteri.
+// In produzione Vercel comprime il JSON: conta la colonna «brotli».
 {
-  await fetch(base + "/__sim/reset?completo=1");
-  const p = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  const bodies = [];
-  p.on("response", (r) => { if (/^\/api\/projects\/progetto-prova(\/items\/.*)?$/.test(new URL(r.url()).pathname)) bodies.push(r.body()); });
-  const t0 = Date.now();
-  await p.goto(base + "/studio?p=progetto-prova");
-  await p.locator(".progress b").waitFor();
-  await p.waitForFunction(() => DATA_READY);
-  const tReady = Date.now() - t0;
-  await p.waitForTimeout(500);
-  const all = await Promise.all(bodies);
+  // testo finto ma realistico da comprimere: parole del documento di prova in ordine pseudo-casuale (sempre lo stesso)
+  const words = (await (await fetch(base + "/__sim/reset?completo=1").then(() => fetch(base + "/api/projects/progetto-prova/items/docs/mvavnlehgrkql"))).json()).item.data.text.split(/\s+/).filter(Boolean);
+  let seed = 7;
+  const rnd = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
+  const longText = () => { let t = ""; while (t.length < 100_000) t += words[Math.floor(rnd() * words.length)] + (rnd() < 0.08 ? "\n" : " "); return t.slice(0, 100_000); };
   const kb = (n) => Math.round(n / 102.4) / 10;
-  const sum = (f) => all.reduce((a, b) => a + f(b), 0);
-  out["Peso dell'apertura del progetto di prova"]["Stato del progetto"] = { richieste: all.length, KB: kb(sum((b) => b.length)), "KB brotli": kb(sum((b) => brotliCompressSync(b).length)), "KB gzip": kb(sum((b) => gzipSync(b).length)), "ms a dati pronti": tReady };
-  await p.close();
+  async function weigh(label, extraDocs) {
+    await fetch(base + "/__sim/reset?completo=1");
+    for (let i = 1; i <= extraDocs; i++) {
+      await fetch(`${base}/api/projects/progetto-prova/items/docs/lungo${i}`, { method: "PUT", body: JSON.stringify({ name: `Allegato ${i}.pdf`, kind: "PDF", text: longText(), chars: 100_000, truncated: false, at: i }) });
+    }
+    const p = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const bodies = [];
+    p.on("response", (r) => { if (/^\/api\/projects\/progetto-prova(\/items\/.*)?$/.test(new URL(r.url()).pathname)) bodies.push(r.body()); });
+    const t0 = Date.now();
+    await p.goto(base + "/studio?p=progetto-prova");
+    await p.locator(".progress b").waitFor();
+    await p.waitForFunction(() => DATA_READY);
+    const tReady = Date.now() - t0;
+    await p.waitForTimeout(500);
+    const all = await Promise.all(bodies);
+    const sum = (f) => all.reduce((a, b) => a + f(b), 0);
+    out["Peso dell'apertura del progetto di prova"][label] = { richieste: all.length, KB: kb(sum((b) => b.length)), "KB brotli": kb(sum((b) => brotliCompressSync(b).length)), "KB gzip": kb(sum((b) => gzipSync(b).length)), "ms a dati pronti": tReady };
+    await p.close();
+  }
+  await weigh("Progetto di prova", 0);
+  await weigh("Con 5 documenti da 100.000 caratteri", 5);
 }
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 for (const mult of [1, 2, 4]) {
