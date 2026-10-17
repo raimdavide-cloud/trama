@@ -582,7 +582,7 @@ function sectionize(main,step){if(step.aux)return;const prev=main.__secEarly?new
     if(!f.opt){if(open&&!f.gate)blocker=d;open=open&&!!f.gate}}
   const unl=secs.filter(d=>!d.__locked);
   secs.forEach((d,i)=>{d.classList.add("step");if(d.__locked)return;d.setAttribute("name","sec-"+step.id);
-    if(d.__ok)d.querySelector(".sec-s").insertAdjacentHTML("beforeend",`<span class="sec-edit">Modifica</span>`);
+    if(d.__ok){d.classList.add("done");d.querySelector(".sec-s").insertAdjacentHTML("beforeend",`<span class="sec-edit">Modifica</span>`)}
     const nx=secs[i+1];if(!nx)return;const f=d.__f,go=(!!f.gate||!!f.opt)&&!nx.__locked,lead=go&&(d.__ok||!!f.opt)&&!nx.__f.opt; // verso le sezioni facoltative «Continua» non è il pulsante principale
     const why=go?"":nx.__locked&&f.gate?flow[blocker?.__title]?.unlock:f.unlock;
     d.classList.toggle("ready",lead);

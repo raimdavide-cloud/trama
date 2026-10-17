@@ -406,6 +406,7 @@ body.panel-open #chatFab{right:calc(min(580px,46vw) + 20px)}
 .sec.step:not([open]) .sec-s .pill.err,.sec.step:not([open]) .sec-s .pill.warn{display:inline-flex}
 .sec-edit{display:none;color:var(--primary);font-weight:600;text-decoration:underline;text-underline-offset:3px}
 .sec.step:not([open]) .sec-edit{display:inline}
+.sec.step.done:not([open])>summary::after{display:none} /* completato e chiuso: basta «Modifica», niente freccetta */
 .sec.locked{background:none;border-style:dashed}
 .sec.locked>summary{cursor:default}
 .sec.locked>summary:hover{background:none}
