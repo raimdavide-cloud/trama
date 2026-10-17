@@ -24,7 +24,10 @@ body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--f-body);
 .wm{display:inline-flex;align-items:baseline}
 .brand .wm-t{width:auto;height:.64em;flex:none;fill:var(--tx-blue);margin-right:.045em}
 .ic{width:1.2em;height:1.2em;flex:none;vertical-align:-.2em}
-.h1-ic{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:11px;background:var(--primary-soft);color:var(--primary);vertical-align:-6px;margin-right:12px}
+.h1-ic{display:inline-grid;place-items:center;flex:none;width:40px;height:40px;border-radius:11px;background:var(--primary-soft);color:var(--primary)}
+/* titolo con icona: il riquadro sta centrato sulla prima riga (alta 1lh), anche se il titolo va a capo */
+h1:has(>.h1-ic){display:flex;align-items:flex-start;gap:12px}
+h1>.h1-ic{margin-top:calc((1lh - 40px)/2)}
 .h1-ic .ic{width:22px;height:22px}
 .dd{position:relative;min-width:0}
 .dd-btn{display:inline-flex;align-items:center;gap:8px;background:none;border:1px solid transparent;border-radius:9px;padding:5px 8px;font:inherit;color:inherit;cursor:pointer;min-width:0;max-width:100%}
@@ -65,7 +68,7 @@ details.item[open]>summary .q-ans{display:none}
 .body{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:0}
 #stepper{overflow:auto;padding:18px 16px 18px 0;border-right:1px solid var(--line)}
 #main{overflow:auto;padding:22px 28px 40px;min-width:0}
-#chat{position:fixed;right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(94px + env(safe-area-inset-bottom,0px));width:min(410px,calc(100vw - 40px));height:min(680px,calc(100dvh - 130px));z-index:30;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;min-height:0;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 22px 60px rgba(20,27,71,.24),0 3px 10px rgba(20,27,71,.10);overflow:hidden;visibility:hidden;opacity:0;transform:translateY(16px) scale(.97);transform-origin:bottom right;pointer-events:none;transition:opacity .18s,transform .22s cubic-bezier(.2,.9,.3,1.1),visibility 0s .22s}
+#chat{position:fixed;right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(94px + env(safe-area-inset-bottom,0px));width:min(410px,calc(100vw - 40px));height:min(680px,calc(100dvh - 130px));z-index:30;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-columns:minmax(0,1fr);min-height:0;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 22px 60px rgba(20,27,71,.24),0 3px 10px rgba(20,27,71,.10);overflow:hidden;visibility:hidden;opacity:0;transform:translateY(16px) scale(.97);transform-origin:bottom right;pointer-events:none;transition:opacity .18s,transform .22s cubic-bezier(.2,.9,.3,1.1),visibility 0s .22s}
 #chat.open{visibility:visible;opacity:1;transform:none;pointer-events:auto;transition:opacity .18s,transform .22s cubic-bezier(.2,.9,.3,1.1)}
 .progress{margin:0 0 16px}
 .progress b{font:500 12px var(--f-mono);color:var(--muted)}
@@ -229,8 +232,8 @@ pre.prev{font:12.5px/1.5 var(--f-mono);background:var(--sunk);border-radius:8px;
 .stat b{display:block;font:700 22px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
 .stat span{font-size:12px;color:var(--muted)}
 /* chat */
-.chat-h{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
-.chat-h h2{margin:0;font-size:16px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-h{padding:14px 14px 10px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:4px}
+.chat-h h2{margin:0;font-size:16px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #chatLog{overflow:auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
 .bub{max-width:100%;padding:9px 12px;border-radius:10px;font-size:14px;line-height:1.5;word-break:break-word}
 .bub.u{align-self:flex-end;background:var(--primary);color:var(--on-primary);max-width:88%;white-space:pre-wrap}
@@ -249,7 +252,8 @@ pre.prev{font:12.5px/1.5 var(--f-mono);background:var(--sunk);border-radius:8px;
 .mem-s{margin:0 0 8px}.mem-s p{margin:6px 0 0;white-space:pre-wrap;color:var(--muted)}
 .act{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-left:3px solid var(--primary);border-radius:8px;background:var(--surface)}
 .act.done{border-left-color:var(--ok);opacity:.85}
-.act-t{font-weight:700;display:flex;gap:6px;align-items:center}
+.act-t{font-weight:700;display:flex;gap:6px;align-items:flex-start;line-height:1.4}
+.act-t>.ic{margin-top:calc((1lh - 1.2em)/2)}
 .act-l{font-size:12.5px;color:var(--muted);margin-top:3px;white-space:pre-wrap;word-break:break-word}
 .act-b{margin-top:8px}
 .bub-foot{margin-top:4px;text-align:right}.bub-foot .link{font-size:12px;color:var(--muted)}
@@ -284,10 +288,10 @@ pre.prev{font:12.5px/1.5 var(--f-mono);background:var(--sunk);border-radius:8px;
 #chat .rz[data-r=sw]{left:0;bottom:0;width:24px;height:24px;cursor:nesw-resize}
 #chat .chat-h{cursor:grab;touch-action:none;user-select:none}
 #chat .chat-h button{cursor:pointer}
-#chat .chat-h button.link{min-height:24px;min-width:24px;padding:4px 6px} /* bersaglio di almeno 24 px (WCAG 2.2, 2.5.8) */
+#chat .chat-h button.link{min-height:24px;min-width:24px;padding:4px} /* bersaglio di almeno 24 px (WCAG 2.2, 2.5.8) */
 body.chat-drag,body.chat-drag *{user-select:none!important;cursor:grabbing!important}
 #chatClose .m{display:none}
-.chat-h .chat-mark{display:inline-grid;vertical-align:-6px;width:26px;height:26px;margin-right:8px;border-radius:50%;background:var(--primary);place-items:center}
+.chat-h .chat-mark{display:inline-grid;vertical-align:middle;width:26px;height:26px;margin-right:8px;border-radius:50%;background:var(--primary);place-items:center}
 .chat-h .chat-mark svg{width:19px;height:19px}
 @keyframes fabpop{0%{transform:scale(0)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
 @keyframes fabspin{to{transform:rotate(360deg)}}
@@ -448,8 +452,8 @@ body.has-recap{--colk:.7} /* finestre medie: senza riepilogo ma con poco spazio 
 .rc-go{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14.5px;padding:11px 14px;text-align:left}
 .rc-go .ic{width:16px;height:16px;flex:none}
 .rc-why{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:6px;font-size:12.5px;color:var(--muted)}
-.rc-why li{display:flex;gap:6px;align-items:center}
-.rc-why .ic{width:14px;height:14px;flex:none}
+.rc-why li{display:flex;gap:6px;align-items:flex-start;line-height:1.4}
+.rc-why .ic{width:14px;height:14px;flex:none;margin-top:calc((1lh - 14px)/2)}
 
 /* ===== assegnazione rapida della release ===== */
 .rq-bulk{display:flex;align-items:flex-end;gap:10px;margin:12px 0;padding:12px;background:var(--sunk);border-radius:var(--r-m)}
