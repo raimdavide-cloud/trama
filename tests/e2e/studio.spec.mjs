@@ -18,7 +18,7 @@ test("la pagina dei progetti mostra le schede e le azioni nel menu", async ({ pa
   await expect(page.locator("#npName")).toBeFocused();
 });
 
-test("lo studio ha 6 passi più il Registro, e ricorda il passo aperto", async ({ page }) => {
+test("Trama ha 6 passi più il Registro, e ricorda il passo aperto", async ({ page }) => {
   await openStudio(page);
   const steps = page.locator("#stepList .st");
   await expect(steps).toHaveCount(7);
@@ -185,7 +185,7 @@ test("barra in alto: menu del progetto con Apri in Jira e verifica dei collegame
   await expect(list.filter({ hasText: "Dati salvati e condivisi" })).toHaveClass(/ok/);
 });
 
-test("solo desktop: sotto i 900 px lo studio mostra l'avviso", async ({ page }) => {
+test("solo desktop: sotto i 900 px Trama mostra l'avviso", async ({ page }) => {
   await page.setViewportSize({ width: 800, height: 900 });
   await page.goto(PROJECT);
   await expect(page.getByRole("heading", { name: "Trama è pensato per il computer" })).toBeVisible();
@@ -290,7 +290,7 @@ test("riepilogo a destra: numeri del backlog e un solo pulsante principale", asy
   await expect(rc.locator(".rc-go")).not.toHaveClass(/primary/);
 });
 
-test("sblocco progressivo: in uno studio nuovo gli step si sbloccano uno dopo l'altro", async ({ page }) => {
+test("sblocco progressivo: in un progetto nuovo gli step si sbloccano uno dopo l'altro", async ({ page }) => {
   await openStudio(page);
   await goToStep(page, "Requisiti");
   const locked = page.locator("#main details.sec.locked summary .sec-t");

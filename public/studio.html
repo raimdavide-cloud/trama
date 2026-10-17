@@ -25,7 +25,7 @@
 </head>
 <body>
 
-<div class="desk-only" role="alert"><div class="card"><div class="eyebrow">Trama</div><h1>Trama è pensato per il computer</h1><p class="lead" style="margin:0 0 16px">Lo studio lavora con tabelle, pannelli e documenti lunghi: aprilo da un computer, con una finestra larga almeno 900 pixel.</p><a href="/">Torna alla home</a></div></div>
+<div class="desk-only" role="alert"><div class="card"><div class="eyebrow">Trama</div><h1>Trama è pensato per il computer</h1><p class="lead" style="margin:0 0 16px">Trama lavora con tabelle, pannelli e documenti lunghi: aprilo da un computer, con una finestra larga almeno 900 pixel.</p><a href="/">Torna alla home</a></div></div>
 <div class="app">
   <header class="top">
     <a class="brand" href="/" style="text-decoration:none;color:inherit"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama, home</span></a>
@@ -366,7 +366,7 @@ function hierCard(k,j){const h=k.hier||defaultKit().hier;const types=(j.types||[
   const opts=v=>!v||types.some(x=>x[0]===v)?types:[[v,v],...types];const pr=hierProblems();const ph=h.phases||[];
   return `<div class="card"><h2>K4 · Struttura gerarchica Jira</h2>
    <label class="row small"><input type="checkbox" data-bind="meta:kit:hier.enabled" ${h.enabled?"checked":""} ${READONLY?"disabled":""}> Rispetta la struttura Cliente › Project › Fase › Feature Epic › Task / Story / Bug</label>
-   ${h.enabled?`<p class="small muted" style="margin:8px 0 12px">Il Cliente è il progetto Jira <span class="key">${esc(P().key||"—")}</span>. Le chiavi (per esempio COM-2, COM-693, COM-694) le assegna Jira alla creazione: non vanno inserite. Lo studio crea nell'ordine Project, Fasi, epiche (Feature Epic) e poi i ticket, ciascuno sotto il proprio livello superiore. Elementi con lo stesso nome e tipo già presenti in Jira vengono riusati, non duplicati.</p>
+   ${h.enabled?`<p class="small muted" style="margin:8px 0 12px">Il Cliente è il progetto Jira <span class="key">${esc(P().key||"—")}</span>. Le chiavi (per esempio COM-2, COM-693, COM-694) le assegna Jira alla creazione: non vanno inserite. Trama crea nell'ordine Project, Fasi, epiche (Feature Epic) e poi i ticket, ciascuno sotto il proprio livello superiore. Elementi con lo stesso nome e tipo già presenti in Jira vengono riusati, non duplicati.</p>
    <div class="toolbar">${B("autoStruct","Genera la struttura in automatico")}<span class="small muted">Riconosce i tipi dalla configurazione di Jira, crea una Fase per release e assegna le epiche. Compila solo ciò che manca.</span></div>
    <div class="grid" style="margin-top:10px">${F("Tipo di ticket del Project",types.length?sel("meta:kit:hier.projectType",h.projectType,opts(h.projectType),{empty:"Scegli…"}):bind("meta:kit:hier.projectType",h.projectType))}${F("Tipo di ticket della Fase",types.length?sel("meta:kit:hier.phaseType",h.phaseType,opts(h.phaseType),{empty:"Scegli…"}):bind("meta:kit:hier.phaseType",h.phaseType))}${F("Tipo di ticket delle Feature Epic",types.length?sel("meta:kit:types.Epic",k.types.Epic,opts(k.types.Epic),{empty:false}):bind("meta:kit:types.Epic",k.types.Epic))}</div>
    <h3>Project</h3>
@@ -474,7 +474,7 @@ function labelTableFields(root){root.querySelectorAll("table").forEach(tb=>{cons
   tb.querySelectorAll("tbody tr").forEach((tr,ri)=>{[...tr.children].forEach((td,ci)=>{td.querySelectorAll("input:not([type=hidden]),select,textarea").forEach(el=>{if(el.getAttribute("aria-label")||el.labels?.length)return;
    const h=hs[ci]||(el.type==="checkbox"?"Seleziona":"Valore");el.setAttribute("aria-label",`${h}, riga ${ri+1}`)})})})})}
 /* Cambio di release (= Fase) di un'epica dal Kit.
-   Nello studio: l'epica passa alla Fase della nuova release e i suoi ticket prendono la nuova release.
+   In Trama: l'epica passa alla Fase della nuova release e i suoi ticket prendono la nuova release.
    In Jira (solo se l'epica esiste già, e solo dopo «Aggiorna Jira»): Principale dell'epica e label di release di epica e ticket. */
 function epicRelease(i,v){const k0=K(),e0=k0.epics[i];if(!e0||e0.release===v)return;const old=e0.release;
   editKit(k=>{k.epics[i].release=v});
@@ -490,7 +490,7 @@ function epicMoveCard(){const mv=T.epicMove;if(!mv)return"";const k=K(),e=k.epic
     <li><b>Fase dell'epica</b>: ${phName(fromPh)} → ${phName(ph)}${ph?.key?"":noProject?' <span class="pill err">il Project non esiste ancora in Jira: crealo dal passo Crea su Jira</span>':' <span class="pill warn">la Fase verrà creata sotto il Project</span>'}. I ticket dell'epica la seguono.</li>
     <li><b>Label di release</b> dell'epica${created.length?` e di ${created.length===1?"1 ticket":created.length+" ticket"} già in Jira`:""}: ${from?.label?`<span class="key">${esc(from.label)}</span>`:"—"} → ${to?.label?`<span class="key">${esc(to.label)}</span>`:"nessuna"}.</li>
    </ul>
-   ${drafts.length?`<p class="small muted" style="margin:6px 0 0">${drafts.length===1?"1 ticket in bozza è già stato aggiornato":drafts.length+" ticket in bozza sono già stati aggiornati"} nello studio: ${drafts.length===1?"verrà creato":"verranno creati"} nella nuova release.</p>`:""}
+   ${drafts.length?`<p class="small muted" style="margin:6px 0 0">${drafts.length===1?"1 ticket in bozza è già stato aggiornato":drafts.length+" ticket in bozza sono già stati aggiornati"} in Trama: ${drafts.length===1?"verrà creato":"verranno creati"} nella nuova release.</p>`:""}
    ${progBlock("epicMove")}
    <div class="toolbar" style="margin:12px 0 0">${JB("epicMoveRun","Aggiorna Jira",{cls:"primary",dis:noProject})}${B("epicMoveSkip","Non ora")}</div>
    <p class="small muted" style="margin:8px 0 0">«Non ora» lascia Jira com'è: lo spostamento dell'epica resterà tra le epiche da collegare al passo Crea su Jira, ma la label di release non verrà aggiornata.</p></div>`}
@@ -562,7 +562,7 @@ function secSpec(id,raw,memo={}){const r=x=>raw.includes(x),pill=(c,t)=>`<span c
     if(r("6. Sincronizzazione")){const sy=T.sync,warn=sy&&!sy.empty&&(sy.deleted.length||sy.parentDiff.length);return{num:"6",title:"Sincronizzazione con Jira",ok:!!sy&&!warn,todo:!!warn,status:sy?(warn?pill("warn","differenze trovate"):plain("sincronizzato alle "+new Date(sy.at).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}))):plain("da sincronizzare")}}}
   return{num:(raw.match(/^\s*(K?\d+)/)||[])[1]||"",title:raw.replace(/^\s*K?\d+\s*[.·]\s*/,""),todo:false,status:""}}
 /* Sblocco progressivo: in un progetto nuovo ogni sezione compare quando la precedente è completata.
-   Una sezione già compilata resta sempre visibile, quindi uno studio completo si vede tutto. Il passo Domande non è
+   Una sezione già compilata resta sempre visibile, quindi un progetto completo si vede tutto. Il passo Domande non è
    sequenziale (le risposte arrivano in ordine sparso) e il Registro non ha sezioni. */
 function secFlow(id,memo){const done=t=>t;
   if(id==="jira"){const p=P(),j=S.jira;return{"Sito Atlassian":{gate:!!p.cloudId,unlock:"il sito Atlassian è collegato"},"Progetto Jira":{gate:!!p.key,unlock:"scegli il progetto Jira"},"Configurazione del progetto":{gate:true}}}
@@ -607,7 +607,7 @@ function sectionize(main,step){if(step.aux)return;const prev=main.__secEarly?new
     const why=go?"":nx.__locked&&f.gate?flow[blocker?.__title]?.unlock:f.unlock;
     d.classList.toggle("ready",lead);
     d.querySelector(".sec-b").insertAdjacentHTML("beforeend",`<div class="sec-foot">${!go&&f.action?`<span class="sec-alt">oppure ${f.action}</span>`:""}<span class="sec-why" id="why-${esc(d.dataset.sec)}">${why?"Per continuare: "+esc(why)+".":""}</span><button type="button" class="sec-go${lead?" primary":""}" data-act="secNext" data-next="${esc(nx.dataset.sec)}" aria-disabled="${!go}"${why?` aria-describedby="why-${esc(d.dataset.sec)}"`:""}>Continua ${ICO("i-arrow")}</button></div>`)});
-  // prima la scelta di chi usa lo studio, poi lo step già aperto (non si chiude da solo mentre lo guardi), poi quello di base
+  // prima la scelta di chi usa Trama, poi lo step già aperto (non si chiude da solo mentre lo guardi), poi quello di base
   const act=SECACT[step.id];let pick=act===""?null:act?unl.find(d=>d.dataset.sec===act):undefined;
   if(pick===undefined)pick=unl.find(d=>prev.has(d.dataset.sec));
   // di base: il primo step che blocca, altrimenti l'ultimo obbligatorio (quello dove si lavora: Requisiti, Ticket…)
@@ -772,7 +772,7 @@ function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.rele
 const ticketState=t=>t.state==="created"?`${browse(t.key)}${vOf(t)==="ok"?'<span class="pill ok">verificato</span>':vOf(t)?'<span class="pill warn">da verificare</span>':""}`:t.state==="error"?'<span class="pill err">errore Jira</span>':t.state==="unknown"?'<span class="pill warn">esito incerto</span>':'<span class="pill">bozza</span>';
 function ticketRow(t){const{e,w}=issuesOf(t),locked=t.state==="created";
  return dtRow("ticket",t.id,`<td><span class="key">${esc(t.ref)}</span></td><td><span class="pill acc">${esc(t.type)}</span></td><td class="dt-t" title="${esc(fullTitle(t))}">${esc(fullTitle(t))}</td><td class="dt-t muted" title="${esc(t.epic||"")}">${esc(t.epic||"—")}</td><td>${!locked&&e.length?`<span class="pill err">${e.length===1?"1 errore":e.length+" errori"}</span> `:""}${!locked&&w.length?`<span class="pill warn">${w.length===1?"1 avviso":w.length+" avvisi"}</span>`:""}</td><td class="dt-st">${ticketState(t)}</td>`)}
-/* Mentre si scrive nel pannello lo studio non ridisegna (il cursore resterebbe a metà): «cosa manca» si aggiorna da solo. */
+/* Mentre si scrive nel pannello Trama non ridisegna (il cursore resterebbe a metà): «cosa manca» si aggiorna da solo. */
 function refreshIssues(id){const sp=$(`.sp[data-panel="ticket:${id}"]`),t=S.tickets[id];if(!sp||!t||t.state==="created")return;const{e,w}=issuesOf({...t,id});
   const html=e.map(x=>`<span class="pill err">${esc(x)}</span>`).join("")+w.map(x=>`<span class="pill warn">${esc(x)}</span>`).join("");let box=sp.querySelector(".issues");
   if(!html){box?.remove();return}if(!box){box=document.createElement("div");box.className="issues";sp.querySelector(".sp-b .grid")?.before(box)}box.innerHTML=html}
@@ -880,7 +880,7 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
   if(created.length)esito.push(erow("created",`<span class="ttl">Ticket creati (${created.length})</span>`,`<div class="tw"><table><thead><tr><th>Chiave</th><th>Titolo</th><th>Epica</th><th>Stato Jira</th><th>Verifica</th></tr></thead><tbody>${created.map(t=>`<tr><td>${browse(t.key)}</td><td>${esc(fullTitle(t))}</td><td>${esc(t.epic)}</td><td>${t.jiraStatus?`<span class="pill">${esc(t.jiraStatus)}</span>`:"—"}</td><td>${vOf(t)==="ok"?'<span class="pill ok">ok</span>':`<span class="pill warn">${esc(vOf(t)||"da verificare")}</span>`}</td></tr>`).join("")}</tbody></table></div>`,false));
   if(esito.length)h+=`<div class="card"><h2>5. Esito della creazione</h2><div class="list">${esito.join("")}</div></div>`;
   // 6 · Sincronizzazione: si ripete nel tempo, resta una sezione a sé
-  if(keys.length)h+=`<div class="card"><h2>6. Sincronizzazione con Jira</h2><p class="small muted" style="margin:0 0 10px">Rilegge da Jira tutto ciò che lo studio ha creato: stato, Principale e titoli. Quello che è stato eliminato o rinominato a mano in Jira viene riconosciuto e lo studio si riallinea (i ticket eliminati tornano in bozza, pronti da ricreare).</p>
+  if(keys.length)h+=`<div class="card"><h2>6. Sincronizzazione con Jira</h2><p class="small muted" style="margin:0 0 10px">Rilegge da Jira tutto ciò che Trama ha creato: stato, Principale e titoli. Quello che è stato eliminato o rinominato a mano in Jira viene riconosciuto e Trama si riallinea (i ticket eliminati tornano in bozza, pronti da ricreare).</p>
     <div class="toolbar">${JB("syncJira","Sincronizza con Jira")}${T.sync?`<span class="small muted">Ultima sincronizzazione ${new Date(T.sync.at).toLocaleTimeString("it-IT")} · ${T.sync.total} elementi letti</span>`:""}</div>
     ${T.sync&&!T.sync.empty?`<div class="stat" style="margin-top:12px"><div><b>${T.sync.total-T.sync.deleted.length}</b><span>presenti in Jira</span></div><div><b style="color:${T.sync.deleted.length?"var(--err)":"inherit"}">${T.sync.deleted.length}</b><span>eliminati in Jira</span></div><div><b style="color:${T.sync.parentDiff.length?"var(--warn)":"inherit"}">${T.sync.parentDiff.length}</b><span>con epica diversa</span></div><div><b style="color:${T.sync.renamed.length?"var(--warn)":"inherit"}">${T.sync.renamed.length}</b><span>rinominati</span></div></div>
     ${Object.keys(T.sync.status).length?`<p class="small" style="margin:10px 0 0">Stato: ${Object.entries(T.sync.status).map(([k2,v])=>`<span class="pill">${esc(k2)} · ${v}</span>`).join(" ")}</p>`:""}
@@ -1300,7 +1300,7 @@ async function syncJira(){const k=K(),h=k.hier;const ts=ticketList().filter(t=>t
     if(kk.hier){(kk.hier.phases||[]).forEach(f=>{if(f.key&&missing.has(f.key)){res.deleted.push(`${f.key} Fase «${f.name}»`);f.key=""}});if(kk.hier.project?.key&&missing.has(kk.hier.project.key)){res.deleted.push(`${kk.hier.project.key} Project «${kk.hier.project.name}»`);kk.hier.project.key=""}}});
   await verifyStructure();T.sync=res;T.report=null;
   const nd=res.deleted.length;logLine(`Sincronizzazione: ${keys.length-nd} elementi presenti in Jira, ${nd} eliminati (riportati in bozza), ${res.parentDiff.length} con epica diversa, ${res.renamed.length} rinominati.`)}
-A.syncJira=()=>run("syncJira","Sincronizzazione…",async()=>{await syncJira();setMsg("create",T.sync.deleted.length?"warn":"ok",T.sync.empty?"Non c'è ancora nulla creato da sincronizzare.":T.sync.deleted.length?`Sincronizzato: ${T.sync.deleted.length} elementi eliminati in Jira sono tornati in bozza.`:"Sincronizzato: tutto ciò che lo studio ha creato è presente in Jira.")});
+A.syncJira=()=>run("syncJira","Sincronizzazione…",async()=>{await syncJira();setMsg("create",T.sync.deleted.length?"warn":"ok",T.sync.empty?"Non c'è ancora nulla creato da sincronizzare.":T.sync.deleted.length?`Sincronizzato: ${T.sync.deleted.length} elementi eliminati in Jira sono tornati in bozza.`:"Sincronizzato: tutto ciò che Trama ha creato è presente in Jira.")});
 function addAutoDecision(text,source){const id=uid();put("decisions",id,{date:today(),text,who:"PO",type:"Organizzazione del backlog",source,impact:"",kit:"",replaces:"",at:Date.now()})}
 
 /* passo 8 */

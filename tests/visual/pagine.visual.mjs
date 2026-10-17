@@ -19,7 +19,7 @@ for (const path of ["/", "/brand", "/installazione", "/privacy", "/componenti", 
   });
 }
 
-test("studio · progetti", async ({ page }) => {
+test("Trama · progetti", async ({ page }) => {
   await page.goto("/studio");
   await expect(page.locator(".proj-card")).toHaveCount(1);
   await page.evaluate(() => document.fonts.ready);
@@ -28,7 +28,7 @@ test("studio · progetti", async ({ page }) => {
 
 const STEPS = ["Progetto Jira", "Requisiti", "Domande di apertura", "Kit di progetto", "Backlog", "Crea su Jira", "Registro decisioni"];
 for (const [i, name] of STEPS.entries()) {
-  test(`studio · ${name}`, async ({ page }) => {
+  test(`Trama · ${name}`, async ({ page }) => {
     await page.goto(PROJECT);
     await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
     await page.locator("#stepList .st", { hasText: name }).click();
@@ -38,7 +38,7 @@ for (const [i, name] of STEPS.entries()) {
   });
 }
 
-test("studio · regole, barra in alto e pannello Collegamenti", async ({ page }) => {
+test("Trama · regole, barra in alto e pannello Collegamenti", async ({ page }) => {
   await page.goto(PROJECT);
   await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
   await page.locator("#rulesBtn").click();
@@ -50,7 +50,7 @@ test("studio · regole, barra in alto e pannello Collegamenti", async ({ page })
   await expect(page.locator("#bridgePanel")).toHaveScreenshot("studio-collegamenti.png", shot);
 });
 
-test("studio · riepilogo a destra", async ({ page }) => {
+test("Trama · riepilogo a destra", async ({ page }) => {
   await page.goto(PROJECT);
   await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
   await page.locator("#stepList .st", { hasText: "Kit di progetto" }).click();

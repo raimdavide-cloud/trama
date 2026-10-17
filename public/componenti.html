@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Componenti · Trama</title>
-<meta name="description" content="Sistema di design di Trama: token, componenti dello studio, regole d'uso, linee guida dei contenuti e accessibilità.">
+<meta name="description" content="Sistema di design di Trama: token, componenti di Trama, regole d'uso, linee guida dei contenuti e accessibilità.">
 <meta name="robots" content="noindex">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/tokens.css">
 <link rel="stylesheet" href="/studio.css">
 <style>
-/* Impaginazione della sola documentazione: i componenti mostrati usano gli stili veri dello studio */
+/* Impaginazione della sola documentazione: i componenti mostrati usano gli stili veri di Trama */
 body{background:var(--bg)}
 .doc-top{display:flex;align-items:center;gap:18px;padding:14px 0;border-bottom:1px solid var(--line)}
 .doc-top nav{margin-left:auto;display:flex;gap:16px;font-size:14px}
@@ -50,8 +50,8 @@ body{background:var(--bg)}
 <main class="doc">
 <header>
   <div class="eyebrow">Sistema di design</div>
-  <h1>Componenti dello studio</h1>
-  <p class="lead">Ogni esempio qui sotto usa gli stessi file dello studio in produzione (<span class="mono">tokens.css</span> e <span class="mono">studio.css</span>): se cambia lo studio, cambia anche questa pagina. Il marchio e le pagine pubbliche sono descritti in <a href="/brand">/brand</a>.</p>
+  <h1>Componenti di Trama</h1>
+  <p class="lead">Ogni esempio qui sotto usa gli stessi file di Trama in produzione (<span class="mono">tokens.css</span> e <span class="mono">studio.css</span>): se cambia Trama, cambia anche questa pagina. Il marchio e le pagine pubbliche sono descritti in <a href="/brand">/brand</a>.</p>
   <ul class="toc" aria-label="In questa pagina">
     <li><a href="#token">Token</a></li><li><a href="#tipografia">Tipografia</a></li><li><a href="#pulsanti">Pulsanti</a></li><li><a href="#etichette">Etichette e stati</a></li><li><a href="#messaggi">Messaggi</a></li><li><a href="#campi">Campi</a></li><li><a href="#tabelle">Tabelle e pannello</a></li><li><a href="#menu">Menu</a></li><li><a href="#avanzamento">Avanzamento</a></li><li><a href="#passo">Intestazione del passo</a></li><li><a href="#contenuti">Contenuti</a></li><li><a href="#accessibilita">Accessibilità</a></li><li><a href="#desktop">Solo desktop</a></li>
   </ul>
@@ -136,7 +136,7 @@ body{background:var(--bg)}
     <label class="row small"><input type="checkbox" checked> Design già pronto</label>
     <input type="search" placeholder="Cerca per ID o titolo" aria-label="Cerca requisiti per ID o titolo">
   </div>
-  <ul class="rules-ok"><li>Ogni campo ha un'etichetta visibile sopra; nelle tabelle l'etichetta è l'intestazione di colonna e lo studio la passa anche ai lettori di schermo.</li><li>I segnaposto mostrano un esempio reale («Es. Release 1»), non ripetono l'etichetta.</li><li>Si salva da solo mentre scrivi: non serve un pulsante «Salva».</li></ul>
+  <ul class="rules-ok"><li>Ogni campo ha un'etichetta visibile sopra; nelle tabelle l'etichetta è l'intestazione di colonna e Trama la passa anche ai lettori di schermo.</li><li>I segnaposto mostrano un esempio reale («Es. Release 1»), non ripetono l'etichetta.</li><li>Si salva da solo mentre scrivi: non serve un pulsante «Salva».</li></ul>
 </section>
 
 <section id="tabelle" aria-labelledby="h-tab">
@@ -186,7 +186,7 @@ body{background:var(--bg)}
   <p class="intro">Trama parla come un collega esperto: chiaro, concreto, senza gergo inutile. Dice cosa succede e cosa fare.</p>
   <h3>Regole</h3>
   <ul class="rules-ok">
-    <li><b>Italiano</b> nello studio; <b>inglese</b> nei ticket (titoli e descrizioni), come nei team di sviluppo. I codici restano come sono: <span class="key">RF-012</span>, <span class="key">COM-904</span>.</li>
+    <li><b>Italiano</b> in Trama; <b>inglese</b> nei ticket (titoli e descrizioni), come nei team di sviluppo. I codici restano come sono: <span class="key">RF-012</span>, <span class="key">COM-904</span>.</li>
     <li>Maiuscola solo all'inizio della frase e nei nomi propri: «Crea su Jira», non «Crea Su Jira».</li>
     <li>Pulsanti: verbo + oggetto, senza punto finale. Messaggi e testi d'aiuto: frasi complete con il punto.</li>
     <li>Errori: cosa è successo, poi cosa fare. «Il tipo «UX Story» non esiste nel progetto: scegli un tipo valido nel kit.»</li>
@@ -204,13 +204,13 @@ body{background:var(--bg)}
     <tr><td>UX Story</td><td>Ticket di design (flussi, schermate, stati) che precede le storie di sviluppo; assegnato a UX</td><td>Spike, task UX</td></tr>
     <tr><td>Ipotesi</td><td>Una scelta fatta al posto del PO, da confermare</td><td>Assunzione, default</td></tr>
     <tr><td>Registro delle decisioni</td><td>L'elenco delle decisioni con fonte e impatto</td><td>Log, storico</td></tr>
-    <tr><td>Ponte</td><td>Il programma sul computer che collega lo studio a Claude Code</td><td>Bridge, connettore</td></tr>
+    <tr><td>Ponte</td><td>Il programma sul computer che collega Trama a Claude Code</td><td>Bridge, connettore</td></tr>
   </tbody></table>
 </section>
 
 <section id="accessibilita" aria-labelledby="h-a11y">
   <h2 id="h-a11y">Accessibilità</h2>
-  <p class="intro">Obiettivo: WCAG 2.2 livello AA. Ogni pagina e ogni passo dello studio sono controllati in automatico con axe a ogni modifica (<span class="mono">tests/e2e/accessibilita.spec.mjs</span>).</p>
+  <p class="intro">Obiettivo: WCAG 2.2 livello AA. Ogni pagina e ogni passo di Trama sono controllati in automatico con axe a ogni modifica (<span class="mono">tests/e2e/accessibilita.spec.mjs</span>).</p>
   <ul class="rules-ok">
     <li>Contrasto almeno 4,5:1 per il testo e 3:1 per bordi e icone: i ruoli dei token lo rispettano già in chiaro e in scuro.</li>
     <li>Tutto si usa da tastiera: Tab per spostarsi, Invio per aprire, frecce nelle tabelle e nelle schede, Esc per chiudere. Il focus è sempre visibile.</li>
@@ -221,7 +221,7 @@ body{background:var(--bg)}
 
 <section id="desktop" aria-labelledby="h-desk">
   <h2 id="h-desk">Solo desktop</h2>
-  <p class="intro">Lo studio è pensato per il computer, da 900 pixel di larghezza in su. Sotto quella misura mostra un avviso al posto dell'interfaccia; telefono e tablet non sono supportati né provati. Le pagine pubbliche (home, guida, marchio, privacy) restano leggibili ovunque.</p>
+  <p class="intro">Trama è pensato per il computer, da 900 pixel di larghezza in su. Sotto quella misura mostra un avviso al posto dell'interfaccia; telefono e tablet non sono supportati né provati. Le pagine pubbliche (home, guida, marchio, privacy) restano leggibili ovunque.</p>
 </section>
 </main>
 </body>

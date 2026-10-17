@@ -20,7 +20,7 @@ Dal documento di requisiti al backlog Jira, passo dopo passo, con Claude e le re
 | Claude | `scripts/claude-bridge.mjs` | Ponte locale: usa Claude Code sul tuo Mac con il tuo abbonamento |
 | Test | `tests/` | Simulatore di Jira, dati di prova anonimizzati, test unitari ed end-to-end |
 
-Claude non gira sul server: lo studio lo chiama tramite un **ponte locale** (`npm run claude`) che usa Claude Code sul tuo Mac, autenticato con il tuo abbonamento. Il ponte ascolta solo su `127.0.0.1:8790`, accetta richieste solo dal sito in `APP_URL` (e da `http://localhost:8888`) e lancia `claude -p` senza strumenti in una cartella temporanea vuota. Senza ponte acceso, lo studio funziona tutto tranne le funzioni di Claude.
+Claude non gira sul server: Trama lo chiama tramite un **ponte locale** (`npm run claude`) che usa Claude Code sul tuo Mac, autenticato con il tuo abbonamento. Il ponte ascolta solo su `127.0.0.1:8790`, accetta richieste solo dal sito in `APP_URL` (e da `http://localhost:8888`) e lancia `claude -p` senza strumenti in una cartella temporanea vuota. Senza ponte acceso, Trama funziona tutto tranne le funzioni di Claude.
 
 **Chi vede cosa:** ogni progetto appartiene a un sito Atlassian. Chiunque acceda a quel sito con il proprio account vede e modifica il progetto. Su Jira ognuno agisce con i propri permessi.
 
@@ -69,13 +69,13 @@ Il sito è su http://localhost:8888 (`vercel dev`, la prima volta chiede di coll
 
 ## 4. Usa Claude
 
-Ogni volta che lavori con lo studio, in un terminale sul Mac:
+Ogni volta che lavori con Trama, in un terminale sul Mac:
 
 ```bash
 cd ~/Desktop/Trama && npm run claude
 ```
 
-Lascia aperto il terminale: lo studio si collega da solo entro qualche secondo (in alto compare «Claude Code collegato»). Chrome potrebbe chiederti di consentire al sito l'accesso ai dispositivi della rete locale: accetta, è il ponte sul tuo Mac.
+Lascia aperto il terminale: Trama si collega da solo entro qualche secondo (in alto compare «Claude Code collegato»). Chrome potrebbe chiederti di consentire al sito l'accesso ai dispositivi della rete locale: accetta, è il ponte sul tuo Mac.
 
 ## 5. Controlli e test
 
@@ -89,11 +89,11 @@ Sintassi di tutto il JavaScript (anche dentro le pagine), JSON di configurazione
 npm test
 ```
 
-Test end-to-end dello studio con Playwright contro un **simulatore** (`tests/sim/server.mjs`): API in memoria e Jira finto che rispetta i livelli Project › Fase › Epica › ticket. Non serve né il database né un account Atlassian. In locale i test usano Chrome già installato.
+Test end-to-end di Trama con Playwright contro un **simulatore** (`tests/sim/server.mjs`): API in memoria e Jira finto che rispetta i livelli Project › Fase › Epica › ticket. Non serve né il database né un account Atlassian. In locale i test usano Chrome già installato.
 
 - **Unitari** (`tests/unit`): router; sessioni, cookie, stessa origine e cifratura dei token; API dei dati con un database finto (chi vede, scrive ed elimina cosa, limiti e validazioni); operazioni Jira contro il Jira finto (campi ammessi, chiavi e label non valide, errori temporanei, nuovo accesso).
 - **End-to-end** (`tests/e2e`): percorso principale (`studio.spec.mjs`), flussi a mano, Domande, Kit, Backlog, esportazioni, resilienza della creazione su Jira con errori simulati, chat e collegamenti delle pagine (`flussi.spec.mjs`), accessibilità WCAG 2.2 AA con axe anche in modalità scura (`accessibilita.spec.mjs`). Gli aiuti comuni stanno in `aiuti.mjs`.
-- **Visivi**, solo in locale (`npm run test:visual`): pagine, passi dello studio e stati come pannelli, studio nuovo, esito della creazione, finestra media, modalità scura, menu e chat. Le immagini di riferimento stanno in `tests/visual/riferimenti`; dopo un cambiamento voluto: `npm run test:visual -- --update-snapshots`, poi guardale prima del commit.
+- **Visivi**, solo in locale (`npm run test:visual`): pagine, passi di Trama e stati come pannelli, progetto nuovo, esito della creazione, finestra media, modalità scura, menu e chat. Le immagini di riferimento stanno in `tests/visual/riferimenti`; dopo un cambiamento voluto: `npm run test:visual -- --update-snapshots`, poi guardale prima del commit.
 
 Il simulatore accetta guasti su richiesta (`POST /__sim/fault`), per provare cosa succede quando Jira risponde con un errore o perde la risposta.
 
@@ -101,7 +101,7 @@ Il simulatore accetta guasti su richiesta (`POST /__sim/fault`), per provare cos
 npm run perf
 ```
 
-Misure di prestazione dello studio sul simulatore (avvia da solo un simulatore sulla porta 8896): ridisegno dei passi con 67, 134 e 268 ticket, una modifica nel Backlog a CPU normale e rallentata, richieste dei salvataggi in blocco. Con `-- --idle` aggiunge 3 minuti da fermo per la sincronizzazione. Da rifare prima e dopo ogni intervento che tocca liste, controlli o salvataggi.
+Misure di prestazione di Trama sul simulatore (avvia da solo un simulatore sulla porta 8896): ridisegno dei passi con 67, 134 e 268 ticket, una modifica nel Backlog a CPU normale e rallentata, richieste dei salvataggi in blocco. Con `-- --idle` aggiunge 3 minuti da fermo per la sincronizzazione. Da rifare prima e dopo ogni intervento che tocca liste, controlli o salvataggi.
 
 Per guardare il simulatore nel browser: `npm run sim`, poi http://127.0.0.1:8899/studio?p=progetto-prova.
 
@@ -141,7 +141,7 @@ Prima di ogni rilascio che tocca il ponte esegui `npm run bridge:pack`: il contr
 
 ## Solo da computer
 
-Trama è pensato per il computer: lo studio richiede una finestra larga almeno 900 pixel e sotto quella misura mostra un avviso. Telefono e tablet non sono supportati e non vengono provati.
+Trama è pensato per il computer: richiede una finestra larga almeno 900 pixel e sotto quella misura mostra un avviso. Telefono e tablet non sono supportati e non vengono provati.
 
 ## Limiti noti
 
