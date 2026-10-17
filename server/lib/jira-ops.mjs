@@ -23,7 +23,7 @@ export function mdToWiki(md) {
     .replace(/\[([^\]\n]+)\]\((https?:[^)\s]+)\)/g, "[$1|$2]");
 }
 
-const ALLOWED_FIELDS = /^(components|fixVersions|labels|parent|priority|customfield_\d+)$/;
+const ALLOWED_FIELDS = /^(components|labels|parent|priority|customfield_\d+)$/;
 
 export const ops = {
   async getAccessibleAtlassianResources(user) {
@@ -95,14 +95,13 @@ export const ops = {
     await jiraFetch(user, i.cloudId, `${V3}/issue/${e(key)}`, { method: "PUT", body: { fields: { parent: { key: parent } } } });
     return { ok: true };
   },
-  // Cambio di release (= Fase) di un'epica: aggiorna solo label e fixVersion di un ticket già esistente.
+  // Cambio di release (= Fase) di un'epica: aggiorna solo le label di un ticket già esistente.
   async setReleaseFields(user, i) {
     const key = String(i.issueKey || "").trim();
     if (!/^[A-Za-z][A-Za-z0-9_]*-\d+$/.test(key)) throw Object.assign(new Error("Chiave ticket non valida"), { code: "tool_error" });
     const labels = [...new Set((Array.isArray(i.labels) ? i.labels : []).map((l) => String(l).trim()).filter(Boolean))];
     if (labels.some((l) => /\s/.test(l) || l.length > 255)) throw Object.assign(new Error("Label non valida: niente spazi"), { code: "tool_error" });
-    const fixVersions = (Array.isArray(i.fixVersions) ? i.fixVersions : []).map((v) => ({ name: String(v?.name || v).trim() })).filter((v) => v.name);
-    await jiraFetch(user, i.cloudId, `${V3}/issue/${e(key)}`, { method: "PUT", body: { fields: { labels, fixVersions } } });
+    await jiraFetch(user, i.cloudId, `${V3}/issue/${e(key)}`, { method: "PUT", body: { fields: { labels } } });
     return { ok: true };
   },
   async createIssueLink(user, i) {

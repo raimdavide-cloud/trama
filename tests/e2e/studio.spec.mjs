@@ -238,7 +238,6 @@ test("Kit: cambiare la release (= Fase) di un'epica la sposta in Jira con i suoi
   for (const t of [epic, ...state.issues.filter((x) => x.parent === epic.key)]) {
     expect(t.labels, t.key).toContain("Release2");
     expect(t.labels, t.key).not.toContain("Release1");
-    expect(t.fixVersions, t.key).not.toContain("0.1.0");
   }
   await goToStep(page, "Registro decisioni");
   await expect(page.locator("#main table")).toContainText("Diario colturale");
