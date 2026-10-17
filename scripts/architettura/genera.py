@@ -131,12 +131,13 @@ SECURITY = table(["Minaccia", "Controllo", "Dove"], [
   ["Token Atlassian esposti", "Cifrati con AES-256-GCM (IV casuale); la chiave sta solo nelle variabili d'ambiente; mai inviati al browser", "<code>seal()</code>/<code>unseal()</code>"],
   ["Input malevolo o eccessivo", "Raccolte e id validati; 1 MB per documento; 4 MB e 500 operazioni per gruppo; un'operazione non valida fa rifiutare tutto il gruppo", "<code>project.mjs</code>"],
   ["Abuso del ponte Claude", "Solo loopback; <code>Origin</code> in elenco; token opzionale; Claude senza strumenti in una cartella vuota", "<code>claude-bridge.mjs</code>"],
+  ["Script iniettati (XSS) e incorniciamento", "Content-Security-Policy su tutte le pagine: script solo dal sito e da cdnjs, nessuno script inline (lo verifica <code>npm run check</code>), <code>frame-ancestors 'none'</code>, <code>base-uri</code> e <code>form-action</code> limitati al sito. Per ora in sola segnalazione: le violazioni arrivano a <code>/api/csp-report</code> e nei log", "<code>vercel.json</code>, <code>csp-report.mjs</code>"],
   ["Segreti nel codice", "Controllo automatico a ogni commit (chiavi Anthropic e Atlassian, stringhe di connessione, chiavi private)", "<code>npm run check</code>"],
   ["Dati personali", "Segnalazione giornaliera ad Atlassian; cancellazione su richiesta o ad account chiuso; i progetti restano senza riferimento all'autore", "<code>privacy.mjs</code>"],
 ])
 
 ADR = [
-  ("Trama senza framework né build", "Un solo file HTML con JavaScript vanilla, servito statico.", "Nessuna catena di build da mantenere, avvio immediato, pagina ispezionabile. In cambio: disciplina manuale su stato e ridisegno, mitigata da memoizzazione per versione dei dati e da 44 test end-to-end."),
+  ("Trama senza framework né build", "Un file HTML e file JavaScript vanilla, serviti statici.", "Nessuna catena di build da mantenere, avvio immediato, pagina ispezionabile. In cambio: disciplina manuale su stato e ridisegno, mitigata da memoizzazione per versione dei dati e da 54 test end-to-end."),
   ("Claude dal computer dell'utente", "Un ponte locale invoca Claude Code con l'abbonamento della persona.", "Nessuna chiave né costo API centrale, nessun testo dei documenti che passa dal server. Richiede di installare Claude Code e avviare il ponte; senza ponte Trama funziona, ma senza proposte di Claude."),
   ("Documenti JSONB invece di tabelle per entità", "Una tabella <code>items</code> con chiave <code>(project, raccolta, id)</code>.", "Il modello evolve senza migrazioni (per esempio UX Story al posto di Spike è stata una conversione nel client). Niente vincoli referenziali tra requisiti e ticket: li verifica Trama."),
   ("Sincronizzazione a polling", "Delta per <code>updated_at</code> ogni 6 s, 30 s da fermi.", "Compatibile con funzioni serverless senza connessioni persistenti. Latenza di collaborazione fino a 30 s, costo proporzionale alle schede aperte."),
@@ -145,7 +146,7 @@ ADR = [
 ]
 
 LIMITS = [
-  ("Nessuna Content-Security-Policy", "Le pagine inviano <code>nosniff</code>, <code>X-Frame-Options: DENY</code> e <code>Referrer-Policy</code>, ma non una CSP. Trama carica librerie da cdnjs: una CSP con elenco di origini è il prossimo passo."),
+  ("CSP in sola segnalazione", "La Content-Security-Policy è attiva come <code>Report-Only</code>: le violazioni si registrano ma non si bloccano. Diventerà obbligatoria dopo qualche giorno di log puliti. Un ponte Claude su un indirizzo diverso da <code>127.0.0.1:8790</code> (per esempio Tailscale) andrà aggiunto a <code>connect-src</code>."),
   ("Ultima scrittura vincente", "Due persone sullo stesso documento nello stesso intervallo: vince l'ultima. Possibile evoluzione: versione per documento e conflitto esplicito."),
   ("Stato completo all'apertura", "Il progetto si carica intero (circa 270 KB nel progetto di prova), testo dei documenti compreso. Possibile evoluzione: testo dei documenti su richiesta."),
   ("Polling invece di push", "Fino a 30 secondi per vedere le modifiche di un collega fermo da più di 2 minuti."),
@@ -248,9 +249,9 @@ page = f'''<!doctype html>
   </div>
   <div class="ax-two">
     <div class="ax-card"><h3>Test a ogni modifica</h3><ul class="ax-list">
-      <li><b>27 unitari</b>: router, sessioni e cifratura, API dei dati con database finto, operazioni Jira.</li>
-      <li><b>44 end-to-end</b> con Playwright su un simulatore completo: Trama vera, API in memoria, Jira finto con guasti su richiesta (risposta persa dopo la creazione, 500 prima della creazione).</li>
-      <li><b>Accessibilità</b> WCAG 2.2 AA con axe, anche in modalità scura; allineamento delle icone misurato.</li>
+      <li><b>32 unitari</b>: router, sessioni e cifratura, API dei dati con database finto, operazioni Jira, segnalazioni CSP.</li>
+      <li><b>54 end-to-end</b> con Playwright su un simulatore completo: Trama vera, API in memoria, Jira finto con guasti su richiesta (risposta persa dopo la creazione, 500 prima della creazione).</li>
+      <li><b>Accessibilità</b> WCAG 2.2 AA con axe, anche in modalità scura; allineamento delle icone misurato; nessuna violazione della CSP su pagine e passi.</li>
       <li><b>25 confronti visivi</b> pixel per pixel, in locale.</li>
     </ul></div>
     <div class="ax-card"><h3>Dal commit alla produzione</h3><ol class="ax-steps">

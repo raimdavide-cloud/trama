@@ -1,0 +1,2 @@
+const names=["i-link","i-file","i-list","i-help","i-kit","i-layers","i-send","i-book","i-tree","i-sprint","i-check","i-alert","i-x","i-sync","i-shield","i-lock","i-users","i-chat","i-sparkle","i-image","i-arrow","i-play","i-pause","i-replay"];
+document.getElementById("iconGrid").innerHTML=names.map(n=>`<div><svg class="ic" aria-hidden="true"><use href="/icons.svg#${n}"/></svg>${n.slice(2)}</div>`).join("");
