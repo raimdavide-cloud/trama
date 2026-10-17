@@ -79,10 +79,47 @@ function jiraError(status, body) {
   return Object.assign(new Error(message), { code: "tool_error" });
 }
 
-// Chiamata REST a Jira Cloud del sito cloudId, con un rinnovo del token in caso di 401.
+// Limiti di Jira: si riprovano solo le letture (GET) e le ricerche JQL, che non cambiano nulla.
+// Le creazioni (ticket, collegamenti) non si riprovano mai qui: una risposta persa non dice se il ticket esiste,
+// e Trama lo riconcilia da sé (ricerca dei creati, «Cerca in Jira»).
+// Tetti pensati per maxDuration 60 s (vercel.json): al massimo 3 tentativi e 20 s di attesa in tutto.
+export const RETRY = {
+  attempts: 3,
+  baseMs: 500,
+  maxWaitMs: 10_000, // un Retry-After più lungo non si aspetta: l'errore torna subito, temporaneo
+  budgetMs: 20_000,
+  sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+  random: Math.random,
+};
+const canRetry = (method, path) => method === "GET" || (method === "POST" && /^\/rest\/api\/3\/search\/jql(\?|$)/.test(path));
+
+// Retry-After in secondi o come data HTTP; null se assente o illeggibile
+export function retryAfterMs(value, now = Date.now()) {
+  if (value == null || String(value).trim() === "") return null;
+  const v = String(value).trim();
+  if (/^\d+(\.\d+)?$/.test(v)) return Math.round(Number(v) * 1000);
+  const at = Date.parse(v);
+  return Number.isNaN(at) ? null : Math.max(0, at - now);
+}
+// attesa prima del tentativo successivo: quella chiesta da Jira, altrimenti esponenziale con margine casuale
+const backoff = (tries) => RETRY.baseMs * 2 ** (tries - 1) + Math.round(RETRY.random() * RETRY.baseMs);
+
+// Chiamata REST a Jira Cloud del sito cloudId, con un rinnovo del token in caso di 401
+// e nuovi tentativi su 429 e 5xx per le sole richieste che si possono ripetere.
 export async function jiraFetch(user, cloudId, path, { method = "GET", body } = {}) {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const token = await accessToken(user, attempt > 0);
+  const repeatable = canRetry(method, path);
+  let refreshed = false, force = false, tries = 0, waited = 0;
+  // true se conviene riprovare: in quel caso ha già atteso
+  const pause = async (ms) => {
+    if (!repeatable || tries >= RETRY.attempts || ms == null || ms > RETRY.maxWaitMs || waited + ms > RETRY.budgetMs) return false;
+    waited += ms;
+    await RETRY.sleep(ms);
+    return true;
+  };
+  for (;;) {
+    tries++;
+    const token = await accessToken(user, force);
+    force = false;
     let r;
     try {
       r = await fetch(`${API}/ex/jira/${encodeURIComponent(cloudId)}${path}`, {
@@ -95,13 +132,22 @@ export async function jiraFetch(user, cloudId, path, { method = "GET", body } = 
         body: body ? JSON.stringify(body) : undefined,
       });
     } catch (e) {
+      if (await pause(backoff(tries))) continue;
       throw Object.assign(new Error("Jira non raggiungibile"), { code: "server_unavailable", retryable: true });
     }
-    if (r.status === 401 && attempt === 0) continue;
+    if (r.status === 401 && !refreshed) { refreshed = force = true; tries--; continue; } // il rinnovo del token non conta come tentativo
     const text = await r.text();
     let data = {};
     try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text.slice(0, 300) }; }
-    if (!r.ok) throw jiraError(r.status, data);
-    return data;
+    if (r.ok) return data;
+    if (r.status === 429 || r.status >= 500) {
+      const asked = retryAfterMs(r.headers.get("retry-after"));
+      if (await pause(asked ?? backoff(tries))) continue;
+      const err = jiraError(r.status, data);
+      if (asked != null) err.retryAfter = Math.ceil(asked / 1000);
+      err.attempts = tries;
+      throw err;
+    }
+    throw jiraError(r.status, data);
   }
 }

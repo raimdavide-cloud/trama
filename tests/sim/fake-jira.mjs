@@ -14,8 +14,11 @@ export const sim = {
   issues: new Map(),
   counter: 1000,
   calls: [],
-  faults: { afterCreate500: {}, before500: {} }, // per tipo: quante volte fallire
-  reset() { this.issues.clear(); this.counter = 1000; this.calls = []; this.faults = { afterCreate500: {}, before500: {} }; },
+  // guasti su richiesta, quante volte fallire: afterCreate500 e before500 per tipo di ticket;
+  // rate429 (con Retry-After = retryAfter, null per ometterlo) e down503 per metodo HTTP o "*" per tutte le richieste
+  faults: { afterCreate500: {}, before500: {}, rate429: {}, down503: {} },
+  retryAfter: "1",
+  reset() { this.issues.clear(); this.counter = 1000; this.calls = []; this.faults = { afterCreate500: {}, before500: {}, rate429: {}, down503: {} }; this.retryAfter = "1"; },
 };
 
 const json = (status, data) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
@@ -83,6 +86,11 @@ async function handle(url, init) {
   if (u.pathname === "/oauth/token/accessible-resources") return json(200, [{ id: sim.cloudId, url: "https://esempio.atlassian.net", name: "esempio" }]);
   const p = u.pathname.replace(/^\/ex\/jira\/[^/]+/, "");
   sim.calls.push(`${method} ${p}${body.fields?.issuetype ? " [" + body.fields.issuetype.name + "]" : ""}`);
+  const take = (f) => { for (const k of [method, "*"]) if ((f[k] || 0) > 0) { f[k]--; return true; } return false; };
+  if (take(sim.faults.rate429)) {
+    return new Response(JSON.stringify({ errorMessages: ["Rate limit exceeded."] }), { status: 429, headers: { "content-type": "application/json", ...(sim.retryAfter != null ? { "retry-after": String(sim.retryAfter) } : {}) } });
+  }
+  if (take(sim.faults.down503)) return err(503, {}, ["Servizio non disponibile (simulato)."]);
 
   if (method === "POST" && p === "/rest/api/2/issue") {
     const f = body.fields || {};
