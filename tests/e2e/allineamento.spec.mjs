@@ -4,8 +4,16 @@ import { test, expect } from "@playwright/test";
 import { misalignedIcons } from "./allineamento.mjs";
 import { openStudio, goToStep, emptyReqs } from "./aiuti.mjs";
 
+// si misura a riposo: font caricati e transizioni finite (la chat si apre con una transizione di 0,22 s;
+// su una macchina lenta, come quella della CI, la misura poteva cadere a metà)
+const settled = (page) => page.evaluate(async () => {
+  await document.fonts.ready;
+  await Promise.all(document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => {})));
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  await document.fonts.ready;
+});
 const check = async (page, label) => {
-  await page.evaluate(() => document.fonts.ready);
+  await settled(page);
   expect.soft(await page.evaluate(`(${misalignedIcons.toString()})()`), label).toEqual([]);
 };
 
