@@ -366,3 +366,7 @@ body.panel-open #chatFab{right:calc(min(580px,46vw) + 20px)}
   .desk-only h1{font:800 26px/1.15 var(--f-display);margin:8px 0 10px}
   .app,#chat,#chatFab{display:none!important}
 }
+
+/* Kit: riquadro di conferma per lo spostamento di un'epica in un'altra release (= Fase) */
+.move-card{border-color:var(--primary);background:var(--primary-soft);margin:0 0 14px}
+.move-l{margin:0;padding-left:20px}.move-l li{margin:6px 0}

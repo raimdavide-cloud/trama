@@ -96,7 +96,7 @@ const AREAS={
   "ux-both":{label:"UX Web/Mobile",prefix:"[UX - Web/Mobile]",comp:["web","mobile"],team:"ux",work:"UX-UI"}};
 const COMP_LABEL={be:"Back-end / Cloud",web:"Web App",mobile:"Mobile App",fw:"Firmware"};
 const REQ_COMPS=["Web App","Mobile App","Back-end/Cloud","Firmware"];
-const TYPES=["Story","Spike","Task","Bug"];
+const TYPES=["Story","UX Story","Task","Bug"];
 const WORK=["Back-End","UI","Logic","UX-UI"];
 const LABELS=["Back-End","UI","Logic","UX-UI","Automation_Test","Manual_Test","Android","iOS","NeedsDesignClarification"];
 const CANON=Object.fromEntries(LABELS.map(l=>[l.toLowerCase().replace(/[^a-z0-9]/g,""),l]));
@@ -104,7 +104,7 @@ const canonLabel=l=>CANON[String(l).toLowerCase().replace(/[^a-z0-9]/g,"")]||/^r
 const SECTIONS={
   Story:["## Context","## User story","## Scope / Action","## Dependencies","## Points to clarify","## Acceptance criteria","## References"],
   Bug:["## Context","## Steps to reproduce","## Expected result","## Actual result","## Evidence","## Acceptance criteria"],
-  Spike:["## Context","## Content to include","## Reference","## Points to define in the design","## Acceptance criteria"],
+  "UX Story":["## Context","## Content to include","## Reference","## Points to define in the design","## Acceptance criteria"],
   Task:["## Context","## Action","## Acceptance criteria","## Notes"]};
 const TEMPLATES={
 Story:`## Context
@@ -143,7 +143,7 @@ Screenshots, logs, error messages.
 
 ## Acceptance criteria
 * The fix, plus the regression checks.`,
-Spike:`## Context
+"UX Story":`## Context
 The requirement and the platforms involved.
 
 ## Content to include
@@ -173,7 +173,7 @@ const STD_QUESTIONS={
 "Strumenti":["Progetto nel tracker esistente o da creare? Campi custom obbligatori?","Dove vivono i design e la documentazione?"]};
 const DECISION_TYPES=["Organizzazione del backlog","Valori e limiti di prodotto","Vincoli di dominio","Ambienti e rilasci","Perimetro funzionale","Processo","Altro"];
 function defaultKit(){return{productName:"",components:{be:"",web:"",mobile:"",fw:""},releases:[],epics:[],
-  team:{be:{},web:{},mobile:{},fw:{},ux:{},qa:{}},types:{Story:"Story",Spike:"Spike",Task:"Task",Bug:"Bug",Epic:"Epic"},
+  team:{be:{},web:{},mobile:{},fw:{},ux:{},qa:{}},types:{Story:"Story","UX Story":"UX Story",Task:"Task",Bug:"Bug",Epic:"Epic"},
   links:{relates:"",blocks:""},custom:{},extraLabels:"",glossary:"",constraints:"",envs:"",
   lang:{po:"Italiano",tickets:"English",client:"English, registro formale"},autoAssign:true,
   hier:{enabled:true,projectType:"",phaseType:"",examples:{project:"",phase:"",epic:""},project:{key:"",name:""},phases:[]}}}
@@ -182,10 +182,10 @@ const RULES=`Sei l'assistente AI di un Product Owner e applichi il playbook "dal
 REGOLE:
 - Il PO decide; tu proponi, scrivi, segnali ipotesi e punti aperti. Dichiara sempre ogni ipotesi.
 - Fase 0: un requisito per riga con ID stabile, titolo, descrizione dal punto di vista dell'utente, componenti (Web App, Mobile App, Back-end/Cloud, Firmware), release, note UI/UX (sulla riga giusta: attenzione alle colonne sfalsate), dipendenze esterne e interne, domande aperte. Le domande di apertura si chiudono prima di creare ticket; dove manca la risposta si scrive un'ipotesi esplicita.
-- Kit: identificativi del tracker; per ogni release un nome e una label Release1, Release2… (fixVersion facoltativa); epiche per area funzionale più "Cross-cutting polish" per infrastruttura, CI e rifiniture; label canoniche (Back-End, UI, Logic, UX-UI, Automation_Test, Manual_Test, Android, iOS, NeedsDesignClarification) sempre scritte uguali; prefissi titoli [BE], [FE - Web], [FE - Mobile], [UX - Web], [UX - Mobile], [UX - Web/Mobile], [FW]; glossario; lingua; vincoli già decisi.
-- Scomposizione di ogni requisito: epica dell'area nella release giusta; se c'è interfaccia e il design non è pronto, una Spike UX per ogni componente con UI; a design pronto una Story BE (dati, API, regole), una FE Web e una FE Mobile secondo i componenti; due storie BE se il back-end ha due lavori distinti; un ticket FW collegato come bloccante se servono firmware o librerie nuove; ogni ticket collegato al requisito e ai fratelli (relates, oppure blocks se uno attende l'altro).
-- Tipi: Story = valore per l'utente con esito verificabile; Spike = definire un concetto prima di implementarlo; Bug = comportamento diverso dall'atteso in una funzione consegnata; Task = lavoro tecnico circoscritto senza valore diretto.
-- Metadati obbligatori su ogni ticket: epica, label di release, label di tipo lavoro, campi custom obbligatori di Jira, prefisso nel titolo. Componente, fixVersion e assegnatario sono facoltativi: nella strutturazione del backlog non servono, si impostano più avanti quando esistono in Jira.
+- Kit: identificativi del tracker; per ogni release un nome e una label Release1, Release2… (ogni release è una Fase in Jira); epiche per area funzionale più "Cross-cutting polish" per infrastruttura, CI e rifiniture; label canoniche (Back-End, UI, Logic, UX-UI, Automation_Test, Manual_Test, Android, iOS, NeedsDesignClarification) sempre scritte uguali; prefissi titoli [BE], [FE - Web], [FE - Mobile], [UX - Web], [UX - Mobile], [UX - Web/Mobile], [FW]; glossario; lingua; vincoli già decisi.
+- Scomposizione di ogni requisito: epica dell'area nella release giusta; se c'è interfaccia e il design non è pronto, una UX Story per ogni componente con UI; a design pronto una Story BE (dati, API, regole), una FE Web e una FE Mobile secondo i componenti; due storie BE se il back-end ha due lavori distinti; un ticket FW collegato come bloccante se servono firmware o librerie nuove; ogni ticket collegato al requisito e ai fratelli (relates, oppure blocks se uno attende l'altro).
+- Tipi: Story = valore per l'utente con esito verificabile; UX Story = progettare l'interfaccia (flussi, schermate, stati) prima dello sviluppo; Bug = comportamento diverso dall'atteso in una funzione consegnata; Task = lavoro tecnico circoscritto senza valore diretto.
+- Metadati obbligatori su ogni ticket: epica, label di release, label di tipo lavoro, campi custom obbligatori di Jira, prefisso nel titolo. Componente e assegnatario sono facoltativi: nella strutturazione del backlog non servono, si impostano più avanti quando esistono in Jira.
 - I ticket si scrivono sempre in inglese con i modelli standard; "Points to clarify" rende visibili le decisioni che spettano a PO o cliente.
 - Ciclo per ogni richiesta: capire l'input; guardare lo stato reale prima di scrivere; chiedere quando sbagliare costa caro, altrimenti procedere dichiarando l'ipotesi; scrivere applicando il kit; creare, poi collegare con le chiavi reali, poi verificare; rispondere in breve (cosa è stato fatto, scelte fatte al posto del PO, cosa resta da decidere, ticket corrispondenti su altri componenti).
 - Ogni decisione che cambia prodotto, processo o classificazione va nel registro (data, decisione al presente, chi, fonte, impatto, regola del kit). Una decisione che ne contraddice un'altra aggiunge una riga e indica quale sostituisce.
@@ -229,7 +229,13 @@ const arr=c=>Object.entries(S[c]).map(([id,v])=>({...v,id}));
 const reqList=()=>arr("reqs").sort((a,b)=>(a.order??0)-(b.order??0)||String(a.code).localeCompare(b.code));
 const cleanVerify=v=>{if(!v||v==="ok"||!/^Manca: /.test(v))return v;const rest=v.slice(7).split(/,\s*(?![^()]*\))/).filter(x=>x.trim()&&!/^(componente|fixversion|assegnatario)/i.test(x.trim()));return rest.length?"Manca: "+rest.join(", "):"ok"},vOf=t=>cleanVerify(t.verify);
 const ticketList=()=>arr("tickets").sort((a,b)=>String(a.ref).localeCompare(b.ref,undefined,{numeric:true}));
-const editKit=fn=>{const k=clone(K());fn(k);saveMeta("kit",k)};
+const editKit=fn=>{const k=clone(K());fn(k);syncPhases(k);saveMeta("kit",k)};
+/* Release = Fase: una Fase per ogni release del K2, con lo stesso nome; l'epica sta sotto la Fase della sua release.
+   Le Fasi già create in Jira restano anche se la loro release sparisce (in Jira non si cancella nulla da qui). */
+function syncPhases(k){const h=k.hier;if(!h)return;const ph=h.phases||[];
+  const list=k.releases.map(r=>r.name).filter(Boolean).map(n=>ph.find(f=>f.name===n)||{id:uid(),name:n,key:""});
+  ph.forEach(f=>{if(f.key&&!list.includes(f))list.push(f)});h.phases=list;
+  k.epics.forEach(e=>{const f=list.find(x=>x.name===e.release);e.phase=f?f.id:""})}
 const editProject=fn=>{const p=clone(P());fn(p);saveMeta("project",p)};
 
 /* ================= Jira ================= */
@@ -342,10 +348,10 @@ function hierProblems(){const k=K(),h=k.hier;if(!h?.enabled)return[];const p=[],
   if(!h.projectType)p.push("manca il tipo di ticket del Project");
   if(!h.phaseType)p.push("manca il tipo di ticket della Fase");
   if(!(h.project?.key||h.project?.name))p.push("manca il Project (chiave esistente o nome da creare)");
-  if(!ph.length)p.push("manca almeno una Fase");
+  if(!ph.length)p.push("manca almeno una release (= Fase)");
   if(ph.some(f=>!(f.key||f.name)))p.push("una Fase non ha né nome né chiave");
   const orphan=k.epics.filter(e=>!e.phase||!ph.some(f=>f.id===e.phase)).length;
-  if(orphan)p.push(`${orphan} epiche senza Fase`);
+  if(orphan)p.push(orphan===1?"1 epica senza release (= Fase)":`${orphan} epiche senza release (= Fase)`);
   return p}
 function hierCard(k,j){const h=k.hier||defaultKit().hier;const types=(j.types||[]).map(t=>[t.name,t.name+(t.level!=null?` · livello ${t.level}`:"")]);
   const opts=v=>!v||types.some(x=>x[0]===v)?types:[[v,v],...types];const pr=hierProblems();const ph=h.phases||[];
@@ -357,9 +363,9 @@ function hierCard(k,j){const h=k.hier||defaultKit().hier;const types=(j.types||[
    <h3>Project</h3>
    <div class="grid">${F("Nome del Project (viene creato in Jira)",bind("meta:kit:hier.project.name",h.project?.name,{ph:k.productName||"Es. Lumio"}))}</div>
    ${h.project?.key?`<p class="small">Creato in Jira come ${browse(h.project.key)}.</p>`:""}
-   <h3>Fasi</h3>
-   <div class="tw"><table><thead><tr><th>Fase (nome)</th><th>In Jira</th><th></th></tr></thead><tbody>${ph.map((f,i)=>`<tr><td>${bind("meta:kit:hier.phases."+i+".name",f.name)}</td><td>${f.key?browse(f.key):'<span class="muted small">chiave assegnata alla creazione</span>'}</td><td>${B("delPhase","Rimuovi",{cls:"link",data:{i}})}</td></tr>`).join("")||'<tr><td colspan="3" class="muted">Nessuna Fase: premi «Genera la struttura in automatico» o aggiungine una.</td></tr>'}</tbody></table></div>
-   <div class="toolbar" style="margin-top:10px">${B("addPhase","Aggiungi Fase")}${B("phasesFromReleases","Una Fase per ogni release",{dis:!k.releases.length})}</div>
+   <h3>Fasi (= release)</h3>
+   <p class="small muted" style="margin:0 0 8px">Ogni release del K2 è una Fase in Jira, con lo stesso nome: per aggiungere una Fase aggiungi una release. Ogni epica sta sotto la Fase della sua release.</p>
+   <div class="tw"><table><thead><tr><th>Fase (= release)</th><th>Epiche</th><th>In Jira</th></tr></thead><tbody>${ph.map(f=>`<tr><td>${esc(f.name||f.key)}${k.releases.some(r=>r.name===f.name)?"":' <span class="pill warn">release non più nel K2</span>'}</td><td>${k.epics.filter(e=>e.phase===f.id).length}</td><td>${f.key?browse(f.key):'<span class="muted small">chiave assegnata alla creazione</span>'}</td></tr>`).join("")||'<tr><td colspan="3" class="muted">Nessuna Fase: aggiungi almeno una release nel K2.</td></tr>'}</tbody></table></div>
    ${pr.length?`<div class="msg warn small">Struttura incompleta: ${pr.map(esc).join("; ")}.</div>`:`<div class="msg ok small">Struttura completa: ogni epica ha una Fase e il Project è definito.</div>`}`:`<p class="small muted" style="margin:8px 0 0">Disattivata: le epiche vengono create direttamente nel progetto, senza Project e Fase.</p>`}</div>`}
 /* ---------- 1. Progetto Jira ---------- */
 STEPS.push({id:"jira",phase:"Avvio",short:"Progetto Jira",sub:"Collega e leggi Jira",title:"Collega il progetto Jira",
@@ -390,7 +396,7 @@ function reqFilter(r){const f=T.rq||(T.rq={q:"",show:"all",rel:"*"}),q=f.q.trim(
 function reqBar(r,rf){if(!r.length)return"";const f=T.rq,rels=[...new Set(r.map(x=>x.release).filter(Boolean))];
   return`<div class="rq-bar"><input type="search" id="rqSearch" placeholder="Cerca per ID o titolo" aria-label="Cerca requisiti per ID o titolo" value="${esc(f.q)}" autocomplete="off">
    <label class="rq-f">Mostra<select id="rqShow">${RQ_SHOW.map(([v,l,fn])=>`<option value="${v}" ${v===f.show?"selected":""}>${l} (${r.filter(fn).length})</option>`).join("")}</select></label>
-   <label class="rq-f">Release<select id="rqRel"><option value="*">Tutte</option>${rels.map(v=>`<option value="${esc(v)}" ${v===f.rel?"selected":""}>${esc(v)} (${r.filter(x=>x.release===v).length})</option>`).join("")}</select></label></div>
+   <label class="rq-f">Release (= Fase)<select id="rqRel"><option value="*">Tutte</option>${rels.map(v=>`<option value="${esc(v)}" ${v===f.rel?"selected":""}>${esc(v)} (${r.filter(x=>x.release===v).length})</option>`).join("")}</select></label></div>
    <p class="small muted rq-count" id="rqCount">${rqCount(rf.length,r.length)}</p>`}
 const rqCount=(n,t)=>n<t?`${n} di ${t} requisiti · <button type="button" class="link" data-act="rqReset">Togli i filtri</button>`:"";
 /* Tabelle compatte con pannello di modifica che scorre da destra (Requisiti e Backlog).
@@ -418,7 +424,7 @@ function reqTrace(x){const ts=ticketList().filter(t=>t.req===x.code);
 // release del requisito: menu con le release del kit e quelle già usate (un campo con suggerimenti mostrava solo quella scritta)
 const relOptions=cur=>[...new Set([...K().releases.map(r=>r.name),...reqList().map(r=>r.release),cur].filter(Boolean))];
 function reqForm(x){const b="reqs:"+x.id+":";
-  return`<div class="grid">${F("ID requisito",bind(b+"code",x.code))}${F("Release",sel(b+"release",x.release||"",relOptions(x.release),{empty:"Senza release"}))}${F("Titolo",bind(b+"title",x.title),"wide")}${F("Descrizione (punto di vista dell'utente)",bind(b+"desc",x.desc,{area:1,rows:3}),"wide")}
+  return`<div class="grid">${F("ID requisito",bind(b+"code",x.code))}${F("Release (= Fase)",sel(b+"release",x.release||"",relOptions(x.release),{empty:"Senza release"}))}${F("Titolo",bind(b+"title",x.title),"wide")}${F("Descrizione (punto di vista dell'utente)",bind(b+"desc",x.desc,{area:1,rows:3}),"wide")}
     <div class="f wide"><span class="small muted" style="font-weight:600">Componenti</span><div class="row">${REQ_COMPS.map(c=>`<label class="row small"><input type="checkbox" data-multi="${b}components" value="${esc(c)}" ${(x.components||[]).includes(c)?"checked":""} ${READONLY?"disabled":""}> ${c}</label>`).join("")}<label class="row small" style="margin-left:12px"><input type="checkbox" data-bind="${b}designReady" ${x.designReady?"checked":""} ${READONLY?"disabled":""}> Design già pronto</label></div></div>
     ${F("Note UI/UX",bind(b+"ui",x.ui,{area:1,rows:2}),"wide")}${F("Dipendenze esterne",bind(b+"extDeps",x.extDeps))}${F("Dipendenze interne",bind(b+"intDeps",x.intDeps,{ph:"Es. REQ-004"}))}${F("Domande aperte",bind(b+"questions",x.questions,{area:1,rows:2}),"wide")}</div>
     ${reqTrace(x)}
@@ -446,6 +452,54 @@ function decTable(d){if(!d.length)return'<p class="empty">Nessuna decisione anco
 function labelTableFields(root){root.querySelectorAll("table").forEach(tb=>{const hs=[...tb.querySelectorAll("thead th")].map(th=>th.textContent.trim());if(!hs.length)return;
   tb.querySelectorAll("tbody tr").forEach((tr,ri)=>{[...tr.children].forEach((td,ci)=>{td.querySelectorAll("input:not([type=hidden]),select,textarea").forEach(el=>{if(el.getAttribute("aria-label")||el.labels?.length)return;
    const h=hs[ci]||(el.type==="checkbox"?"Seleziona":"Valore");el.setAttribute("aria-label",`${h}, riga ${ri+1}`)})})})})}
+/* Cambio di release (= Fase) di un'epica dal Kit.
+   Nello studio: l'epica passa alla Fase della nuova release e i suoi ticket prendono la nuova release.
+   In Jira (solo se l'epica esiste già, e solo dopo «Aggiorna Jira»): Principale dell'epica e label di release di epica e ticket. */
+function epicRelease(i,v){const k0=K(),e0=k0.epics[i];if(!e0||e0.release===v)return;const old=e0.release;
+  editKit(k=>{k.epics[i].release=v});
+  ticketList().filter(t=>t.epic===e0.name&&t.release!==v&&v).forEach(t=>{const{id,...d}=t;put("tickets",id,{...d,release:v})});
+  T.epicMove=e0.key&&k0.hier?.enabled&&v?{name:e0.name,from:old,to:v}:null;render()}
+function epicMoveCard(){const mv=T.epicMove;if(!mv)return"";const k=K(),e=k.epics.find(x=>x.name===mv.name);if(!e||!e.key){T.epicMove=null;return""}
+  const from=relOf(mv.from),to=relOf(mv.to),ph=(k.hier.phases||[]).find(f=>f.id===e.phase),fromPh=(k.hier.phases||[]).find(f=>f.name===mv.from);
+  const created=ticketList().filter(t=>t.epic===e.name&&t.state==="created"&&t.key),drafts=ticketList().filter(t=>t.epic===e.name&&t.state!=="created");
+  const noProject=!ph?.key&&!k.hier.project?.key,phName=x=>x?`«${esc(x.name)}»${x.key?" "+browse(x.key):""}`:"—";
+  return`<div class="card move-card" id="epicMove" role="region" aria-label="Aggiornamento di Jira per l'epica ${esc(e.name)}"><h3 style="margin-top:0">Aggiornare anche Jira?</h3>
+   <p style="margin:0 0 8px">L'epica <b>${esc(e.name)}</b> ${browse(e.key)} è passata dalla release <b>${esc(mv.from||"—")}</b> alla release <b>${esc(mv.to)}</b>. In Jira cambierà:</p>
+   <ul class="move-l">
+    <li><b>Fase dell'epica</b>: ${phName(fromPh)} → ${phName(ph)}${ph?.key?"":noProject?' <span class="pill err">il Project non esiste ancora in Jira: crealo dal passo Crea su Jira</span>':' <span class="pill warn">la Fase verrà creata sotto il Project</span>'}. I ticket dell'epica la seguono.</li>
+    <li><b>Label di release</b> dell'epica${created.length?` e di ${created.length===1?"1 ticket":created.length+" ticket"} già in Jira`:""}: ${from?.label?`<span class="key">${esc(from.label)}</span>`:"—"} → ${to?.label?`<span class="key">${esc(to.label)}</span>`:"nessuna"}.</li>
+   </ul>
+   ${drafts.length?`<p class="small muted" style="margin:6px 0 0">${drafts.length===1?"1 ticket in bozza è già stato aggiornato":drafts.length+" ticket in bozza sono già stati aggiornati"} nello studio: ${drafts.length===1?"verrà creato":"verranno creati"} nella nuova release.</p>`:""}
+   ${progBlock("epicMove")}
+   <div class="toolbar" style="margin:12px 0 0">${JB("epicMoveRun","Aggiorna Jira",{cls:"primary",dis:noProject})}${B("epicMoveSkip","Non ora")}</div>
+   <p class="small muted" style="margin:8px 0 0">«Non ora» lascia Jira com'è: lo spostamento dell'epica resterà tra le epiche da collegare al passo Crea su Jira, ma la label di release non verrà aggiornata.</p></div>`}
+async function epicMoveRun(){const mv=T.epicMove;if(!mv)return;const p=P(),k=K(),e=k.epics.find(x=>x.name===mv.name);if(!e?.key)return;
+  const relLabels=k.releases.map(r=>r.label).filter(Boolean),to=relOf(mv.to);
+  let ph=(k.hier.phases||[]).find(f=>f.id===e.phase);
+  const targets=[e.key,...ticketList().filter(t=>t.epic===e.name&&t.state==="created"&&t.key).map(t=>t.key)];
+  progStart("epicMove",{label:`Sposto «${e.name}» nella Fase «${mv.to}»`,unit:"ticket",total:targets.length+1,detail:"Fase dell'epica"});
+  try{
+    if(!ph?.key){const pk=k.hier.project?.key;if(!pk)throw{code:"tool_error",message:"Il Project non esiste ancora in Jira."};
+      const key=await createNode(k.hier.phaseType,ph.name,`## Context\nPhase "${ph.name}" of the project.`,pk);editKit(kk=>{const x=kk.hier.phases.find(y=>y.id===ph.id);if(x)x.key=key});ph={...ph,key}}
+    await jira("setIssueParent",{cloudId:p.cloudId,issueKey:e.key,parentKey:ph.key});editKit(kk=>{const x=kk.epics.find(y=>y.name===e.name);if(x)x.linkedTo=ph.key});
+    Object.assign(T.prog.epicMove,{done:1,detail:`Fase aggiornata · label: 0 di ${targets.length}`});progPaint("epicMove");
+    const {map}=await fetchIssues(targets,["labels"]);const fails=[];let i=0;
+    for(const key of targets){if(T.prog.epicMove?.stop)break;const f=map[key]?.fields||{};
+      const labels=[...(f.labels||[]).filter(l=>!relLabels.includes(l)),...(to?.label?[to.label]:[])];
+      try{await jira("setReleaseFields",{cloudId:p.cloudId,issueKey:key,labels})}catch(err){fails.push(`${key}: ${jiraOrAi(err)}`)}
+      i++;Object.assign(T.prog.epicMove,{done:1+i,detail:`Fase aggiornata · label: ${i} di ${targets.length}`});progPaint("epicMove")}
+    const {map:after}=await fetchIssues(targets,["parent","labels"]);
+    const parentOk=after[e.key]?.fields?.parent?.key===ph.key,labOk=targets.filter(x=>!to?.label||(after[x]?.fields?.labels||[]).includes(to.label)).length;
+    addAutoDecision(`Epica «${e.name}» (${e.key}) spostata dalla release «${mv.from||"—"}» alla release «${mv.to}» (Fase ${ph.key}); in Jira aggiornata la label di release di ${targets.length===1?"1 elemento":targets.length+" elementi"}.`,"Kit di progetto (K3)");
+    T.epicMove=null;
+    setMsg("kit",fails.length||!parentOk||labOk<targets.length?"warn":"ok",`${parentOk?`Epica «${e.name}» spostata nella Fase ${ph.key}`:`L'epica «${e.name}» non risulta sotto la Fase ${ph.key}: controlla in Jira`}; label di release verificate su ${labOk} di ${targets.length} elementi.${fails.length?" Non aggiornati: "+fails.slice(0,4).join("; ")+(fails.length>4?" …":""):""}`)}
+  finally{progEnd("epicMove")}}
+/* Gli Spike non esistono più: i ticket di design sono UX Story, come il tipo di Jira.
+   All'apertura di un progetto creato prima, i ticket «Spike» e la mappatura del kit passano a «UX Story» (una volta sola). */
+let SPIKE_DONE=false;
+function migrateSpike(loaded){if(SPIKE_DONE||READONLY||!loaded.has("meta")||!loaded.has("tickets"))return;SPIKE_DONE=true;
+  if(S.kit?.types&&"Spike" in S.kit.types)editKit(k=>{const was=k.types.Spike;delete k.types.Spike;if(!k.types["UX Story"])k.types["UX Story"]=!was||was==="Spike"||was==="Task"?"UX Story":was});
+  arr("tickets").filter(t=>t.type==="Spike").forEach(t=>{const{id,...d}=t;put("tickets",id,{...d,type:"UX Story"})})}
 function docsView(){const d=arr("docs").sort((a,b)=>(a.at||0)-(b.at||0));
   let h=`<label class="drop" id="drop"><input type="file" id="fileIn" multiple accept=".docx,.pdf,.xlsx,.xls,.csv,.txt,.md,.markdown,.json,image/png,image/jpeg,image/webp,image/gif" ${READONLY?"disabled":""}><b>Trascina qui i file o scegli dal computer</b><span class="small muted">Word (.docx), PDF, Excel (.xlsx, .xls), CSV, testo, Markdown, immagini</span></label>`;
   if(T.uploads.length)h+=`<div class="list" style="margin-top:10px">${T.uploads.map(u=>`<div class="row small"><span class="pill ${u.s==="ok"?"ok":u.s==="err"?"err":"acc"}">${u.s==="ok"?"Caricato":u.s==="err"?"Errore":"In lavorazione"}</span><b>${esc(u.name)}</b><span class="muted">${esc(u.note||"")}</span></div>`).join("")}</div>`;
@@ -496,7 +550,7 @@ STEPS.push({id:"questions",phase:"Preparazione",short:"Domande di apertura",sub:
 function usedAreas(){const s=new Set();reqList().forEach(r=>(r.components||[]).forEach(c=>{if(c==="Web App")s.add("web");if(c==="Mobile App")s.add("mobile");if(c==="Back-end/Cloud")s.add("be");if(c==="Firmware")s.add("fw")}));return s}
 STEPS.push({id:"kit",phase:"Preparazione",short:"Kit di progetto",sub:"Release, epiche, label",title:"Compila il kit di progetto",
  goal:"Il kit è l'insieme di regole e identificativi che rende ogni ticket coerente con gli altri. È salvato con il progetto e vale per tutto il team.",
- rules:["K1: tipi di collegamento e campi custom con i nomi esatti letti da Jira.","K2: ogni release ha un nome e una label (Release1, Release2). La fixVersion con data è facoltativa: si aggiunge quando esiste in Jira. Leggere sempre il nome attuale prima di usarlo.","K3: un'epica per area funzionale; infrastruttura, CI e rifiniture trasversali in un'epica dedicata («Cross-cutting polish»).","K4: struttura Cliente › Project › Fase › Feature Epic › ticket: ogni livello sta sotto il proprio Principale.","K5: label sempre scritte allo stesso modo: una variante crea un filtro diverso.","K6: ogni titolo inizia con il prefisso dell'area ([BE], [FE - Web], [FE - Mobile], [UX - …], [FW]).","K7–K8: glossario di dominio e lingue di lavoro, uguali in tutti i ticket.","K9: ogni decisione tecnica che i ticket futuri devono rispettare, con il ticket di riferimento."],
+ rules:["K1: tipi di collegamento e campi custom con i nomi esatti letti da Jira.","K2: ogni release ha un nome e una label (Release1, Release2) ed è una Fase della struttura Jira.","K3: un'epica per area funzionale; infrastruttura, CI e rifiniture trasversali in un'epica dedicata («Cross-cutting polish»).","K4: struttura Cliente › Project › Fase › Feature Epic › ticket: ogni livello sta sotto il proprio Principale.","K5: label sempre scritte allo stesso modo: una variante crea un filtro diverso.","K6: ogni titolo inizia con il prefisso dell'area ([BE], [FE - Web], [FE - Mobile], [UX - …], [FW]).","K7–K8: glossario di dominio e lingue di lavoro, uguali in tutti i ticket.","K9: ogni decisione tecnica che i ticket futuri devono rispettare, con il ticket di riferimento."],
  checks:()=>{const k=K();return[
   {t:"Tipi di collegamento scelti con il nome esatto (K1)",ok:!!(k.links.relates&&k.links.blocks)},
   {t:"Campi obbligatori del progetto valorizzati (K1)",ok:(S.jira.required||[]).every(f=>k.custom?.[f.key])},
@@ -511,8 +565,8 @@ STEPS.push({id:"kit",phase:"Preparazione",short:"Kit di progetto",sub:"Release, 
     ${F("Collegamento di correlazione",linkOpts.length?sel("meta:kit:links.relates",k.links.relates,linkOpts,{empty:"Scegli…"}):bind("meta:kit:links.relates",k.links.relates,{ph:"Leggi la configurazione al passo 1"}))}
     ${F("Collegamento di blocco",linkOpts.length?sel("meta:kit:links.blocks",k.links.blocks,linkOpts,{empty:"Scegli…"}):bind("meta:kit:links.blocks",k.links.blocks,{ph:"Leggi la configurazione al passo 1"}))}
     ${(j.required||[]).map(f=>F(`${esc(f.name)} <span class="mono">${esc(f.key)}</span> · obbligatorio`,f.allowed?.length?sel("meta:kit:custom."+f.key,k.custom?.[f.key],f.allowed):bind("meta:kit:custom."+f.key,k.custom?.[f.key]))).join("")}</div></div>`;
-  h+=`<div class="card"><h2>K2 · Versioni e release <span class="pill">fixVersion facoltativa</span></h2><div class="tw"><table><thead><tr><th>Release</th><th>fixVersion</th><th>Label</th><th>Data</th><th></th></tr></thead><tbody>${k.releases.map((r,i)=>`<tr><td>${bind("meta:kit:releases."+i+".name",r.name)}</td><td>${bind("meta:kit:releases."+i+".fixVersion",r.fixVersion,{ph:"Es. 1.0.0"})}</td><td>${bind("meta:kit:releases."+i+".label",r.label,{ph:"Release1"})}</td><td>${bind("meta:kit:releases."+i+".date",r.date,{type:"date"})}</td><td>${B("delRelease","Rimuovi",{cls:"link",data:{i}})}</td></tr>`).join("")||'<tr><td colspan="5" class="muted">Nessuna release. Aggiungine una per ogni release concordata con il cliente.</td></tr>'}</tbody></table></div><div class="toolbar" style="margin-top:10px">${B("addRelease","Aggiungi release")}</div></div>`;
-  h+=`<div class="card"><h2>K3 · Epiche</h2><div class="tw"><table><thead><tr><th>Epica (area funzionale)</th><th>Release</th>${k.hier?.enabled?"<th>Fase</th>":""}<th>Chiave Jira</th><th></th></tr></thead><tbody>${k.epics.map((e,i)=>`<tr><td>${bind("meta:kit:epics."+i+".name",e.name)}</td><td>${sel("meta:kit:epics."+i+".release",e.release,k.releases.map(r=>r.name),{empty:"Tutte"})}</td>${k.hier?.enabled?`<td>${sel("meta:kit:epics."+i+".phase",e.phase,(k.hier.phases||[]).map(f=>[f.id,f.name||f.key||"Fase"]),{empty:"Scegli…"})}</td>`:""}<td>${e.key?browse(e.key):'<span class="muted small">creata al passo 7</span>'}</td><td>${B("delEpic","Rimuovi",{cls:"link",data:{i}})}</td></tr>`).join("")||'<tr><td colspan="5" class="muted">Nessuna epica. Un\'epica per area funzionale, più «Cross-cutting polish».</td></tr>'}</tbody></table></div><div class="toolbar" style="margin-top:10px">${B("addEpic","Aggiungi epica")}${!k.epics.some(e=>/cross-cutting/i.test(e.name))?B("addPolish","Aggiungi «Cross-cutting polish»"):""}</div>
+  h+=`<div class="card"><h2>K2 · Release (= Fasi in Jira)</h2><p class="small muted" style="margin:0 0 10px">Ogni release è una Fase della struttura Jira (Project › Fase › Epica): epiche e ticket di una release stanno sotto la sua Fase.</p><div class="tw"><table><thead><tr><th>Release (= Fase)</th><th>Label</th><th>Data</th><th></th></tr></thead><tbody>${k.releases.map((r,i)=>`<tr><td>${bind("meta:kit:releases."+i+".name",r.name)}</td><td>${bind("meta:kit:releases."+i+".label",r.label,{ph:"Release1"})}</td><td>${bind("meta:kit:releases."+i+".date",r.date,{type:"date"})}</td><td>${B("delRelease","Rimuovi",{cls:"link",data:{i}})}</td></tr>`).join("")||'<tr><td colspan="4" class="muted">Nessuna release. Aggiungine una per ogni release concordata con il cliente.</td></tr>'}</tbody></table></div><div class="toolbar" style="margin-top:10px">${B("addRelease","Aggiungi release")}</div></div>`;
+  h+=`<div class="card"><h2>K3 · Epiche</h2>${epicMoveCard()}<div class="tw"><table><thead><tr><th>Epica (area funzionale)</th><th>Release (= Fase)</th><th>Chiave Jira</th><th></th></tr></thead><tbody>${k.epics.map((e,i)=>`<tr><td>${bind("meta:kit:epics."+i+".name",e.name)}</td><td>${sel("meta:kit:epics."+i+".release",e.release,k.releases.map(r=>r.name),{empty:k.hier?.enabled?"Scegli…":"Tutte"})}</td><td>${e.key?browse(e.key):'<span class="muted small">si crea al passo Crea su Jira</span>'}</td><td>${B("delEpic","Rimuovi",{cls:"link",data:{i}})}</td></tr>`).join("")||'<tr><td colspan="4" class="muted">Nessuna epica. Un\'epica per area funzionale, più «Cross-cutting polish».</td></tr>'}</tbody></table></div><div class="toolbar" style="margin-top:10px">${B("addEpic","Aggiungi epica")}${!k.epics.some(e=>/cross-cutting/i.test(e.name))?B("addPolish","Aggiungi «Cross-cutting polish»"):""}</div>
     <p class="small muted">Se le epiche di una release chiusa non si riusano nella successiva, crea nuove epiche con il nome della release (es. «Notifiche (Release 2)»).</p></div>`;
   h+=hierCard(k,j);
   h+=`<details class="item" data-k="kit-adv" style="margin-top:12px"><summary><span class="ttl">Regole avanzate: label, prefissi, glossario, lingue, vincoli</span><span class="pill">facoltativo</span></summary><div class="in">`;
@@ -551,8 +605,8 @@ function nextRef(){const n=ticketList().reduce((m,t)=>Math.max(m,+(String(t.ref)
 const fmtRef=n=>"T-"+String(n).padStart(3,"0");
 const linksText=t=>(t.links||[]).map(l=>`${l.type}: ${l.to}`).join(", ");
 STEPS.push({id:"backlog",phase:"Creazione",short:"Backlog",sub:"Scomposizione e metadati",title:"Scomponi i requisiti in ticket",
- goal:"Claude scompone ogni requisito della release secondo le regole (spike UX, storie BE/FE, ticket FW, collegamenti) e scrive i ticket in inglese con i modelli. Lo strumento controlla i metadati obbligatori prima della creazione.",
- rules:["Epica dell'area funzionale nella release giusta.","Spike UX per ogni componente con UI, assegnata a UX; si salta se il design esiste già.","A design pronto: una storia BE per dati, API e regole; una FE Web e una FE Mobile. Due storie BE se ci sono due lavori distinti.","Firmware e librerie: un ticket per quel team, collegato come bloccante.","Tracciabilità: ogni ticket è collegato al requisito d'origine e ai fratelli.","Metadati obbligatori: epica, label di release, label di tipo lavoro, campi custom obbligatori di Jira, prefisso (1.4). Componente, fixVersion e assegnatario sono facoltativi: si impostano quando esistono in Jira.","Ticket in inglese con la stessa struttura; «Points to clarify» rende visibili le decisioni di PO e cliente."],
+ goal:"Claude scompone ogni requisito della release secondo le regole (UX Story, storie BE/FE, ticket FW, collegamenti) e scrive i ticket in inglese con i modelli. Lo strumento controlla i metadati obbligatori prima della creazione.",
+ rules:["Epica dell'area funzionale nella release giusta.","Una UX Story per ogni componente con UI, assegnata a UX; si salta se il design esiste già.","A design pronto: una storia BE per dati, API e regole; una FE Web e una FE Mobile. Due storie BE se ci sono due lavori distinti.","Firmware e librerie: un ticket per quel team, collegato come bloccante.","Tracciabilità: ogni ticket è collegato al requisito d'origine e ai fratelli.","Metadati obbligatori: epica, label di release, label di tipo lavoro, campi custom obbligatori di Jira, prefisso (1.4). Componente e assegnatario sono facoltativi: si impostano quando esistono in Jira.","Ticket in inglese con la stessa struttura; «Points to clarify» rende visibili le decisioni di PO e cliente."],
  checks:()=>{const ts=ticketList();const errs=ts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;
   return[{t:"Ticket generati per i requisiti",ok:ts.length>0},{t:"Nessun ticket con errori di metadati",ok:ts.length>0&&errs===0}]},
  view(){const k=K(),rs=reqList(),ts=ticketList();const rels=k.releases.map(r=>r.name);if(!T.rel||!rels.includes(T.rel)&&T.rel!=="*")T.rel=rels[0]||"*";
@@ -569,7 +623,7 @@ STEPS.push({id:"backlog",phase:"Creazione",short:"Backlog",sub:"Scomposizione e 
  ask:["Controlla se mancano ticket corrispondenti su altri componenti","Quali ticket hanno punti da chiarire per il cliente?"]});
 const nReq=n=>n===1?"1 requisito":n+" requisiti";
 function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.release===T.rel),todo=inRel.filter(r=>!ts.some(t=>t.req===r.code)),done=inRel.length-todo.length;
-  let h=`<div class="card"><div class="toolbar" style="margin:0"><label class="f" style="min-width:180px">Release da scomporre<select id="relPick">${[["*","Tutte le release"],...rels.map(r=>[r,r])].map(([v,l])=>`<option value="${esc(v)}" ${v===T.rel?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
+  let h=`<div class="card"><div class="toolbar" style="margin:0"><label class="f" style="min-width:200px">Release (= Fase) da scomporre<select id="relPick">${[["*","Tutte le release"],...rels.map(r=>[r,r])].map(([v,l])=>`<option value="${esc(v)}" ${v===T.rel?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
    ${AIB("genTickets",!todo.length?"Tutti i requisiti hanno ticket":done?`Scomponi ${nReq(todo.length)} senza ticket`:`Genera ticket per ${nReq(todo.length)}`,{cls:todo.length?"primary":"",dis:!todo.length||!k.epics.length})}</div>
    <p class="small muted" style="margin:8px 0 0">${!k.epics.length?"Servono prima le epiche nel kit (passo 4). ":""}${todo.length&&done?`${done===1?"1 requisito ha":done+" requisiti hanno"} già i ticket e non ${done===1?"viene toccato":"vengono toccati"}: Claude scompone solo ${todo.length===1?"quello che non ne ha":"i "+todo.length+" che non ne hanno"}. `:!todo.length&&inRel.length?`${inRel.length===1?"L'unico requisito ha":"Tutti i "+inRel.length+" requisiti hanno"} già i ticket. Per rifare quelli di un requisito usa «Rigenera» sulla sua riga. `:""}Claude scrive i ticket in inglese con i modelli del kit, uno o più per ogni requisito.</p>
    ${T.prog.genTickets?progBlock("genTickets"):T.genLog?`<div class="log" style="margin-top:10px">${esc(T.genLog)}</div>`:""}</div>`;
@@ -592,7 +646,7 @@ function ticketForm(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked
  ${t.err?`<div class="msg err">${esc(t.err)}</div>`:""}
  ${(e.length||w.length)&&!locked?`<div class="issues">${e.map(x=>`<span class="pill err">${esc(x)}</span>`).join("")}${w.map(x=>`<span class="pill warn">${esc(x)}</span>`).join("")}</div>`:""}
  <div class="grid">${F("Tipo",sel(b+"type",t.type,TYPES,{empty:false}))}${F("Area (prefisso)",sel(b+"area",t.area,Object.entries(AREAS).map(([k2,a])=>[k2,a.prefix+" "+a.label]),{empty:false}))}
-  ${F("Epica",sel(b+"epic",t.epic,k.epics.map(x=>x.name),{empty:"Scegli…"}))}${F("Release",sel(b+"release",t.release,k.releases.map(x=>x.name),{empty:"Scegli…"}))}
+  ${F("Epica",sel(b+"epic",t.epic,k.epics.map(x=>x.name),{empty:"Scegli…"}))}${F("Release (= Fase)",sel(b+"release",t.release,k.releases.map(x=>x.name),{empty:"Scegli…"}))}
   ${F("Tipo di lavoro",sel(b+"work",t.work,WORK,{empty:"Scegli…"}))}${F("Altre label",bind(b+"labels",(t.labels||[]).join(", "),{list:1,ph:"Android, iOS, Manual_Test…"}))}
   ${F("Titolo (in inglese, senza prefisso)",bind(b+"title",String(t.title||"").replace(/^\s*\[[^\]]+\]\s*/,"")),"wide")}
   ${F("Descrizione (modello "+esc(t.type)+")",bind(b+"desc",t.desc,{area:1,rows:14,code:1}),"wide")}
@@ -653,14 +707,14 @@ function assumptionsAll(pl){const k=K(),out=[];
   pl.ready.forEach(t=>(t.assumptions||[]).forEach(a=>out.push(`${t.ref}: ${a}`)));return out}
 STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e conferma",title:"Crea il backlog su Jira",
  goal:"Prima rileggi lo stato reale di Jira, poi conferma le ipotesi. Lo strumento crea le epiche e i ticket, li collega con le chiavi reali e rilegge ogni ticket per verificare che i campi siano stati salvati.",
- rules:["Leggere lo stato del tracker prima di scrivere: versioni ed epiche cambiano nome, ticket vengono cancellati da altri.","Cercare ticket simili o già esistenti, per non duplicare.","Fermarsi prima di azioni irreversibili o costose: la creazione parte solo dopo la tua conferma.","Creare i collegamenti solo dopo, usando le chiavi reali restituite dal tracker.","Rileggere i ticket per controllare che i campi siano stati salvati.","Rispondere in breve: cosa è stato creato, quali scelte sono state fatte, cosa resta da decidere, cosa fare a mano."],
+ rules:["Leggere lo stato del tracker prima di scrivere: le epiche cambiano nome, ticket vengono cancellati da altri.","Cercare ticket simili o già esistenti, per non duplicare.","Fermarsi prima di azioni irreversibili o costose: la creazione parte solo dopo la tua conferma.","Creare i collegamenti solo dopo, usando le chiavi reali restituite dal tracker.","Rileggere i ticket per controllare che i campi siano stati salvati.","Rispondere in breve: cosa è stato creato, quali scelte sono state fatte, cosa resta da decidere, cosa fare a mano."],
  checks:()=>{const ts=ticketList(),c=ts.filter(t=>t.state==="created");const pend=ts.reduce((n,t)=>n+(t.links||[]).filter(l=>!(t.linksDone||[]).includes(l.type+":"+l.to)).length,0);
   return[{t:"Stato di Jira riletto prima di scrivere",ok:!!T.pre||c.length>0},{t:"Ipotesi lette e confermate",ok:T.ack||c.length>0},{t:"Tutti i ticket creati in Jira",ok:ts.length>0&&c.length===ts.length},{t:"Collegamenti creati con le chiavi reali",ok:c.length>0&&pend===0},{t:"Campi verificati rileggendo i ticket",ok:c.length>0&&c.every(t=>vOf(t)==="ok")}]},
  view(){const p=P(),pl=planOf(),ts=ticketList();
   if(!p.key)return`<div class="card warn">Collega prima il progetto Jira (passo 1).</div>`;
   const ck=T.pre?computeChecks(pl):[],errs=ck.filter(c=>c.lvl==="err"),warns=ck.filter(c=>c.lvl==="warn");
   const ico={ok:'<span class="pill ok">ok</span>',warn:'<span class="pill warn">attenzione</span>',err:'<span class="pill err">blocca</span>'};
-  let h=`<div class="card"><h2>1. Controllo prima della creazione</h2><p class="small muted" style="margin:0 0 10px">Rilegge Jira (tipi, campi obbligatori, versioni, ticket già presenti) e verifica che tutto sia a posto. Parte da solo all'apertura del passo.</p>
+  let h=`<div class="card"><h2>1. Controllo prima della creazione</h2><p class="small muted" style="margin:0 0 10px">Rilegge Jira (tipi, campi obbligatori, ticket già presenti) e verifica che tutto sia a posto. Parte da solo all'apertura del passo.</p>
    <div class="toolbar">${JB("preflight",T.pre?"Esegui di nuovo il controllo":"Esegui il controllo",{cls:T.pre?"":"primary"})}${T.pre?`<span class="small muted">Eseguito alle ${new Date(T.pre.at).toLocaleTimeString("it-IT")} · ${Object.keys(T.pre.existing).length} ticket già in Jira</span>`:""}</div>
    ${ck.length?`<div class="tw" style="margin-top:10px"><table><tbody>${ck.map(c=>`<tr><td style="width:1%;white-space:nowrap">${ico[c.lvl]}</td><td><b>${esc(c.t)}</b><div class="small muted" style="font-weight:400">${esc(c.d)}</div></td></tr>`).join("")}</tbody></table></div>
    <div class="msg ${errs.length?"err":warns.length?"warn":"ok"}" style="margin:10px 0 0">${errs.length?`${errs.length} controlli bloccano la creazione: risolvili prima di procedere.`:warns.length?`Puoi procedere: ${warns.length} avvisi non bloccano la creazione.`:"Tutto in ordine: puoi procedere."}</div>`:""}</div>`;
@@ -736,6 +790,8 @@ function bridgeSettings(){const custom=BS.bridgeUrl()!==BS.DEFAULT_BRIDGE;
    <div class="toolbar" style="margin-top:10px"><button class="primary" data-act="saveBridge">Salva e ricollega</button><button data-act="resetBridge">Ripristina l'indirizzo del Mac</button></div>`)}
 {const sid=ls.get("stepid:"+PID,""),ix=STEPS.findIndex(x=>x.id===sid);cur=ix>=0?ix:0}
 const A={};
+A.epicMoveRun=()=>run("epicMoveRun","Aggiornamento di Jira…",epicMoveRun,"kit");
+A.epicMoveSkip=()=>{T.epicMove=null;render()};
 A.decReset=()=>{T.dq={q:"",type:"*",src:"*"};render()};
 const rowOf=p=>p&&document.querySelector(`#main tr[data-k="${p.kind==="req"?"req":"t"}-${p.id}"]`);
 A.openRow=el=>{const kind=el.dataset.kind,id=el.dataset.id;if(T.panel?.kind===kind&&T.panel.id===id)return;T.panel={kind,id};render();rowOf(T.panel)?.scrollIntoView({block:"nearest"});$("#main .sp .sp-t")?.focus({preventScroll:true})};
@@ -818,22 +874,22 @@ async function readConfig(){const p=P();if(!p.key)return;const cloudId=p.cloudId
   const story=types.find(t=>t.name===K().types.Story)||types.find(t=>/^story$/i.test(t.name))||types.find(t=>!t.subtask&&t.level===0);
   let fields=[];if(story){const fm=await jira("getJiraIssueTypeMetaWithFields",{cloudId,projectIdOrKey:p.key,issueTypeId:story.id,requiredFieldsOnly:false,maxResults:100});fields=fm?.fields||[]}
   const fv=k=>fields.find(f=>(f.fieldId||f.key)===k);
-  const comps=(fv("components")?.allowedValues||[]).map(v=>v.name).filter(Boolean),vers=(fv("fixVersions")?.allowedValues||[]).map(v=>v.name).filter(Boolean);
+  const comps=(fv("components")?.allowedValues||[]).map(v=>v.name).filter(Boolean);
   const required=fields.filter(f=>f.required&&String(f.fieldId||f.key).startsWith("customfield_")).map(f=>({key:f.fieldId||f.key,name:f.name,allowed:(f.allowedValues||[]).map(v=>v.value||v.name).filter(Boolean)}));
   const sprint=fields.find(f=>String(f.schema?.custom||"").includes("gh-sprint")),sp=fields.find(f=>/story point/i.test(f.name||""));
-  saveMeta("jira",{key:p.key,readAt:Date.now(),types:types.filter(t=>!t.subtask).map(t=>({id:t.id,name:t.name,level:t.level})),links,components:comps,versions:vers,required,sprintField:sprint?.fieldId||sprint?.key||"",spField:sp?.fieldId||sp?.key||"",storyTypeId:story?.id||""});
-  editKit(k=>{const names=types.filter(t=>!t.subtask).map(t=>t.name);const ALT={Story:["Story","Task"],Spike:["Spike","Task","Story"],Task:["Task","Story"],Bug:["Bug","Task","Story"],Epic:["Epic"]};
+  saveMeta("jira",{key:p.key,readAt:Date.now(),types:types.filter(t=>!t.subtask).map(t=>({id:t.id,name:t.name,level:t.level})),links,components:comps,required,sprintField:sprint?.fieldId||sprint?.key||"",spField:sp?.fieldId||sp?.key||"",storyTypeId:story?.id||""});
+  editKit(k=>{const names=types.filter(t=>!t.subtask).map(t=>t.name);const ALT={Story:["Story","Task"],"UX Story":["UX Story","Story","Task"],Task:["Task","Story"],Bug:["Bug","Task","Story"],Epic:["Epic"]};
     Object.keys(k.types).forEach(t=>{const cand=[k.types[t],...(ALT[t]||[t])];let m=null;for(const c of cand){m=names.find(n=>n.toLowerCase()===String(c).toLowerCase());if(m)break}if(m)k.types[t]=m});
     if(!links.some(l=>l.name===k.links.relates))k.links.relates=links.find(l=>/relat/i.test(l.name))?.name||"";
     if(!links.some(l=>l.name===k.links.blocks))k.links.blocks=links.find(l=>/block/i.test(l.name))?.name||""});
   if(K().hier?.enabled)autoStructure();
-  const kk=K(),need=[...new Set([kk.types.Story,kk.types.Task,kk.types.Bug,kk.types.Spike,kk.types.Epic,kk.hier?.enabled?kk.hier.projectType:"",kk.hier?.enabled?kk.hier.phaseType:""].filter(Boolean))];
+  const kk=K(),need=[...new Set([kk.types.Story,kk.types.Task,kk.types.Bug,kk.types["UX Story"],kk.types.Epic,kk.hier?.enabled?kk.hier.projectType:"",kk.hier?.enabled?kk.hier.phaseType:""].filter(Boolean))];
   const reqByType={};for(const name of need){const ty=types.find(t=>t.name===name&&!t.subtask);if(!ty)continue;
     try{const fm=await jira("getJiraIssueTypeMetaWithFields",{cloudId,projectIdOrKey:p.key,issueTypeId:ty.id,requiredFieldsOnly:false,maxResults:100});
       reqByType[name]=(fm?.fields||[]).filter(f=>f.required&&!["project","issuetype","summary","reporter","description"].includes(f.fieldId||f.key)).map(f=>({key:f.fieldId||f.key,name:f.name}))}
     catch(e){if(LIFECYCLE.includes(e?.code))throw e}}
   saveMeta("jira",{...S.jira,reqByType});
-  return{comps,vers}}
+  return{comps}}
 A.readConfig=()=>run("readConfig","Lettura…",async()=>{await readConfig();setMsg(STEPS[cur].id,"ok","Configurazione letta da Jira e salvata nel kit (K1).")});
 
 /* passo 2 */
@@ -900,7 +956,7 @@ A.delQ=el=>del("questions",el.dataset.id);
 A.copyQuestions=el=>{const t=arr("questions").filter(x=>!x.answer?.trim()&&!x.hypothesis?.trim()).map((q,i)=>`${i+1}. ${q.q}`).join("\n");copyText(t,el)};
 
 /* passo 5 */
-A.addRelease=()=>editKit(k=>{const n=k.releases.length+1;k.releases.push({name:"Release "+n,fixVersion:"",label:"Release"+n,date:""})});
+A.addRelease=()=>editKit(k=>{const n=k.releases.length+1;k.releases.push({name:"Release "+n,label:"Release"+n,date:""})});
 A.delRelease=el=>editKit(k=>k.releases.splice(+el.dataset.i,1));
 A.addPhase=()=>editKit(k=>{(k.hier.phases||(k.hier.phases=[])).push({id:uid(),name:"Nuova fase",key:""})});
 A.delPhase=el=>editKit(k=>{const f=k.hier.phases[+el.dataset.i];k.hier.phases.splice(+el.dataset.i,1);k.epics.forEach(e=>{if(f&&e.phase===f.id)e.phase=""})});
@@ -919,33 +975,33 @@ A.addEpic=()=>editKit(k=>k.epics.push({name:"Nuova epica",release:"",key:""}));
 A.addPolish=()=>editKit(k=>k.epics.push({name:"Cross-cutting polish",release:"",key:""}));
 A.delEpic=el=>editKit(k=>k.epics.splice(+el.dataset.i,1));
 A.proposeKit=()=>run("proposeKit","Claude sta pensando…",async()=>{const ans=arr("questions").filter(q=>q.answer||q.hypothesis).map(q=>`- ${q.q} → ${q.answer||q.hypothesis}`).join("\n");
-  let out;try{out=await ask(`${RULES}\n\nCOMPITO: proponi il kit di progetto (K2, K3, K7, K8, K9) a partire da requisiti, risposte e documenti. Epiche: una per area funzionale (es. Autenticazione, Account, Notifiche, Integrazione dispositivi, Configurazione) più "Cross-cutting polish". Release: usa i nomi presenti nei requisiti; fixVersion in forma 1.0.0; label Release1, Release2…; data solo se indicata (YYYY-MM-DD), altrimenti vuota. Elenca in "assumptions" ogni scelta non presente nei documenti.\nKit attuale: ${kitBrief()}\nRisposte e ipotesi:\n${ans||"(nessuna)"}\nRequisiti:\n${reqList().map(reqLine).join("\n").slice(0,50000)}\nDocumenti:${ctxDocs(40000)}\n\nRispondi SOLO con JSON: {"productName":"","releases":[{"name":"","fixVersion":"","label":"","date":""}],"epics":[{"name":"","release":""}],"glossary":"","constraints":"","envs":"","lang":{"po":"","tickets":"","client":""},"assumptions":[""]}`)}catch(e){throw{ai:1,e}}
+  let out;try{out=await ask(`${RULES}\n\nCOMPITO: proponi il kit di progetto (K2, K3, K7, K8, K9) a partire da requisiti, risposte e documenti. Epiche: una per area funzionale (es. Autenticazione, Account, Notifiche, Integrazione dispositivi, Configurazione) più "Cross-cutting polish". Release: usa i nomi presenti nei requisiti; label Release1, Release2…; data solo se indicata (YYYY-MM-DD), altrimenti vuota. Elenca in "assumptions" ogni scelta non presente nei documenti.\nKit attuale: ${kitBrief()}\nRisposte e ipotesi:\n${ans||"(nessuna)"}\nRequisiti:\n${reqList().map(reqLine).join("\n").slice(0,50000)}\nDocumenti:${ctxDocs(40000)}\n\nRispondi SOLO con JSON: {"productName":"","releases":[{"name":"","label":"","date":""}],"epics":[{"name":"","release":""}],"glossary":"","constraints":"","envs":"","lang":{"po":"","tickets":"","client":""},"assumptions":[""]}`)}catch(e){throw{ai:1,e}}
   editKit(k=>{if(!k.productName&&out.productName)k.productName=out.productName;
-   if(!k.releases.length)k.releases=(out.releases||[]).filter(r=>r.name).map(r=>({name:r.name,fixVersion:r.fixVersion||"",label:r.label||"",date:/^\d{4}-\d{2}-\d{2}$/.test(r.date||"")?r.date:""}));
+   if(!k.releases.length)k.releases=(out.releases||[]).filter(r=>r.name).map(r=>({name:r.name,label:r.label||"",date:/^\d{4}-\d{2}-\d{2}$/.test(r.date||"")?r.date:""}));
    if(!k.epics.length)k.epics=(out.epics||[]).filter(e=>e.name).map(e=>({name:e.name,release:e.release||"",key:""}));
    ["glossary","constraints","envs"].forEach(f=>{if(!k[f]&&out[f])k[f]=out[f]});});
   setMsg("kit","warn","",`<b>Kit proposto da Claude.</b> Ho compilato solo i campi vuoti. Ipotesi da verificare:<ul>${(out.assumptions||[]).map(a=>`<li>${esc(a)}</li>`).join("")||"<li>nessuna dichiarata</li>"}</ul>`)});
 
 /* passo 6 */
-function ticketFromAI(x,ref,req){const area=AREAS[x.area]?x.area:"be";const type=TYPES.includes(x.type)?x.type:"Story";
+function ticketFromAI(x,ref,req){const area=AREAS[x.area]?x.area:"be";const type=TYPES.includes(x.type)?x.type:/spike/i.test(x.type||"")?"UX Story":"Story";
   return{ref,req:req?.code||x.req||"",type,area,title:String(x.title||"").replace(/^\s*\[[^\]]+\]\s*/,"").trim(),epic:K().epics.some(e=>e.name===x.epic)?x.epic:"",release:req?.release||"",work:WORK.includes(x.work)?x.work:AREAS[area].work,
    labels:(x.labels||[]).map(canonLabel).filter(l=>!WORK.includes(l)&&!/^Release\d+$/.test(l)),desc:String(x.description||TEMPLATES[type]),links:[],assumptions:(x.assumptions||[]).map(String),state:"draft",order:Date.now()}}
 async function genFor(reqs){const k=K();const prompt=`${RULES}
 
 COMPITO: scomponi i requisiti seguenti in ticket Jira applicando le regole di scomposizione (1.2) e di scelta del tipo (1.3).
-- Requisito con interfaccia e design NON pronto: una Spike per ogni piattaforma con UI (area ux-web, ux-mobile oppure ux-both se identica), più la Story BE se servono dati o API. Le storie FE si fanno a design pronto.
+- Requisito con interfaccia e design NON pronto: una UX Story per ogni piattaforma con UI (area ux-web, ux-mobile oppure ux-both se identica), più la Story BE se servono dati o API. Le storie FE si fanno a design pronto.
 - Requisito con design pronto: Story BE (area be), Story FE Web (web), Story FE Mobile (mobile) secondo i componenti.
 - Firmware o librerie nuove: Task o Story in area fw che BLOCCA i ticket che la attendono.
-- Collega i fratelli: "relates" tra ticket dello stesso requisito, "blocks" quando uno attende l'altro (la BE che fornisce le API blocca le FE; la spike UX blocca le FE).
+- Collega i fratelli: "relates" tra ticket dello stesso requisito, "blocks" quando uno attende l'altro (la BE che fornisce le API blocca le FE; la UX Story blocca le FE).
 - Titolo in inglese, breve, SENZA prefisso (il prefisso viene aggiunto dall'area).
 - Epica: SOLO uno dei nomi elencati; se nessuna è adatta, lascia vuoto e spiegalo in assumptions.
-- work: Back-End per area be, UI o Logic per FE e FW, UX-UI per le spike UX.
+- work: Back-End per area be, UI o Logic per FE e FW, UX-UI per le UX Story.
 - labels: solo extra canoniche (Android, iOS, Manual_Test, Automation_Test, NeedsDesignClarification) quando servono.
 - description: in ${k.lang.tickets||"English"}, in Markdown, con ESATTAMENTE le sezioni del modello del tipo:
 STORY:
 ${TEMPLATES.Story}
-SPIKE:
-${TEMPLATES.Spike}
+UX STORY:
+${TEMPLATES["UX Story"]}
 TASK:
 ${TEMPLATES.Task}
   Nella sezione References cita l'ID del requisito d'origine. In "Points to clarify" metti le decisioni che spettano al PO o al cliente. Non citare chiavi Jira: non esistono ancora.
@@ -958,7 +1014,7 @@ Vincoli già decisi: ${k.constraints||"-"}
 REQUISITI:
 ${reqs.map(reqLine).join("\n")}
 
-Rispondi SOLO con JSON: {"tickets":[{"tmp":"a1","req":"ID requisito","type":"Story|Spike|Task|Bug","area":"be|web|mobile|fw|ux-web|ux-mobile|ux-both","title":"","epic":"","work":"","labels":[],"description":"","links":[{"type":"blocks|relates","to":"tmp di un altro ticket di questa risposta"}],"assumptions":[""]}]}`;
+Rispondi SOLO con JSON: {"tickets":[{"tmp":"a1","req":"ID requisito","type":"Story|UX Story|Task|Bug","area":"be|web|mobile|fw|ux-web|ux-mobile|ux-both","title":"","epic":"","work":"","labels":[],"description":"","links":[{"type":"blocks|relates","to":"tmp di un altro ticket di questa risposta"}],"assumptions":[""]}]}`;
   let out;try{out=await ask(prompt,{onText:({text})=>{const b=$('[data-act="genTickets"]');if(b)b.textContent=`Claude scrive… ${text.length.toLocaleString("it-IT")} caratteri`}})}catch(e){throw{ai:1,e}}
   const list=out?.tickets||[];let n=nextRef();const map={};const made=[];
   list.forEach(x=>{const req=reqs.find(r=>r.code===x.req)||reqs[0];const ref=fmtRef(n++);if(x.tmp)map[x.tmp]=ref;made.push([x,ticketFromAI(x,ref,req)])});
@@ -972,7 +1028,7 @@ A.regenReq=el=>{const code=el.dataset.code;arm("regen"+code,el,()=>run("regenReq
 A.addTicket=()=>{const id=uid(),k=K();put("tickets",id,{ref:fmtRef(nextRef()),req:"",type:"Story",area:"be",title:"",epic:"",release:k.releases[0]?.name||"",work:"Back-End",labels:[],desc:TEMPLATES.Story,links:[],assumptions:[],state:"draft",order:Date.now()});openSet.add("t-"+id);T.rel="*"};
 A.delTicket=el=>arm("t"+el.dataset.id,el,()=>del("tickets",el.dataset.id));
 A.applyTemplate=el=>arm("tpl"+el.dataset.id,el,()=>{const t=S.tickets[el.dataset.id];put("tickets",el.dataset.id,{...t,desc:TEMPLATES[t.type]})});
-A.exportTickets=()=>{const k=K();exportCsv("backlog.csv",["Ref","Requisito","Tipo","Titolo","Epica","Fix Version","Label","Collegamenti","Chiave Jira","Descrizione"],ticketList().map(t=>[t.ref,t.req,k.types[t.type]||t.type,fullTitle(t),t.epic,relOf(t.release)?.fixVersion||"",labelsOf(t).join(" "),linksText(t),t.key||"",t.desc]))};
+A.exportTickets=()=>{const k=K();exportCsv("backlog.csv",["Ref","Requisito","Tipo","Titolo","Epica","Label","Collegamenti","Chiave Jira","Descrizione"],ticketList().map(t=>[t.ref,t.req,k.types[t.type]||t.type,fullTitle(t),t.epic,labelsOf(t).join(" "),linksText(t),t.key||"",t.desc]))};
 
 /* passo 7 */
 let logTimer=null;
@@ -987,7 +1043,6 @@ A.preflight=()=>run("preflight","Lettura di Jira…",async()=>{await readConfig(
   editKit(k=>{k.epics.forEach(e=>{if(!e.key){const x=same(e.name,k.types.Epic);if(x)e.key=x}});
     if(k.hier?.enabled){(k.hier.phases||[]).forEach(f=>{if(!f.key){const x=same(f.name,k.hier.phaseType);if(x)f.key=x}});if(!k.hier.project.key){const x=same(k.hier.project.name,k.hier.projectType);if(x)k.hier.project.key=x}}});setMsg("create","info","Stato di Jira riletto. Controlla l'anteprima e le ipotesi.")});
 function fieldsFor(t){const k=K(),j=S.jira,r=relOf(t.release),f={};
-  if(r?.fixVersion&&(j.versions||[]).includes(r.fixVersion))f.fixVersions=[{name:r.fixVersion}];
   f.labels=labelsOf(t);const ep=k.epics.find(e=>e.name===t.epic);if(ep?.key)f.parent={key:ep.key};
   (j.required||[]).forEach(x=>{const v=k.custom?.[x.key];if(v)f[x.key]=x.allowed?.length?{value:v}:v});return f}
 async function createOne(t){const p=P(),k=K();
@@ -1014,7 +1069,7 @@ async function createEpics(){const pl=planOf();const H0=K().hier;
       try{const key=await createNode(H0.phaseType,f.name,`## Context\nPhase "${f.name}" of the project.`,pk);editKit(k=>{const x=k.hier.phases.find(y=>y.id===f.id);if(x)x.key=key});logLine(`Fase «${f.name}» → ${key} (sotto ${pk})`)}catch(err){if(!handle(err,`Fase «${f.name}»`))return false}}}
   for(const e of pl.epics){if(T.stop)return false;const rel=K().releases.find(r=>r.name===e.release);let parent="";
     if(K().hier?.enabled){const ph=K().hier.phases.find(f=>f.id===e.phase);parent=ph?.key||"";if(!parent){logLine(`Epica «${e.name}» saltata: la sua Fase non esiste ancora in Jira.`);continue}}
-    try{const key=await createNode(K().types.Epic||"Epic",e.name,`## Context\nEpic for the functional area "${e.name}"${e.release?` (${e.release})`:""}.`,parent,{labels:rel?.label?[rel.label]:[],...(rel?.fixVersion&&(S.jira.versions||[]).includes(rel.fixVersion)?{fixVersions:[{name:rel.fixVersion}]}:{})});editKit(k=>{const x=k.epics.find(y=>y.name===e.name);if(x){x.key=key;if(parent)x.linkedTo=parent}});logLine(`Epica «${e.name}» → ${key}${parent?` (sotto ${parent})`:""}`)}
+    try{const key=await createNode(K().types.Epic||"Epic",e.name,`## Context\nEpic for the functional area "${e.name}"${e.release?` (${e.release})`:""}.`,parent,{labels:rel?.label?[rel.label]:[]});editKit(k=>{const x=k.epics.find(y=>y.name===e.name);if(x){x.key=key;if(parent)x.linkedTo=parent}});logLine(`Epica «${e.name}» → ${key}${parent?` (sotto ${parent})`:""}`)}
     catch(err){if(!handle(err,`Epica «${e.name}»`))return false}}
   for(const e of planOf().struct.link){if(T.stop)return false;const ph=K().hier.phases.find(f=>f.id===e.phase);
     if(!ph?.key){logLine(`Epica «${e.name}» (${e.key}) non collegata: la sua Fase non esiste ancora in Jira.`);continue}
@@ -1044,7 +1099,7 @@ async function fetchIssues(keys,fields){const p=P();const map={},missing=new Set
       await Promise.all([worker(),worker(),worker(),worker()])}}
   return{map,missing}}
 async function verify(){const p=P(),k=K(),c=ticketList().filter(t=>t.state==="created"&&t.key);let ok=0;
-  for(let i=0;i<c.length;i+=40){const part=c.slice(i,i+40);const {map:iss}=await fetchIssues(part.map(t=>t.key),["summary","labels","components","fixVersions","parent","assignee"]);
+  for(let i=0;i<c.length;i+=40){const part=c.slice(i,i+40);const {map:iss}=await fetchIssues(part.map(t=>t.key),["summary","labels","components","parent","assignee"]);
    for(const t of part){const x=iss[t.key];let v,note="";if(!x)v="non trovato in Jira";else{const f=x.fields||{},miss=[],soft=[],exp=fieldsFor(t);
      (exp.labels||[]).forEach(l=>{if(!(f.labels||[]).includes(l))miss.push("label "+l)});     if(exp.parent&&f.parent?.key!==exp.parent.key)miss.push("epica");
      if(!exp.parent)miss.push("epica (non creata)");
@@ -1136,7 +1191,8 @@ document.addEventListener("change",e=>{const el=e.target;
   if(el.dataset.links){const id=el.dataset.links,t=S.tickets[id];const links=el.value.split(/[,;]+/).map(s=>s.trim()).filter(Boolean).map(s=>{const m=s.match(/^(blocks|blocca|relates|correlato)?\s*:?\s*(T-\d+)$/i);return m?{type:/^bloc/i.test(m[1]||"")?"blocks":"relates",to:m[2].toUpperCase()}:null}).filter(Boolean);put("tickets",id,{...t,links});return}
   if(el.dataset.multi){const[c,id,f]=el.dataset.multi.split(":");const doc=clone(S[c][id]);const set=new Set(doc[f]||[]);el.checked?set.add(el.value):set.delete(el.value);doc[f]=REQ_COMPS.filter(x=>set.has(x));put(c,id,doc);return}
   if(el.dataset.bind){const[c,id,...rest]=el.dataset.bind.split(":");const f=rest.join(":");let v=el.type==="checkbox"?el.checked:el.dataset.type==="list"?el.value.split(",").map(s=>s.trim()).filter(Boolean):el.value;
-    if(c==="meta"){const doc=clone(S[id])||{};setPath(doc,f,v);let old=null;if(id==="kit"&&/^releases\.\d+\.name$/.test(f)){old=getPath(S.kit,f);if(old&&old!==v)doc.epics.forEach(x=>{if(x.release===old)x.release=v});else old=null}
+    if(c==="meta"&&id==="kit"&&/^epics\.\d+\.release$/.test(f)){epicRelease(+f.split(".")[1],v);return}
+    if(c==="meta"){const doc=clone(S[id])||{};setPath(doc,f,v);let old=null;if(id==="kit"&&/^releases\.\d+\.name$/.test(f)){old=getPath(S.kit,f);if(old&&old!==v){doc.epics.forEach(x=>{if(x.release===old)x.release=v});(doc.hier?.phases||[]).forEach(x=>{if(x.name===old)x.name=v})}else old=null}if(id==="kit")syncPhases(doc);
       saveMeta(id,doc);if(old){arr("reqs").forEach(r=>{if(r.release===old){const{id:rid,...d}=r;put("reqs",rid,{...d,release:v})}});arr("tickets").forEach(t=>{if(t.release===old){const{id:tid,...d}=t;put("tickets",tid,{...d,release:v})}})}}
     else{const doc=clone(S[c][id]);if(!doc)return;setPath(doc,f,v);put(c,id,doc)}}});
 document.addEventListener("dragover",e=>{const d=e.target.closest?.("#drop");if(d){e.preventDefault();d.classList.add("over")}});
@@ -1431,10 +1487,10 @@ $("#main").innerHTML='<p class="empty" style="padding-top:10vh">Caricamento…</
   SERVER_PROJECT=st.project;document.title=st.project.name+" · Trama";
   DB=BS.createDB(PID,st);caps.db="ok";MCP=BS.mcp;caps.mcp="ok";LIM=await BS.sample.limits();DL=BS.downloads;
   await checkBridge();setInterval(()=>{if(!document.hidden)checkBridge()},10000);
-  DB.collection("meta").onSnapshot(s=>{s.docs.forEach(d=>{if(d.exists)S[d.id]=d.data()});S.kit={...defaultKit(),...(S.kit||{}),team:{...defaultKit().team,...(S.kit?.team||{})}};renderChat();scheduleRender()});
-  // alla prima lettura di domande e registro si riallineano le decisioni nate dalle domande (anche quelle scritte da versioni precedenti)
   const LOADED=new Set();
-  COLS.forEach(c=>DB.collection(c).onSnapshot(s=>{const o={};s.docs.forEach(d=>{if(d.exists)o[d.id]=d.data()});S[c]=o;if(!LOADED.has(c)){LOADED.add(c);if(LOADED.has("questions")&&LOADED.has("decisions")&&!LOADED.has("qsync")){LOADED.add("qsync");queueMicrotask(syncQDecisions)}}scheduleRender()}));
+  DB.collection("meta").onSnapshot(s=>{if(!LOADED.has("meta")){LOADED.add("meta");queueMicrotask(()=>migrateSpike(LOADED))}s.docs.forEach(d=>{if(d.exists)S[d.id]=d.data()});S.kit={...defaultKit(),...(S.kit||{}),team:{...defaultKit().team,...(S.kit?.team||{})}};renderChat();scheduleRender()});
+  // alla prima lettura di domande e registro si riallineano le decisioni nate dalle domande (anche quelle scritte da versioni precedenti)
+  COLS.forEach(c=>DB.collection(c).onSnapshot(s=>{const o={};s.docs.forEach(d=>{if(d.exists)o[d.id]=d.data()});S[c]=o;if(!LOADED.has(c)){LOADED.add(c);if(c==="tickets")queueMicrotask(()=>migrateSpike(LOADED));if(LOADED.has("questions")&&LOADED.has("decisions")&&!LOADED.has("qsync")){LOADED.add("qsync");queueMicrotask(syncQDecisions)}}scheduleRender()}));
   setTimeout(()=>{const p=P();if(p.cloudId!==SERVER_PROJECT.cloudId||p.siteUrl!==SERVER_PROJECT.siteUrl)editProject(q=>{q.cloudId=SERVER_PROJECT.cloudId;q.siteUrl=SERVER_PROJECT.siteUrl;if(!q.name)q.name=SERVER_PROJECT.name})},60);
   render();renderChat();if(STEPS[cur].id==="create")A.go({dataset:{i:cur}})})();
 </script>

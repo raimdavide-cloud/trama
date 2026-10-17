@@ -55,7 +55,7 @@ createServer(async (req, res) => {
   const p = url.pathname;
   try {
     // comandi del simulatore, usati dai test
-    if (p === "/__sim/state") return send(res, 200, { issues: [...sim.issues.values()].map((i) => ({ key: i.key, type: i.type, summary: i.summary, parent: i.parent || null })), links: sim.links || [], calls: sim.calls });
+    if (p === "/__sim/state") return send(res, 200, { issues: [...sim.issues.values()].map((i) => ({ key: i.key, type: i.type, summary: i.summary, parent: i.parent || null, labels: i.fields?.labels || [], fixVersions: (i.fields?.fixVersions || []).map((v) => v.name) })), links: sim.links || [], calls: sim.calls });
     if (p === "/__sim/reset") { sim.reset(); sim.links = []; resetStore(); return send(res, 200, { ok: true }); }
     if (p === "/__sim/fault") { const b = JSON.parse(raw); sim.faults[b.kind][b.type] = b.times; return send(res, 200, sim.faults); }
 
