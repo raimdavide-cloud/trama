@@ -54,7 +54,8 @@ function checkParent(childType, parentKey) {
 function runJql(jql, body) {
   const [where] = jql.split(/\s+ORDER BY\s+/i);
   let list = [...sim.issues.values()];
-  for (const clause of where.split(/\s+AND\s+/i).map((c) => c.trim()).filter(Boolean)) {
+  // AND separa le clausole solo fuori dalle virgolette, come in Jira: summary ~ "login and password" è una clausola sola
+  for (const clause of where.split(/\s+AND\s+(?=(?:[^"]*"[^"]*")*[^"]*$)/i).map((c) => c.trim()).filter(Boolean)) {
     let m;
     if ((m = clause.match(/^project\s*=\s*"?([A-Za-z0-9_]+)"?$/i))) list = list.filter(() => m[1] === sim.projectKey);
     else if ((m = clause.match(/^issuetype\s*=\s*"(.+)"$/i))) list = list.filter((i) => i.type === m[1]);

@@ -89,7 +89,13 @@ Sintassi di tutto il JavaScript (anche dentro le pagine), JSON di configurazione
 npm test
 ```
 
-Test unitari del router e test end-to-end dello studio con Playwright contro un **simulatore** (`tests/sim/server.mjs`): API in memoria e Jira finto che rispetta i livelli Project › Fase › Epica › ticket. Non serve né il database né un account Atlassian. In locale i test usano Chrome già installato.
+Test end-to-end dello studio con Playwright contro un **simulatore** (`tests/sim/server.mjs`): API in memoria e Jira finto che rispetta i livelli Project › Fase › Epica › ticket. Non serve né il database né un account Atlassian. In locale i test usano Chrome già installato.
+
+- **Unitari** (`tests/unit`): router; sessioni, cookie, stessa origine e cifratura dei token; API dei dati con un database finto (chi vede, scrive ed elimina cosa, limiti e validazioni); operazioni Jira contro il Jira finto (campi ammessi, chiavi e label non valide, errori temporanei, nuovo accesso).
+- **End-to-end** (`tests/e2e`): percorso principale (`studio.spec.mjs`), flussi a mano, Domande, Kit, Backlog, esportazioni, resilienza della creazione su Jira con errori simulati, chat e collegamenti delle pagine (`flussi.spec.mjs`), accessibilità WCAG 2.2 AA con axe anche in modalità scura (`accessibilita.spec.mjs`). Gli aiuti comuni stanno in `aiuti.mjs`.
+- **Visivi**, solo in locale (`npm run test:visual`): pagine, passi dello studio e stati come pannelli, studio nuovo, esito della creazione, finestra media, modalità scura, menu e chat. Le immagini di riferimento stanno in `tests/visual/riferimenti`; dopo un cambiamento voluto: `npm run test:visual -- --update-snapshots`, poi guardale prima del commit.
+
+Il simulatore accetta guasti su richiesta (`POST /__sim/fault`), per provare cosa succede quando Jira risponde con un errore o perde la risposta.
 
 Per guardare il simulatore nel browser: `npm run sim`, poi http://127.0.0.1:8899/studio?p=progetto-prova.
 

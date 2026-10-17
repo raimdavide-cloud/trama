@@ -49,3 +49,47 @@ test("accessibilità: ogni passo dello studio, pannello e Regole", async ({ page
   await page.locator("#capChips button").click();
   await audit(page, "pannello Collegamenti");
 });
+
+test("accessibilità: studio nuovo, pannelli, assegnazione rapida, menu e chat", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto(PROJECT);
+  await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
+  await page.locator("#stepList .st", { hasText: "Backlog" }).click();
+  await page.locator('#main tr[data-k^="t-"]').first().click();
+  await expect(page.locator(".sp")).toBeVisible();
+  await audit(page, "pannello di un ticket");
+  await page.keyboard.press("Escape");
+  await page.locator("#stepList .st", { hasText: "Requisiti" }).click();
+  await page.locator("[data-act=relQuick]").click();
+  await audit(page, "assegnazione rapida della release");
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => { for (const c of ["docs", "reqs"]) for (const k of Object.keys(S[c])) del(c, k); });
+  await expect(page.locator("#main details.sec.locked")).toHaveCount(2);
+  await audit(page, "studio nuovo con step bloccati");
+  await page.locator("#projBtn").click();
+  await audit(page, "menu del progetto");
+  await page.keyboard.press("Escape");
+  await page.locator("#chatFab").click();
+  await expect(page.locator("#chat")).toHaveClass(/open/);
+  await audit(page, "chat aperta");
+});
+
+test.describe("modalità scura", () => {
+  test.use({ colorScheme: "dark" });
+  for (const path of ["/", "/installazione", "/componenti"]) {
+    test(`accessibilità in modalità scura: pagina ${path}`, async ({ page }) => {
+      await page.goto(path);
+      await audit(page, `${path} (scuro)`);
+    });
+  }
+  test("accessibilità in modalità scura: passi dello studio", async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.goto(PROJECT);
+    await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
+    for (const name of ["Requisiti", "Kit di progetto", "Backlog", "Crea su Jira"]) {
+      await page.locator("#stepList .st", { hasText: name }).click();
+      if (name === "Crea su Jira") await expect(page.locator('#main details.sec[data-sec="create:controllo-prima-della-creazione"] .sec-go')).toHaveAttribute("aria-disabled", "false", { timeout: 20_000 });
+      await audit(page, `${name} (scuro)`);
+    }
+  });
+});

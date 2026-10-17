@@ -284,6 +284,7 @@ pre.prev{font:12.5px/1.5 var(--f-mono);background:var(--sunk);border-radius:8px;
 #chat .rz[data-r=sw]{left:0;bottom:0;width:24px;height:24px;cursor:nesw-resize}
 #chat .chat-h{cursor:grab;touch-action:none;user-select:none}
 #chat .chat-h button{cursor:pointer}
+#chat .chat-h button.link{min-height:24px;min-width:24px;padding:4px 6px} /* bersaglio di almeno 24 px (WCAG 2.2, 2.5.8) */
 body.chat-drag,body.chat-drag *{user-select:none!important;cursor:grabbing!important}
 #chatClose .m{display:none}
 .chat-h .chat-mark{display:inline-grid;vertical-align:-6px;width:26px;height:26px;margin-right:8px;border-radius:50%;background:var(--primary);place-items:center}
@@ -426,6 +427,7 @@ body.panel-open #chatFab{right:calc(min(580px,46vw) + 20px)}
 .sec.step.ready .sec-b button.primary:not(.sec-go){background:var(--surface);border-color:var(--line);color:var(--fg)}
 #recap{display:none}
 /* il riepilogo toglie spazio: le colonne fisse delle tabelle si stringono così il titolo resta leggibile */
+body.has-recap{--colk:.7} /* finestre medie: senza riepilogo ma con poco spazio per la tabella */
 @media(min-width:1300px){
   body.has-recap{--colk:.78}
   body.has-recap .body{grid-template-columns:232px minmax(0,1fr) 264px}

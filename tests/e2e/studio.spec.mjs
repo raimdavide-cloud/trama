@@ -1,41 +1,10 @@
 // Percorso principale dello studio sul progetto di prova (tests/fixtures/progetto-prova.json).
 import { test, expect } from "@playwright/test";
-
-const PROJECT = "/studio?p=progetto-prova";
+import { PROJECT, openStudio, goToStep, openSec, toAck, runCreate } from "./aiuti.mjs";
 
 test.beforeEach(async ({ request }) => {
   await request.get("/__sim/reset");
 });
-
-async function openStudio(page) {
-  await page.goto(PROJECT);
-  await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
-}
-const goToStep = (page, name) => page.locator("#stepList .st", { hasText: name }).click();
-async function openSec(page, title) {
-  const sec = page.locator("#main details.sec", { has: page.locator("summary .sec-t", { hasText: title }) });
-  if (!(await sec.evaluate((d) => d.open))) await sec.locator(":scope > summary").click();
-  return sec;
-}
-// Crea su Jira è uno stepper: dal controllo (parte da solo) si va avanti con «Continua» fino alle ipotesi
-async function toAck(page) {
-  const ctl = page.locator('#main details.sec[data-sec="create:controllo-prima-della-creazione"]');
-  await expect(ctl.locator(".sec-go")).toHaveAttribute("aria-disabled", "false", { timeout: 20_000 });
-  await openSec(page, "Controllo prima della creazione");
-  await ctl.locator(".sec-go").click();
-  await expect(page.locator('#main details.sec[data-sec="create:anteprima"]')).toHaveAttribute("open", "");
-  await page.locator('#main details.sec[data-sec="create:anteprima"] .sec-go').click();
-  await expect(page.locator("#ackBox")).toBeVisible();
-}
-async function runCreate(page) {
-  await openSec(page, "Ipotesi e scelte fatte al tuo posto");
-  await page.locator("#ackBox").check();
-  await page.locator('#main details.sec[data-sec="create:ipotesi-e-scelte-fatte-al-tuo-posto"] .sec-go').click();
-  const run = page.locator("[data-act=runCreate]");
-  await run.click(); // primo clic: chiede conferma
-  await expect(run).toContainText("Conferma");
-  await run.click();
-}
 
 test("la pagina dei progetti mostra le schede e le azioni nel menu", async ({ page }) => {
   await page.goto("/studio");
