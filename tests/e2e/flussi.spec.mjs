@@ -103,6 +103,9 @@ test("Backlog: un ticket a mano mostra cosa manca, si corregge nel pannello e si
   await epic.selectOption({ index: 1 });
   await expect(errs).toHaveCount(0); // «cosa manca» si aggiorna mentre si compila, senza uscire dal pannello
   expect(e0).toBeGreaterThan(0);
+  // esco dai campi: lo studio fa ora il ridisegno rimandato, così la conferma non scade durante un ridisegno lento (CI)
+  await panel.locator(".sp-t").click();
+  await expect(panel.locator('select[data-bind$=":epic"]')).toHaveValue(await epic.inputValue());
   const del = panel.locator("[data-act=delTicket]");
   await del.click();
   await expect(del).toHaveText("Conferma eliminazione");

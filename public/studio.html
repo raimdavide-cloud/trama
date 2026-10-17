@@ -997,7 +997,9 @@ function progFound(act,text,ix,n,added){const p=T.prog[act];if(!p)return;const i
   if(it.length===p.items.length)return;p.items=it;p.detail=`${n>1?`Documento ${ix+1} di ${n} · `:""}${it.length===1?"1 requisito trovato":it.length+" requisiti trovati"}${added?` · ${added} già aggiunti`:""}`;progPaint(act)}
 async function run(act,label,fn,step){busy[act]=label;scheduleRender();try{await fn()}catch(e){console.warn(e);setMsg(step||STEPS[cur].id,"err",jiraOrAi(e))}finally{delete busy[act];scheduleRender()}}
 function jiraOrAi(e){if(e?.ai)return aiMsg(e.e);if(e?.code&&["not_granted","sampling_disabled","rate_limited","prompt_too_large","invalid_json","refused","empty_completion","session_expired","no_ai","image_rejected","cancelled"].includes(e.code)&&!e.jira)return aiMsg(e);return e?.message&&!e.code?String(e.message):jiraMsg(e)}
-function arm(key,el,fn){if(T.arm[key]){delete T.arm[key];fn()}else{T.arm[key]=1;scheduleRender();setTimeout(()=>{if(T.arm[key]){delete T.arm[key];scheduleRender()}},4000)}}
+// Azioni da confermare con un secondo clic. I 4 secondi per confermare partono quando «Conferma…» è a schermo,
+// non dal clic: su un computer lento il ridisegno di un passo grande ne consumerebbe una parte.
+function arm(key,el,fn){if(T.arm[key]){delete T.arm[key];fn()}else{const at=T.arm[key]=Date.now();scheduleRender();requestAnimationFrame(()=>setTimeout(()=>{if(T.arm[key]===at){delete T.arm[key];scheduleRender()}},4000))}}
 
 /* passo 1 */
 A.jiraSites=()=>run("jiraSites","Collegamento…",async()=>{const p=await jira("getAccessibleAtlassianResources",{});T.sites=(Array.isArray(p)?p:p?.resources||[]).map(s=>({id:s.id,url:s.url,name:s.name}));
