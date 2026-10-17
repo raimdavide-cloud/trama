@@ -359,6 +359,7 @@ body.panel-open #chatFab{right:calc(min(580px,46vw) + 20px)}
 .dt-wrap.dt-menus{overflow:visible}
 .dt-menus thead th:first-child{border-top-left-radius:var(--r-m)}.dt-menus thead th:last-child{border-top-right-radius:var(--r-m)}
 .dt-dec td{vertical-align:top;overflow:visible}
+.dt-dec .dt-t{display:block} /* Tipo e Fonte: puntini dentro la colonna invece di sconfinare nella successiva */
 .dt-dec tr.superseded td{color:var(--muted)}
 .row-dd .dd-btn{width:30px;height:30px}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}

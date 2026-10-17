@@ -11,7 +11,7 @@ test.beforeEach(async ({ request, page }) => {
   await page.clock.setFixedTime(new Date("2026-10-16T10:00:00")); // orari e date sempre uguali
 });
 
-for (const path of ["/", "/brand", "/installazione", "/privacy", "/componenti"]) {
+for (const path of ["/", "/brand", "/installazione", "/privacy", "/componenti", "/architettura"]) {
   test(`pagina ${path}`, async ({ page }) => {
     await page.goto(path);
     await page.evaluate(() => document.fonts.ready);
@@ -54,6 +54,8 @@ test("studio · riepilogo a destra", async ({ page }) => {
   await page.goto(PROJECT);
   await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
   await page.locator("#stepList .st", { hasText: "Kit di progetto" }).click();
+  await expect(page.locator("#recap .rc-st")).toContainText("Passo completato"); // riepilogo aggiornato con i dati del passo
+  await expect(page.locator("#recap .rc-go")).toHaveClass(/primary/);
   await page.evaluate(() => document.fonts.ready);
   await expect(page.locator("#recap")).toHaveScreenshot("studio-riepilogo.png", shot);
 });

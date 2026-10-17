@@ -42,6 +42,7 @@
         <a role="menuitem" href="/studio">Tutti i progetti</a>
         <button type="button" role="menuitem" id="healthItem" data-act="healthCheck" hidden>Verifica prima della demo</button>
         <a role="menuitem" href="/installazione">Guida al ponte Claude</a>
+        <a role="menuitem" href="/architettura">Architettura</a>
         <a role="menuitem" href="/privacy">Privacy e dati</a>
         <div class="dd-sep"></div>
         <button type="button" role="menuitem" id="logoutBtn">Esci</button>
@@ -456,7 +457,7 @@ const decCount=(n,t)=>n<t?`${n} di ${t} decisioni · <button type="button" class
 function decTable(d){if(!d.length)return'<p class="empty">Nessuna decisione ancora. Le risposte alle domande di apertura entrano da sole; le altre si aggiungono qui o dalla chat.</p>';
   const f=T.dq||(T.dq={q:"",type:"*",src:"*"}),df=decFilter(d),num=new Map(d.map((x,i)=>[x.id,i+1]));
   const cnt=(k,v)=>d.filter(x=>(x[k]||"")===v).length,types=[...new Set(d.map(x=>x.type).filter(Boolean))],srcs=[...new Set(d.map(x=>x.source||""))].filter(Boolean);
-  const has=k=>d.some(x=>String(x[k]||"").trim()),cols=[["who","Chi",120],["type","Tipo",150],["source","Fonte",140],["impact","Impatto",160],["kit","Kit",64],["replaces","Sostituisce",104]].filter(([k])=>has(k));
+  const has=k=>d.some(x=>String(x[k]||"").trim()),cols=[["who","Chi",140],["type","Tipo",150],["source","Fonte",140],["impact","Impatto",160],["kit","Kit",64],["replaces","Sostituisce",104]].filter(([k])=>has(k));
   const bar=`<div class="rq-bar"><input type="search" id="decSearch" placeholder="Cerca nelle decisioni" aria-label="Cerca nelle decisioni" value="${esc(f.q)}" autocomplete="off">
    <label class="rq-f">Tipo<select id="decType"><option value="*">Tutti</option>${types.map(v=>`<option value="${esc(v)}" ${v===f.type?"selected":""}>${esc(v)} (${cnt("type",v)})</option>`).join("")}</select></label>
    <label class="rq-f">Fonte<select id="decSrc"><option value="*">Tutte</option>${srcs.map(v=>`<option value="${esc(v)}" ${v===f.src?"selected":""}>${esc(v)} (${cnt("source",v)})</option>`).join("")}</select></label></div>

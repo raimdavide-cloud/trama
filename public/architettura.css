@@ -1,0 +1,102 @@
+/* Pagina /architettura: impaginazione e diagrammi. Colori, caratteri e raggi solo dai token di tokens.css.
+   Classi con prefisso ax- per non toccare gli stili dello studio (studio.css è caricato per marchio e intestazione). */
+body{background:var(--bg)}
+.ax-wrap{max-width:1240px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.ax-top{display:flex;align-items:center;gap:18px;padding:14px 0;border-bottom:1px solid var(--line)}
+.ax-top nav{margin-left:auto;display:flex;gap:16px;font-size:14px}
+.ax-top nav a[aria-current]{color:var(--fg);font-weight:600;text-decoration:none}
+.ax-main{display:grid;gap:56px;padding:34px 0 64px}
+.ax-hero{display:grid;gap:14px}
+.ax-hero h1{font:800 clamp(34px,4.6vw,48px)/1.04 var(--f-display);letter-spacing:-.025em;margin:0;text-wrap:balance}
+.ax-lead{color:var(--muted);max-width:78ch;margin:0;font-size:17px;line-height:1.6}
+.ax-facts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:6px 0 0}
+.ax-facts div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);padding:12px 14px;min-width:0}
+.ax-facts dt{font:600 11.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ax-facts dd{margin:4px 0 0;font:700 15px/1.3 var(--f-display)}
+.ax-toc{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
+.ax-sec{display:grid;gap:18px;scroll-margin-top:20px}
+.ax-h{display:grid;gap:6px}
+.ax-h h2{font:750 clamp(24px,3vw,30px)/1.12 var(--f-display);letter-spacing:-.015em;margin:0;text-wrap:balance}
+.ax-h p{color:var(--muted);max-width:78ch;margin:0}
+.ax-h3{font:700 17px var(--f-display);margin:8px 0 0}
+code{font:500 .86em var(--f-mono);background:var(--sunk);border-radius:4px;padding:1px 4px;overflow-wrap:anywhere}
+
+/* diagramma dei container */
+.ax-diagram{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);overflow-x:auto}
+.ax-diagram svg{display:block;width:100%;min-width:980px;height:auto}
+.ax-z{fill:var(--sunk)}
+.ax-zl{font:600 12px var(--f-mono);letter-spacing:.06em;fill:var(--muted);text-transform:uppercase}
+.ax-b{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.ax-b.ax-k{stroke:var(--primary);stroke-width:1.6}
+.ax-bt{font:700 16px var(--f-display);fill:var(--fg)}
+.ax-bs{font:400 13px var(--f-body);fill:var(--muted)}
+.ax-bm{font:500 12px var(--f-mono);fill:var(--muted)}
+.ax-row{fill:var(--sunk)}
+.ax-rt{font:600 13.5px var(--f-body);fill:var(--fg)}
+.ax-ln{stroke:var(--muted);stroke-width:1.4;fill:none}
+.ax-dash{stroke-dasharray:4 4}
+.ax-th{stroke:var(--accent);stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ax-ar{fill:var(--muted)}
+.ax-ar-t{fill:var(--accent)}
+.ax-lb{font:500 12px var(--f-mono);fill:var(--muted)}
+.ax-lbg{fill:var(--surface)}
+.ax-tl{font:700 12px var(--f-mono);fill:var(--accent-text)}
+.ax-pb{fill:var(--accent-soft)}
+
+/* tabelle */
+.ax-tw{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l)}
+.ax-t{width:100%;border-collapse:collapse;font-size:14px;min-width:720px}
+.ax-t th{font:600 11.5px var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 14px;background:var(--sunk)}
+.ax-t td{padding:11px 14px;border-top:1px solid var(--line);vertical-align:top;line-height:1.45}
+.ax-t td:first-child{white-space:nowrap}
+
+/* diagrammi di sequenza: una colonna per partecipante, una riga per messaggio */
+.ax-flows{display:grid;grid-template-columns:minmax(0,1fr);gap:18px} /* a tutta larghezza: in demo si leggono da lontano */
+.ax-tw:focus-visible,.ax-seq-wrap:focus-visible,.ax-diagram:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.ax-seq-fig{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:18px;display:grid;gap:12px;align-content:start;min-width:0}
+.ax-seq-fig figcaption{display:grid;gap:6px}
+.ax-seq-fig h3{font:700 18px var(--f-display);margin:0}
+.ax-seq-fig figcaption p{font-size:14px;color:var(--muted);margin:0}
+.ax-seq-wrap{overflow-x:auto}
+.ax-seq{display:grid;grid-template-columns:repeat(var(--n),minmax(140px,1fr));grid-auto-rows:minmax(44px,auto);column-gap:0;min-width:calc(var(--n) * 150px)}
+.ax-sp{grid-row:1;justify-self:center;align-self:start;font:600 12px/1.3 var(--f-mono);text-align:center;background:var(--primary-soft);color:var(--primary);border-radius:var(--r-s);padding:6px 8px;margin:0 4px 6px;overflow-wrap:anywhere}
+.ax-life{justify-self:center;width:0;border-left:1.5px dashed var(--line)}
+.ax-msg{position:relative;align-self:end;padding-bottom:9px;z-index:1}
+.ax-msg span{display:block;text-align:center;font-size:13.5px;line-height:1.35;padding:0 calc(100% / var(--span) / 2 + 4px);margin-bottom:3px}
+.ax-msg::before{content:"";position:absolute;bottom:4px;left:calc(100% / var(--span) / 2);right:calc(100% / var(--span) / 2);border-top:1.6px solid var(--muted)}
+.ax-msg::after{content:"";position:absolute;bottom:0;right:calc(100% / var(--span) / 2);border:4.5px solid transparent;border-left:8px solid var(--muted);border-right:0}
+.ax-msg.rev::after{right:auto;left:calc(100% / var(--span) / 2);border-left:0;border-right:8px solid var(--muted)}
+.ax-msg.ret::before{border-top-style:dashed}
+.ax-msg.thr::before{border-top:3px solid var(--accent);bottom:3px}
+.ax-msg.thr::after{border-left-color:var(--accent)}
+.ax-msg.thr.rev::after{border-right-color:var(--accent)}
+.ax-note{align-self:center;justify-self:center;z-index:1;font-size:13px;line-height:1.35;text-align:center;background:var(--accent-soft);color:var(--fg);border-radius:var(--r-s);padding:5px 8px;margin:4px;max-width:96%}
+.ax-seq-text summary{cursor:pointer;font-size:13px;color:var(--primary)}
+.ax-seq-text ol{margin:8px 0 0;padding-left:20px;font-size:13.5px;display:grid;gap:4px}
+
+/* schede, metriche, elenchi */
+.ax-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.ax-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:18px;display:grid;gap:8px;align-content:start;min-width:0}
+.ax-card h3{font:700 17px/1.25 var(--f-display);margin:0}
+.ax-card p{margin:0;font-size:14.5px;line-height:1.5}
+.ax-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.ax-metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.ax-metrics div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);padding:14px;display:grid;gap:4px;align-content:start}
+.ax-metrics b{font:800 24px/1.1 var(--f-display);color:var(--primary);font-variant-numeric:tabular-nums}
+.ax-metrics span{font-size:13px;color:var(--muted);line-height:1.4}
+.ax-list{margin:0;padding-left:20px;display:grid;gap:8px;font-size:15px;line-height:1.5;max-width:100ch}
+.ax-steps{margin:0;padding-left:20px;display:grid;gap:8px;font-size:15px;line-height:1.5}
+.ax-limits li::marker{color:var(--accent-text)}
+.ax-foot{border-top:1px solid var(--line);padding:18px 0 36px;font-size:13px;color:var(--muted)}
+
+@media (max-width:1100px){
+  .ax-flows,.ax-two{grid-template-columns:minmax(0,1fr)}
+  .ax-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .ax-facts{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .ax-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .ax-metrics,.ax-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ax-cards{grid-template-columns:minmax(0,1fr)}
+  .ax-top nav{gap:10px}
+}

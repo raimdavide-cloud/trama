@@ -183,7 +183,7 @@ test("Chat: si apre dal pulsante, si chiude con Esc e il pulsante dice in che st
 
 test("pagine pubbliche: ogni collegamento interno porta a una pagina che esiste", async ({ page, request }) => {
   const seen = new Set(), broken = [];
-  for (const start of ["/", "/brand", "/installazione", "/privacy", "/componenti", "/studio"]) {
+  for (const start of ["/", "/brand", "/installazione", "/privacy", "/componenti", "/architettura", "/studio"]) {
     await page.goto(start);
     const links = await page.locator("a[href]").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
     for (const href of links) {

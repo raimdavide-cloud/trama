@@ -14,7 +14,7 @@ test.beforeEach(async ({ request }) => {
 });
 
 test("icone allineate: pagine pubbliche", async ({ page }) => {
-  for (const path of ["/", "/brand", "/installazione", "/privacy", "/componenti", "/studio"]) {
+  for (const path of ["/", "/brand", "/installazione", "/privacy", "/componenti", "/architettura", "/studio"]) {
     await page.goto(path);
     if (path === "/studio") await expect(page.locator(".proj-card")).toHaveCount(1);
     await check(page, path);
