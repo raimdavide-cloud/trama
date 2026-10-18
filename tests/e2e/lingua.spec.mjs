@@ -69,29 +69,49 @@ test("inglese: nessun testo dell'interfaccia resta in italiano, in tutti i passi
   expect(missing, `testi senza traduzione (aggiungili in public/i18n-en.js, elenco completo: npm run i18n:mancanti)`).toEqual([]);
 });
 
-test("homepage: switch della lingua nell'header, la scelta vale anche dentro Trama", async ({ page }) => {
+test("homepage: sezioni e lingua in un solo menu nell'header, «Apri Trama» resta fuori; la lingua vale anche dentro Trama", async ({ page }) => {
   await page.goto("/");
-  const btn = page.locator("nav.top #langBtn");
-  await expect(btn).toContainText("ITA");
+  const nav = page.locator("nav.top");
+  // nell'header restano solo marchio, menu e «Apri Trama»
+  await expect(nav.locator(":scope > *")).toHaveCount(3);
+  await expect(nav.locator(":scope > a.btn.primary")).toHaveText("Apri Trama");
+  const btn = nav.locator("#menuBtn"), menu = page.locator("#siteMenu");
+  await expect(btn).toContainText("Menu");
   await btn.click();
-  await expect(page.locator("#langMenu")).toBeVisible();
-  await expect(page.locator('#langMenu [data-lang="it"]')).toHaveAttribute("aria-checked", "true");
-  await expect(page.locator('#langMenu [data-lang="it"]')).toBeFocused();
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole("menuitem")).toHaveText(["Vantaggi", "Per chi", "Come funziona", "Demo", "Esempi", "Regole", "Sicurezza", "Domande"]);
+  await expect(menu.locator('[data-lang="it"]')).toHaveAttribute("aria-checked", "true");
+  await expect(menu.getByRole("menuitem").first()).toBeFocused();
+  await page.keyboard.press("End");
+  await expect(menu.locator('[data-lang="en"]')).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(menu.getByRole("menuitem").first()).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(page.locator("#langMenu")).toBeHidden();
+  await expect(menu).toBeHidden();
   await expect(btn).toBeFocused();
+  // una sezione: il menu si chiude e la pagina va lì
   await btn.click();
-  await page.locator('#langMenu [data-lang="en"]').click();
+  await menu.getByRole("menuitem", { name: "Vantaggi" }).click();
+  await expect(menu).toBeHidden();
+  await expect(page).toHaveURL(/#vantaggi$/);
+  await expect(page.locator("#vantaggi h2")).toBeInViewport();
+  // le sezioni sono nello stesso ordine delle voci del menu
+  const ids = await page.locator("#siteMenu a[role=menuitem]").evaluateAll((as) => as.map((a) => a.getAttribute("href").slice(1)));
+  const order = await page.locator("section[id]").evaluateAll((ss) => ss.map((s) => s.id));
+  expect(order).toEqual(ids);
+  // la lingua
+  await btn.click();
+  await menu.locator('[data-lang="en"]').click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.locator("h1")).toContainText("From document to backlog");
-  await expect(page.locator("nav.top")).toContainText("Open Trama");
-  await expect(btn).toContainText("ENG");
+  await expect(nav).toContainText("Open Trama");
+  await expect(page.locator("#vantaggi h2")).toHaveText("The PO prepares, the whole team gains.");
   // stessa scelta dentro Trama
   await page.goto(PROJECT);
   await expect(page.locator(".progress b")).toHaveText(/steps completed/);
   await page.goto("/");
-  await page.locator("nav.top #langBtn").click();
-  await page.locator('#langMenu [data-lang="it"]').click();
+  await page.locator("#menuBtn").click();
+  await page.locator('#siteMenu [data-lang="it"]').click();
   await expect(page.locator("h1")).toContainText("Dal documento al backlog");
 });
 

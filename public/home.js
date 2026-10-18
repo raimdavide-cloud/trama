@@ -105,11 +105,15 @@ const exBox=document.getElementById("exBox");
 function showEx(i){exBox.innerHTML=`<div class="example" role="tabpanel"><div class="ex-in">${EX[i].in}</div><div class="arrow" aria-hidden="true">${I("i-arrow")}</div><div class="ex-out">${EX[i].out}</div></div>`;document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",+t.dataset.ex===i?"true":"false"))}
 document.querySelector(".tabs").addEventListener("click",e=>{const t=e.target.closest(".tab");if(t)showEx(+t.dataset.ex)});showEx(0);
 
-/* Lingua: lo stesso switch dell'header di Trama; la scelta vale anche dentro Trama */
-{const dd=document.getElementById("langDd"),btn=document.getElementById("langBtn"),menu=document.getElementById("langMenu");
+/* Menu dell'header: sezioni della pagina e lingua in un solo menu; «Apri Trama» resta fuori. La lingua scelta vale anche dentro Trama */
+{const dd=document.getElementById("menuDd"),btn=document.getElementById("menuBtn"),menu=document.getElementById("siteMenu");
+ const items=()=>[...menu.querySelectorAll('[role^="menuitem"]')];
  const close=focus=>{menu.hidden=true;btn.setAttribute("aria-expanded","false");if(focus)btn.focus()};
- btn.addEventListener("click",()=>{const open=menu.hidden;menu.hidden=!open;btn.setAttribute("aria-expanded",String(open));if(open)menu.querySelector('[aria-checked="true"]')?.focus()});
- menu.addEventListener("click",e=>{const b=e.target.closest("[data-lang]");if(!b)return;if(b.dataset.lang===window.I18N?.lang)return close(true);window.I18N?.set(b.dataset.lang);location.reload()});
- menu.addEventListener("keydown",e=>{const it=[...menu.querySelectorAll("[data-lang]")],i=it.indexOf(document.activeElement);if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();it[(i+(e.key==="ArrowDown"?1:it.length-1))%it.length].focus()}});
+ btn.addEventListener("click",()=>{const open=menu.hidden;menu.hidden=!open;btn.setAttribute("aria-expanded",String(open));if(open)items()[0].focus()});
+ menu.addEventListener("click",e=>{const a=e.target.closest("a[role=menuitem]");if(a)return close(false);const b=e.target.closest("[data-lang]");if(!b)return;if(b.dataset.lang===window.I18N?.lang)return close(true);window.I18N?.set(b.dataset.lang);location.reload()});
+ menu.addEventListener("keydown",e=>{const it=items(),i=it.indexOf(document.activeElement);
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();it[(i+(e.key==="ArrowDown"?1:it.length-1))%it.length].focus()}
+  else if(e.key==="Home"||e.key==="End"){e.preventDefault();it[e.key==="Home"?0:it.length-1].focus()}
+  else if(e.key==="Tab")close(false)});
  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!menu.hidden)close(true)});
  document.addEventListener("click",e=>{if(!menu.hidden&&!dd.contains(e.target))close(false)});}

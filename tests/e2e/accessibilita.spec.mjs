@@ -35,11 +35,11 @@ test("accessibilità: domande con una selezione attiva e un cestino armato", asy
   await audit(page, "domande selezionate");
 });
 
-test("accessibilità: homepage in inglese con il menu della lingua aperto", async ({ page, context }) => {
+test("accessibilità: homepage in inglese con il menu aperto", async ({ page, context }) => {
   await context.addInitScript(() => { try { localStorage.setItem("trama:lang", "en"); } catch {} });
   await page.goto("/");
-  await page.locator("#langBtn").click();
-  await expect(page.locator("#langMenu")).toBeVisible();
+  await page.locator("#menuBtn").click();
+  await expect(page.locator("#siteMenu")).toBeVisible();
   await audit(page, "homepage in inglese");
 });
 
