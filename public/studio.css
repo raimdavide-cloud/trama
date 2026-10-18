@@ -526,3 +526,10 @@ html[lang="it"] .lang-btn [data-flag="en"],html[lang="en"] .lang-btn [data-flag=
 .exp-dd .dd-menu{min-width:260px}
 .push-box{margin:0 0 16px;padding:0 0 14px;border-bottom:1px solid var(--line)}
 .push-box .h-sub{margin:0 0 6px;font:700 15px var(--f-display)}
+/* confronto con una nuova versione del documento */
+.dd-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.dd-row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.45}
+.dd-row input{margin-top:3px}
+.dd-f{display:block;margin-top:3px;color:var(--muted)}
+.dd-f del{color:var(--err);text-decoration:line-through}
+.dd-f ins{color:var(--ok);text-decoration:none;font-weight:600}

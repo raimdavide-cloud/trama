@@ -396,7 +396,7 @@ function reqTable(r,rf){if(!r.length)return'<p class="empty">Nessun requisito an
   const by={};ticketList().forEach(t=>{(by[t.req]=by[t.req]||[]).push(t)});
   return`<div class="dt-wrap"><table class="dt"><colgroup><col style="width:calc(96px*var(--colk,1))"><col><col style="width:calc(150px*var(--colk,1))"><col style="width:calc(140px*var(--colk,1))"><col style="width:calc(130px*var(--colk,1))"><col style="width:calc(170px*var(--colk,1))"></colgroup>
    <thead><tr><th scope="col">ID</th><th scope="col">Titolo</th><th scope="col">Componenti</th><th scope="col">Release</th><th scope="col">Ticket</th><th scope="col">Note</th></tr></thead>
-   <tbody>${rf.map(x=>dtRow("req",x.id,`<td><span class="key">${esc(x.code)}</span></td><td class="dt-t" title="${esc(x.title)}">${esc(x.title)}</td><td class="dt-t muted">${(x.components||[]).map(c=>COMP_SHORT[c]||c).join(" · ")||"—"}</td><td>${x.release?`<span class="pill" title="${esc(x.release)}">${esc(x.release)}</span>`:'<span class="pill err">manca</span>'}</td><td>${traceCell(x.code,by[x.code]||[])}</td><td>${[x.questions&&'<span class="pill warn">domande</span>',x.designReady&&'<span class="pill ok">design pronto</span>'].filter(Boolean).join(" ")}</td>`)).join("")}</tbody></table></div>`}
+   <tbody>${rf.map(x=>dtRow("req",x.id,`<td><span class="key">${esc(x.code)}</span></td><td class="dt-t" title="${esc(x.title)}">${esc(x.title)}</td><td class="dt-t muted">${(x.components||[]).map(c=>COMP_SHORT[c]||c).join(" · ")||"—"}</td><td>${x.release?`<span class="pill" title="${esc(x.release)}">${esc(x.release)}</span>`:'<span class="pill err">manca</span>'}</td><td>${traceCell(x.code,by[x.code]||[])}</td><td>${[x.removed&&'<span class="pill err">rimosso</span>',x.changed&&!x.removed&&'<span class="pill acc">cambiato</span>',x.questions&&'<span class="pill warn">domande</span>',x.designReady&&'<span class="pill ok">design pronto</span>'].filter(Boolean).join(" ")}</td>`)).join("")}</tbody></table></div>`}
 function reqTrace(x){const ts=ticketList().filter(t=>t.req===x.code);
   return`<div class="sp-sec"><h3>Ticket di questo requisito</h3>${ts.length?`<ul class="trace">${ts.map(t=>`<li><span class="key">${esc(t.ref)}</span><span class="tt">${esc(fullTitle(t))}</span>${t.state==="created"&&t.key?browse(t.key):'<span class="pill">bozza</span>'}</li>`).join("")}</ul><button type="button" class="link" data-act="reqTickets" data-code="${esc(x.code)}">Apri nel Backlog →</button>`:'<p class="small muted" style="margin:0">Nessun ticket ancora: si generano al passo Backlog.</p>'}</div>`}
 // release del requisito: menu con le release del kit e quelle già usate (un campo con suggerimenti mostrava solo quella scritta)
@@ -507,7 +507,7 @@ function secSpec(id,raw,memo={}){const r=x=>raw.includes(x),pill=(c,t)=>`<span c
     if(r("K4")){const h=k.hier,pr=hierProblems();return{num:"K4",title:"Struttura gerarchica Jira",ok:!pr.length,todo:!!h?.enabled&&pr.length>0,status:!h?.enabled?plain("disattivata"):pr.length?pill("err",n1(pr.length,"problema","problemi")):pill("ok","completa")}}
     if(r("K5"))return{num:"K5–6",title:"Label e prefissi",todo:false,status:pill("","facoltativo")};
     if(r("K7"))return{num:"K7–9",title:"Glossario, comunicazione, vincoli",todo:false,status:pill("","facoltativo")}}
-  if(id==="backlog"){const rs=reqList(),ts=ticketList(),inRel=rs.filter(x=>T.rel==="*"||x.release===T.rel),todo=inRel.filter(x=>!ts.some(t=>t.req===x.code)).length,err=ts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;
+  if(id==="backlog"){const rs=reqList(),ts=ticketList(),inRel=rs.filter(x=>!x.removed&&(T.rel==="*"||x.release===T.rel)),todo=inRel.filter(x=>!ts.some(t=>t.req===x.code)).length,err=ts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;
     if(r("Scomposizione"))return{num:"1",title:"Scomposizione in ticket",ok:!todo,todo:todo>0||!!T.prog.genTickets,status:T.prog.genTickets?pill("acc","in corso…"):todo?pill("warn",n1(todo,"requisito senza ticket","requisiti senza ticket")):pill("ok","ogni requisito ha i suoi ticket")};
     if(r("Ticket per requisito"))return{num:"2",title:"Ticket per requisito",ok:!err,todo:true,status:plain(n1(ts.length,"ticket","ticket"))+(err?pill("err",n1(err,"con errori","con errori")):"")}}
   if(id==="create"){const pl=memo.pl||(memo.pl=planOf()),ts=memo.ts||(memo.ts=ticketList()),ck=memo.ck||(memo.ck=T.pre?computeChecks(pl):[]),errs=ck.filter(c=>c.lvl==="err"&&!(c.t==="Elementi da creare o collegare"&&ts.some(t=>t.state==="created"))).length,warns=ck.filter(c=>c.lvl==="warn").length;
@@ -590,7 +590,7 @@ function docsView(){const d=arr("docs").sort((a,b)=>(a.at||0)-(b.at||0));
   if(T.uploads.length)h+=`<div class="list" style="margin-top:10px">${T.uploads.map(u=>`<div class="row small"><span class="pill ${u.s==="ok"?"ok":u.s==="err"?"err":"acc"}">${u.s==="ok"?"Caricato":u.s==="err"?"Errore":"In lavorazione"}</span><b>${esc(u.name)}</b><span class="muted">${esc(u.note||"")}</span></div>`).join("")}</div>`;
   h+=`<details class="item" data-k="paste" style="margin-top:12px"><summary><span class="ttl">Incolla testo (appunti di meeting, messaggi, specifiche)</span></summary><div class="in"><div class="grid">${F("Titolo",`<input id="pasteName" placeholder="Es. Verbale kickoff 14 ottobre">`)}${F("Testo",`<textarea id="pasteText" rows="6"></textarea>`,"wide")}</div><div class="toolbar" style="margin-top:10px">${B("pasteDoc","Aggiungi ai documenti")}</div></div></details>`;
   h+=`<h3>Documenti del progetto (${d.length})</h3><div class="list">${d.map(x=>det("doc-"+x.id,`<span class="pill acc">${esc(x.kind)}</span><span class="ttl">${esc(x.name)}</span><span class="small muted">${(x.chars||0).toLocaleString(LOCALE())} caratteri${x.truncated?" · troncato":""}</span>`,
-    `${x.truncated?`<div class="msg warn">Il testo è stato troncato a ${(x.chars).toLocaleString(LOCALE())} caratteri per restare nei limiti di salvataggio.</div>`:""}${lazy(x)?(openSet.has("doc-"+x.id)&&want("docs",x.id),'<p class="small muted">Caricamento del testo…</p>'):`<pre class="prev">${esc((x.text||"").slice(0,4000))}${(x.text||"").length>4000?"\n…":""}</pre>`}<div class="toolbar" style="margin-top:10px">${B("delDoc",T.arm["doc"+x.id]?"Conferma eliminazione":"Elimina",{cls:T.arm["doc"+x.id]?"armed":"danger",data:{id:x.id}})}</div>`)).join("")||'<p class="empty">Nessun documento ancora. Carica il documento di requisiti per iniziare.</p>'}</div>`;
+    `${x.truncated?`<div class="msg warn">Il testo è stato troncato a ${(x.chars).toLocaleString(LOCALE())} caratteri per restare nei limiti di salvataggio.</div>`:""}${lazy(x)?(openSet.has("doc-"+x.id)&&want("docs",x.id),'<p class="small muted">Caricamento del testo…</p>'):`<pre class="prev">${esc((x.text||"").slice(0,4000))}${(x.text||"").length>4000?"\n…":""}</pre>`}<div class="toolbar" style="margin-top:10px">${reqList().length?AIB("compareDoc","Nuova versione? Confronta con i requisiti",{data:{id:x.id}}):""}${B("delDoc",T.arm["doc"+x.id]?"Conferma eliminazione":"Elimina",{cls:T.arm["doc"+x.id]?"armed":"danger",data:{id:x.id}})}</div>`)).join("")||'<p class="empty">Nessun documento ancora. Carica il documento di requisiti per iniziare.</p>'}</div>`;
   return h}
 
 /* ---------- 3. Requisiti ---------- */
@@ -612,6 +612,7 @@ STEPS.push({id:"reqs",phase:"Preparazione",short:"Requisiti",sub:"Carica, estrai
   h+=reqTable(r,rf)+`
   <div class="card warn small" style="margin-top:14px">Controlla che ogni nota UI/UX sia sulla riga giusta: nei fogli del cliente le colonne sfalsate sono un errore frequente.</div>`;
   if(T.panel?.kind==="relq")h+=relqPanel();
+  if(T.panel?.kind==="docdiff")h+=docDiffPanel();
   if(T.panel?.kind==="req"){const x=S.reqs[T.panel.id]&&{...S.reqs[T.panel.id],id:T.panel.id};if(x)h+=sidePanel("req",x.id,`<span class="key">${esc(x.code)}</span><span>${esc(x.title)}</span>`,reqForm(x))}
   return h},
  ask:["Riassumi i documenti caricati in 5 punti","Quali requisiti hanno dipendenze esterne?","Ci sono requisiti duplicati o sovrapposti?","Proponi l'ordine dei requisiti in base alle dipendenze"]});
@@ -739,19 +740,19 @@ STEPS.push({id:"backlog",phase:"Creazione",short:"Backlog",sub:"Scomposizione e 
   return h},
  ask:["Controlla se mancano ticket corrispondenti su altri componenti","Quali ticket hanno punti da chiarire per il cliente?"]});
 const nReq=n=>n===1?"1 requisito":n+" requisiti";
-function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.release===T.rel),todo=inRel.filter(r=>!ts.some(t=>t.req===r.code)),done=inRel.length-todo.length;
+function ticketsPanel(k,rs,ts,rels){const inRelAll=rs.filter(r=>T.rel==="*"||r.release===T.rel),inRel=inRelAll.filter(r=>!r.removed),todo=inRel.filter(r=>!ts.some(t=>t.req===r.code)),done=inRel.length-todo.length;
   let h=`<div class="card"><h2>Scomposizione in ticket</h2><div class="toolbar" style="margin:0"><label class="f" style="min-width:200px">Release (= Fase) da scomporre<select id="relPick">${[["*","Tutte le release"],...rels.map(r=>[r,r])].map(([v,l])=>`<option value="${esc(v)}" ${v===T.rel?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
    ${AIB("genTickets",!todo.length?"Tutti i requisiti hanno ticket":done?`Scomponi ${nReq(todo.length)} senza ticket`:`Genera ticket per ${nReq(todo.length)}`,{cls:todo.length?"primary":"",dis:!todo.length||!k.epics.length})}</div>
    <p class="small muted" style="margin:8px 0 0">${!k.epics.length?"Servono prima le epiche nel kit (passo 4). ":""}${todo.length&&done?`${done===1?"1 requisito ha":done+" requisiti hanno"} già i ticket e non ${done===1?"viene toccato":"vengono toccati"}: Claude scompone solo ${todo.length===1?"quello che non ne ha":"i "+todo.length+" che non ne hanno"}. `:!todo.length&&inRel.length?`${inRel.length===1?"L'unico requisito ha":"Tutti i "+inRel.length+" requisiti hanno"} già i ticket. Per rifare quelli di un requisito usa «Rigenera» sulla sua riga. `:""}Claude scrive i ticket in inglese con i modelli del kit, uno o più per ogni requisito.</p>
    ${T.prog.genTickets?progBlock("genTickets"):T.genLog?`<div class="log" style="margin-top:10px">${esc(T.genLog)}</div>`:""}</div>`;
-  const groups0=[...inRel.map(r=>({r,ts:ts.filter(t=>t.req===r.code)})),{r:null,ts:ts.filter(t=>!rs.some(r=>r.code===t.req)&&(T.rel==="*"||t.release===T.rel))}].filter(g=>g.ts.length);
+  const groups0=[...inRelAll.map(r=>({r,ts:ts.filter(t=>t.req===r.code)})),{r:null,ts:ts.filter(t=>!rs.some(r=>r.code===t.req)&&(T.rel==="*"||t.release===T.rel))}].filter(g=>g.ts.length);
   const groups=T.bReq?groups0.filter(g=>g.r?.code===T.bReq):groups0;
   const tq=T.tq.trim().toLowerCase();T.tsel=new Set([...T.tsel].filter(id=>S.tickets[id]));
   h+=`<div class="card"><h2>Ticket per requisito</h2><div class="toolbar list-bar"><input type="search" id="tSearch" class="t-search" placeholder="Cerca per rif., titolo o chiave" aria-label="Cerca ticket per riferimento, titolo o chiave Jira" value="${esc(T.tq)}" autocomplete="off">${T.bReq?`<span class="pill primary">Solo ${esc(T.bReq)}</span><button type="button" class="link" data-act="bReqClear">Mostra tutti</button>`:""}<span style="flex:1"></span><label class="row small"><input type="checkbox" id="onlyIssues" ${T.onlyIssues?"checked":""}> Solo con problemi</label>${B("addTicket","Aggiungi a mano")}<div class="dd exp-dd"><button type="button" class="dd-btn exp-btn" aria-haspopup="menu" aria-expanded="false" ${ts.length?"":"disabled"}>Esporta <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dd-menu right" role="menu" hidden><button type="button" role="menuitem" data-act="exportTickets">Backlog in CSV</button><button type="button" role="menuitem" data-act="qaZip">Schede QA e piano di test (.zip)</button></div></div></div>`;
   const ids=[];
-  const bodies=groups.map(({r,ts:gts})=>{const shown=T.onlyIssues?gts.filter(t=>{const i=issuesOf(t);return i.e.length||i.w.length}):gts;if(!shown.length)return"";const bad=gts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;shown.forEach(t=>ids.push(t.id));
+  const bodies=groups.map(({r,ts:gts})=>{const shown=T.onlyIssues?gts.filter(t=>{const i=issuesOf(t);return i.e.length||i.w.length||t.review}):gts;if(!shown.length)return"";const bad=gts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;shown.forEach(t=>ids.push(t.id));
    const vis=shown.filter(t=>tMatch(t,tq));
-   return`<tbody${vis.length?"":" hidden"}><tr class="dt-g"><th colspan="${READONLY?6:7}" scope="rowgroup"><div class="dt-gh">${r?`<span class="key">${esc(r.code)}</span><span class="dt-t">${esc(r.title)}</span>`:`<span>Ticket senza requisito</span>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r&&T.prevGen[r.code]?B("restoreGen",T.arm["rg"+r.code]?"Conferma: torna ai ticket di prima":"Torna ai ticket di prima",{cls:T.arm["rg"+r.code]?"armed":"link",data:{code:r.code}}):""}${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")}):""}</div></th></tr>${shown.map(t=>ticketRow(t,!tMatch(t,tq))).join("")}</tbody>`}).join("");
+   return`<tbody${vis.length?"":" hidden"}><tr class="dt-g"><th colspan="${READONLY?6:7}" scope="rowgroup"><div class="dt-gh">${r?`<span class="key">${esc(r.code)}</span><span class="dt-t">${esc(r.title)}</span>${r.removed?'<span class="pill err">requisito rimosso</span>':r.changed?'<span class="pill acc">requisito cambiato</span>':""}`:`<span>Ticket senza requisito</span>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r&&T.prevGen[r.code]?B("restoreGen",T.arm["rg"+r.code]?"Conferma: torna ai ticket di prima":"Torna ai ticket di prima",{cls:T.arm["rg"+r.code]?"armed":"link",data:{code:r.code}}):""}${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")}):""}</div></th></tr>${shown.map(t=>ticketRow(t,!tMatch(t,tq))).join("")}</tbody>`}).join("");
   T.panelIds=ids.filter(id=>tMatch(S.tickets[id],tq));
   const visIds=T.panelIds,allOn=visIds.length>0&&visIds.every(id=>T.tsel.has(id));
   h+=bodies?`<div class="dt-wrap"><table class="dt"><colgroup>${READONLY?"":'<col style="width:44px">'}<col style="width:calc(92px*var(--colk,1))"><col style="width:calc(96px*var(--colk,1))"><col><col style="width:calc(180px*var(--colk,1))"><col style="width:calc(150px*var(--colk,1))"><col style="width:calc(160px*var(--colk,1))"></colgroup>
@@ -759,7 +760,8 @@ function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.rele
   h+=bulkBar(k)+"</div>";
   if(T.panel?.kind==="ticket"){const t=ticketList().find(x=>x.id===T.panel.id);if(t)h+=sidePanel("ticket",t.id,`<span class="key">${esc(t.ref)}</span><span class="pill acc">${esc(t.type)}</span><span>${esc(fullTitle(t))}</span>`,ticketForm(t))}
   return h}
-const ticketState=t=>t.state==="created"?`${browse(t.key)}${dirtyOf(t).length?'<span class="pill warn">da aggiornare</span>':vOf(t)==="ok"?'<span class="pill ok">verificato</span>':vOf(t)?'<span class="pill warn">da verificare</span>':""}`:t.state==="error"?'<span class="pill err">errore Jira</span>':t.state==="unknown"?'<span class="pill warn">esito incerto</span>':'<span class="pill">bozza</span>';
+const reviewPill=t=>t.review?'<span class="pill warn">da rivedere</span>':"";
+const ticketState=t=>reviewPill(t)+(t.state==="created"?`${browse(t.key)}${dirtyOf(t).length?'<span class="pill warn">da aggiornare</span>':vOf(t)==="ok"?'<span class="pill ok">verificato</span>':vOf(t)?'<span class="pill warn">da verificare</span>':""}`:t.state==="error"?'<span class="pill err">errore Jira</span>':t.state==="unknown"?'<span class="pill warn">esito incerto</span>':'<span class="pill">bozza</span>');
 const tMatch=(t,q)=>!q||!t||[t.ref,fullTitle(t),t.key,t.epic].some(v=>String(v||"").toLowerCase().includes(q));
 // barra della selezione: epica, release, tipo di lavoro e label in un colpo solo; si eliminano solo le bozze
 function bulkBar(k){const n=T.tsel.size;if(!n||READONLY)return"";const drafts=[...T.tsel].filter(id=>S.tickets[id]?.state!=="created").length,armed=T.arm.tbulk;
@@ -779,7 +781,7 @@ function refreshQuestion(id){const x=S.questions[id],p=$(`#main details.item[dat
   const [c,l]=x.answer?.trim()?["ok","Risposta"]:x.hypothesis?.trim()?["warn","Ipotesi"]:["err","Aperta"];p.className="pill "+c;p.textContent=l}
 function ticketForm(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked=t.state==="created";
  const dirty=dirtyOf(t);
- return`${locked?(dirty.length?`<div class="msg warn">Creato in Jira come ${browse(t.key)}. Modificato qui dopo la creazione: ${dirty.map(f=>PUSH_NAMES[f]).join(", ")}. <span class="row" style="display:inline-flex;margin-left:6px">${JB("pushCheck","Aggiorna in Jira",{data:{id:t.id},dis:T.running})}</span></div>${pushPreview(t.id)}`
+ return`${t.review?`<div class="msg warn">Da rivedere: ${esc(t.review.why)} <span class="row" style="display:inline-flex;margin-left:6px">${B("reviewDone","Segna come rivisto",{data:{id:t.id}})}</span></div>`:""}${locked?(dirty.length?`<div class="msg warn">Creato in Jira come ${browse(t.key)}. Modificato qui dopo la creazione: ${dirty.map(f=>PUSH_NAMES[f]).join(", ")}. <span class="row" style="display:inline-flex;margin-left:6px">${JB("pushCheck","Aggiorna in Jira",{data:{id:t.id},dis:T.running})}</span></div>${pushPreview(t.id)}`
    :`<div class="msg info">Creato in Jira come ${browse(t.key)}. Se lo modifichi qui, Trama ti propone di aggiornarlo anche in Jira.${vOf(t)&&vOf(t)!=="ok"?" "+esc(vOf(t)):""}</div>`):""}
  ${t.err?`<div class="msg err">${esc(t.err)}</div>`:""}
  ${(e.length||w.length)&&!locked?`<div class="issues">${e.map(x=>`<span class="pill err">${esc(x)}</span>`).join("")}${w.map(x=>`<span class="pill warn">${esc(x)}</span>`).join("")}</div>`:""}
@@ -1130,6 +1132,55 @@ ${String(d.text).slice(0,150000)}`;
 }finally{stopped=progEnd("extractReqs")}
   editProject(p=>{delete p.reqsValidatedAt});
   setMsg("reqs","ok",`${stopped?"Estrazione fermata. ":""}${added} requisiti estratti${skipped?`, ${skipped} saltati perché già presenti`:""}. Controllali uno per uno, poi valida la lista.`)});
+/* Nuova versione del documento: Tessa rilegge il documento e abbina ogni requisito a quelli esistenti (anche se riformulato).
+   Il PO sceglie cosa applicare: nuovi requisiti, modifiche campo per campo, requisiti rimossi. I ticket dei requisiti cambiati o
+   rimossi diventano «da rivedere», con il motivo; la nuova versione entra nel registro decisioni. */
+const DIFF_FIELDS={title:"titolo",desc:"descrizione",components:"componenti",release:"release",ui:"note UI/UX",extDeps:"dipendenze esterne",intDeps:"dipendenze interne"};
+const normTxt=v=>Array.isArray(v)?[...v].sort().join("|"):String(v??"").replace(/\s+/g," ").trim().toLowerCase();
+function docDiff(found,doc,prevSource){const reqs=reqList().filter(r=>!r.removed),byCode=new Map(reqs.map(r=>[r.code,r])),byTitle=new Map(reqs.map(r=>[normTxt(r.title),r])),seen=new Set(),out={added:[],changed:[],removed:[]};
+  for(const f of found){const t=String(f.title||"").trim();if(!t)continue;const cand={title:t,desc:String(f.desc||""),components:(f.components||[]).filter(c=>REQ_COMPS.includes(c)),release:String(f.release||""),ui:String(f.ui||""),extDeps:String(f.extDeps||""),intDeps:String(f.intDeps||""),questions:String(f.questions||"")};
+    const m=byCode.get(String(f.sameAs||"").trim())||byCode.get(String(f.sourceId||"").trim())||byTitle.get(normTxt(t));
+    if(!m||seen.has(m.id)){out.added.push({...cand,sourceId:String(f.sourceId||"").trim()});continue}seen.add(m.id);
+    const fields=Object.keys(DIFF_FIELDS).filter(k=>normTxt(cand[k])&&normTxt(cand[k])!==normTxt(m[k]));if(fields.length)out.changed.push({id:m.id,code:m.code,fields,from:Object.fromEntries(fields.map(k=>[k,m[k]])),to:Object.fromEntries(fields.map(k=>[k,cand[k]]))})}
+  out.removed=reqs.filter(r=>!seen.has(r.id)&&r.source&&r.source===prevSource&&r.source!==doc.name).map(r=>({id:r.id,code:r.code,title:r.title}));
+  out.added.forEach((a,i)=>a.key="a"+i);out.changed.forEach(c=>c.key="c"+c.id);out.removed.forEach(r=>r.key="r"+r.id);
+  return out}
+A.compareDoc=el=>run("compareDoc","Tessa confronta…",async()=>{const d=await full("docs",el.dataset.id);if(!d)return;
+  const existing=reqList().filter(r=>!r.removed).map(r=>`${r.code} · ${r.title}`).join("\n").slice(0,12000);
+  const prompt=`${RULES}
+
+COMPITO: il documento qui sotto è una nuova versione dei requisiti. Elenca TUTTI i requisiti che contiene (anche quelli invariati), uno per elemento, dal punto di vista dell'utente, nella lingua del documento. Per ognuno indica in "sameAs" il codice del requisito già esistente che corrisponde (anche se riformulato), altrimenti stringa vuota. Non inventare requisiti.
+Requisiti esistenti:
+${existing||"(nessuno)"}
+
+Rispondi SOLO con JSON: {"requirements":[{"sameAs":"codice esistente o stringa vuota","sourceId":"ID nel documento o stringa vuota","title":"","desc":"","components":["Web App"|"Mobile App"|"Back-end/Cloud"|"Firmware"],"release":"","ui":"","extDeps":"","intDeps":"","questions":""}]}
+
+DOCUMENTO «${d.name}»:
+${String(d.text).slice(0,150000)}`;
+  let out;try{out=await ask(prompt)}catch(e){throw{ai:1,e}}
+  const sources=[...new Set(reqList().map(r=>r.source).filter(x=>x&&x!==d.name))];
+  const prev=sources.length===1?sources[0]:sources.find(x=>x.replace(/[_\s-]*v?\d+(\.\w+)?$/i,"")===d.name.replace(/[_\s-]*v?\d+(\.\w+)?$/i,""))||sources[0]||"";
+  const diff=docDiff(out?.requirements||[],d,prev);T.dd={doc:d.name,docId:el.dataset.id,prev,sources,found:out?.requirements||[],diff,off:new Set()};T.panel={kind:"docdiff",id:"docdiff"};
+  if(!diff.added.length&&!diff.changed.length&&!diff.removed.length)toast("Nessuna differenza: i requisiti sono già allineati a questo documento.")});
+function docDiffPanel(){const dd=T.dd;if(!dd)return"";const {added,changed,removed}=dd.diff;const ck=x=>`<input type="checkbox" class="dd-pick" value="${esc(x.key)}" ${dd.off.has(x.key)?"":"checked"} aria-label="Applica">`;
+  const n=[...added,...changed,...removed].filter(x=>!dd.off.has(x.key)).length;
+  const sec=(t,list,row)=>list.length?`<div class="sp-sec"><h3>${t} (${list.length})</h3><ul class="dd-list">${list.map(x=>`<li><label class="dd-row">${ck(x)}<span>${row(x)}</span></label></li>`).join("")}</ul></div>`:"";
+  return sidePanel("docdiff","docdiff",`<span>Nuova versione: ${esc(dd.doc)}</span>`,`<p class="small muted" style="margin:0 0 10px">Confronto tra «${esc(dd.doc)}» e i requisiti attuali. Scegli cosa applicare: i ticket dei requisiti cambiati o rimossi diventano «da rivedere».</p>
+   ${dd.sources.length>1?`<label class="f">Versione precedente (per i requisiti rimossi)<select id="ddPrev">${dd.sources.map(x=>`<option ${x===dd.prev?"selected":""}>${esc(x)}</option>`).join("")}</select></label>`:""}
+   ${sec("Nuovi",added,x=>`<b>${esc(x.sourceId||"nuovo")}</b> · ${esc(x.title)}`)}
+   ${sec("Cambiati",changed,x=>`<b>${esc(x.code)}</b> · ${x.fields.map(f=>`<span class="dd-f">${DIFF_FIELDS[f]}: <del>${esc(String(Array.isArray(x.from[f])?x.from[f].join(", "):x.from[f]||"—").slice(0,140))}</del> → <ins>${esc(String(Array.isArray(x.to[f])?x.to[f].join(", "):x.to[f]).slice(0,140))}</ins></span>`).join("")}`)}
+   ${sec("Non più nel documento",removed,x=>`<b>${esc(x.code)}</b> · ${esc(x.title)}`)}
+   ${!added.length&&!changed.length&&!removed.length?'<p class="empty">Nessuna differenza: i requisiti sono già allineati a questo documento.</p>':""}
+   <div class="toolbar" style="margin-top:12px">${B("docDiffApply",T.arm.ddApply?`Conferma: applica ${n===1?"1 modifica":n+" modifiche"}`:`Applica ${n===1?"1 modifica":n+" modifiche"}`,{cls:T.arm.ddApply?"armed":"primary",dis:!n})}${B("spClose","Chiudi",{ro:1})}</div>`)}
+A.docDiffApply=el=>arm("ddApply",el,()=>{const dd=T.dd,on=x=>!dd.off.has(x.key),snapR={},snapT={},mark=(code,why)=>ticketList().filter(t=>t.req===code).forEach(t=>{snapT[t.id]??=S.tickets[t.id];put("tickets",t.id,{...S.tickets[t.id],review:{why,at:Date.now()}})});
+  const add=dd.diff.added.filter(on),chg=dd.diff.changed.filter(on),rem=dd.diff.removed.filter(on),newIds=[];T.fresh=new Set();
+  add.forEach((a,i)=>{const used=new Set(reqList().map(x=>x.code));const code=a.sourceId&&!used.has(a.sourceId)?a.sourceId:nextReqCode();const id=uid();newIds.push(id);T.fresh.add(id);const{key,sourceId,...f}=a;put("reqs",id,{...f,code,designReady:false,source:dd.doc,order:Date.now()+i})});
+  chg.forEach(c=>{snapR[c.id]=S.reqs[c.id];put("reqs",c.id,{...S.reqs[c.id],...c.to,changed:{at:Date.now(),doc:dd.doc,fields:c.fields},source:dd.doc});mark(c.code,`il requisito ${c.code} è cambiato in «${dd.doc}» (${c.fields.map(f=>DIFF_FIELDS[f]).join(", ")}).`)});
+  rem.forEach(r=>{snapR[r.id]=S.reqs[r.id];put("reqs",r.id,{...S.reqs[r.id],removed:{at:Date.now(),doc:dd.doc}});mark(r.code,`il requisito ${r.code} non c'è più in «${dd.doc}».`)});
+  const pl=(n,a,b)=>n===1?"1 "+a:n+" "+b;addAutoDecision(`Nuova versione del documento «${dd.doc}»: ${pl(add.length,"requisito nuovo","requisiti nuovi")}, ${pl(chg.length,"cambiato","cambiati")}, ${pl(rem.length,"non più presente","non più presenti")}.`,"Documento");
+  editProject(p=>{delete p.reqsValidatedAt});T.panel=null;T.dd=null;
+  toast(`Applicate ${add.length+chg.length+rem.length} modifiche: ${Object.keys(snapT).length===1?"1 ticket da rivedere":Object.keys(snapT).length+" ticket da rivedere"}.`,()=>{newIds.forEach(id=>del("reqs",id));Object.entries(snapR).forEach(([id,d])=>put("reqs",id,d));Object.entries(snapT).forEach(([id,d])=>put("tickets",id,d));toast("Versione del documento non applicata.")})});
+A.reviewDone=el=>{const t=S.tickets[el.dataset.id];if(!t)return;const{review,...rest}=t;put("tickets",el.dataset.id,rest);toast("Ticket segnato come rivisto.")};
 A.exportReqs=()=>exportCsv("requisiti.csv",["ID","Titolo","Descrizione","Componenti","Release","Note UI/UX","Dipendenze esterne","Dipendenze interne","Domande aperte","Design pronto"],reqList().map(r=>[r.code,r.title,r.desc,(r.components||[]).join("; "),r.release,r.ui,r.extDeps,r.intDeps,r.questions,r.designReady?"sì":"no"]));
 
 /* passo 4 */
@@ -1216,7 +1267,7 @@ Rispondi SOLO con JSON: {"tickets":[{"tmp":"a1","req":"ID requisito","type":"Sto
   list.forEach(x=>{const req=reqs.find(r=>r.code===x.req)||reqs[0];const ref=fmtRef(n++);if(x.tmp)map[x.tmp]=ref;made.push([x,ticketFromAI(x,ref,req)])});
   for(const[x,t]of made){t.links=(x.links||[]).map(l=>({type:l.type==="blocks"?"blocks":"relates",to:map[l.to]})).filter(l=>l.to&&l.to!==t.ref);await put("tickets",uid(),t)}
   return made.length}
-A.genTickets=()=>run("genTickets","Claude sta scomponendo…",async()=>{const ts=ticketList();const todo=reqList().filter(r=>(T.rel==="*"||r.release===T.rel)&&!ts.some(t=>t.req===r.code));let tot=0,stopped=false;T.genLog="";
+A.genTickets=()=>run("genTickets","Claude sta scomponendo…",async()=>{const ts=ticketList();const todo=reqList().filter(r=>!r.removed&&(T.rel==="*"||r.release===T.rel)&&!ts.some(t=>t.req===r.code));let tot=0,stopped=false;T.genLog="";
   progStart("genTickets",{label:"Claude sta scomponendo i requisiti in ticket",unit:"gruppo",total:todo.length,detail:`Requisiti 0 di ${todo.length}`});T.fresh=new Set();const before=new Set(Object.keys(S.tickets));
   try{for(let i=0;i<todo.length;i+=3){if(T.prog.genTickets?.stop)break;const batch=todo.slice(i,i+3);Object.assign(T.prog.genTickets,{done:i,label:`Claude scompone ${batch.map(r=>r.code).join(", ")}`,detail:`Requisiti ${i} di ${todo.length} · ${tot} ticket finora`});progPaint("genTickets");T.genLog+=`Requisiti ${batch.map(r=>r.code).join(", ")}… `;scheduleRender();try{const n=await genFor(batch);tot+=n;T.genLog+=`${n} ticket\n`;Object.keys(S.tickets).forEach(id=>{if(!before.has(id))T.fresh.add(id)});Object.assign(T.prog.genTickets,{done:Math.min(i+3,todo.length),detail:`Requisiti ${Math.min(i+3,todo.length)} di ${todo.length} · ${tot} ticket finora`,items:[...T.fresh].map(id=>S.tickets[id]).filter(Boolean).slice(-4).map(t=>({code:t.ref,title:fullTitle(t)}))});progPaint("genTickets")}catch(e){T.genLog+="non riuscito\n";throw e}}}finally{stopped=progEnd("genTickets")}
   setMsg("backlog","ok",`${stopped?"Scomposizione fermata. ":""}${tot} ticket generati. Apri ognuno per controllare titolo, epica, descrizione e ipotesi; correggi gli errori segnalati in rosso.`)});
@@ -1451,6 +1502,8 @@ document.addEventListener("change",e=>{const el=e.target;
   if(el.id==="rqShow"||el.id==="rqRel"){T.rq[el.id==="rqShow"?"show":"rel"]=el.value;render();return}
   if(el.classList.contains("t-pick")){el.checked?T.tsel.add(el.value):T.tsel.delete(el.value);delete T.arm.tbulk;render();refocus(`.t-pick[value="${el.value}"]`);return}
   if(el.id==="tAll"){const ids=$$('#main tr[data-k^="t-"]:not([hidden])').map(r=>r.dataset.id);ids.forEach(id=>el.checked?T.tsel.add(id):T.tsel.delete(id));delete T.arm.tbulk;render();refocus("#tAll");return}
+  if(el.classList.contains("dd-pick")){el.checked?T.dd.off.delete(el.value):T.dd.off.add(el.value);delete T.arm.ddApply;render();refocus(`.dd-pick[value="${el.value}"]`);return}
+  if(el.id==="ddPrev"){const d=S.docs[T.dd.docId];T.dd.prev=el.value;T.dd.diff=docDiff(T.dd.found,{name:T.dd.doc,...(d||{})},el.value);T.dd.off=new Set();render();refocus("#ddPrev");return}
   if(el.id==="kiSrc"){T.ki.src=el.value;delete T.arm.kimp;if(el.value.startsWith("prj:")&&!T.kiCache?.[el.value])kitSource(el.value).then(scheduleRender,e=>toast(e.message||"Kit non letto."));render();refocus("#kiSrc");return}
   if(el.classList.contains("ki-part")){T.ki.parts[el.value]=el.checked;delete T.arm.kimp;return}
   if(el.id==="kiOver"){T.ki.over=el.checked;delete T.arm.kimp;return}
