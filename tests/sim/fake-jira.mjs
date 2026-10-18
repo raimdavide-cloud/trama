@@ -109,7 +109,7 @@ async function handle(url, init) {
     return json(201, { id: String(id), key: issue.key, self: `https://x/rest/api/2/issue/${id}` });
   }
   let m;
-  if ((m = p.match(/^\/rest\/api\/3\/issue\/([A-Z0-9-]+)$/))) {
+  if ((m = p.match(/^\/rest\/api\/[23]\/issue\/([A-Z0-9-]+)$/))) {
     const issue = sim.issues.get(m[1]);
     if (!issue) return err(404, {}, ["Issue does not exist or you do not have permission to see it."]);
     if (method === "GET") return json(200, view(issue, (u.searchParams.get("fields") || "summary").split(",")));
@@ -117,6 +117,8 @@ async function handle(url, init) {
       const parent = body.fields?.parent?.key;
       if (parent) { const bad = checkParent(issue.type, parent); if (bad) return bad; issue.parent = parent; }
       if (body.fields?.labels) issue.fields.labels = body.fields.labels;
+      if ("summary" in (body.fields || {})) { if (!body.fields.summary) return err(400, { summary: "Il riepilogo è obbligatorio." }); issue.summary = body.fields.summary; }
+      if ("description" in (body.fields || {})) issue.description = body.fields.description;
       if (body.fields?.fixVersions) {
         for (const v of body.fields.fixVersions) if (!sim.versions.includes(v.name)) return err(400, { fixVersions: `Versione «${v.name}» inesistente.` });
         issue.fields.fixVersions = body.fields.fixVersions;

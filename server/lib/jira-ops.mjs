@@ -104,6 +104,28 @@ export const ops = {
     await jiraFetch(user, i.cloudId, `${V3}/issue/${e(key)}`, { method: "PUT", body: { fields: { labels } } });
     return { ok: true };
   },
+  // Aggiornamento di un ticket creato da Trama: solo i campi cambiati (titolo, descrizione, label, epica, campi ammessi).
+  async editJiraIssue(user, i) {
+    const key = String(i.issueKey || "").trim(), ok = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
+    if (!ok.test(key)) throw Object.assign(new Error("Chiave ticket non valida"), { code: "tool_error" });
+    const fields = Object.fromEntries(Object.entries(i.additional_fields || {}).filter(([k]) => ALLOWED_FIELDS.test(k) && k !== "labels" && k !== "parent"));
+    if (i.summary !== undefined) fields.summary = String(i.summary).slice(0, 255);
+    if (i.description !== undefined) fields.description = mdToWiki(i.description);
+    if (Array.isArray(i.labels)) {
+      const labels = [...new Set(i.labels.map((l) => String(l).trim()).filter(Boolean))];
+      if (labels.some((l) => /\s/.test(l) || l.length > 255)) throw Object.assign(new Error("Label non valida: niente spazi"), { code: "tool_error" });
+      fields.labels = labels;
+    }
+    if (i.parentKey) {
+      if (!ok.test(String(i.parentKey))) throw Object.assign(new Error("Chiave dell'epica non valida"), { code: "tool_error" });
+      fields.parent = { key: String(i.parentKey) };
+    }
+    if (!Object.keys(fields).length) return { ok: true, unchanged: true };
+    if (fields.summary === "") throw Object.assign(new Error("Il titolo non può essere vuoto"), { code: "tool_error" });
+    // API v2: la descrizione accetta il wiki markup, come nella creazione
+    await jiraFetch(user, i.cloudId, `/rest/api/2/issue/${e(key)}`, { method: "PUT", body: { fields } });
+    return { ok: true };
+  },
   async createIssueLink(user, i) {
     await jiraFetch(user, i.cloudId, `${V3}/issueLink`, {
       method: "POST",

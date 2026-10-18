@@ -154,3 +154,18 @@ test("Retry-After si legge in secondi o come data HTTP", () => {
   assert.equal(retryAfterMs(null, now), null);
   assert.equal(retryAfterMs("domani", now), null);
 });
+
+test("aggiornamento di un ticket creato: solo i campi passati, descrizione in wiki markup, controlli prima di Jira", async () => {
+  const r = await create({ summary: "[BE] Vecchio titolo", description: "## Context\nprima", additional_fields: { labels: ["MVP"] } });
+  const key = r.key;
+  assert.deepEqual(await ops.editJiraIssue(user, { cloudId, issueKey: key }), { ok: true, unchanged: true });
+  await ops.editJiraIssue(user, { cloudId, issueKey: key, summary: "[BE] Nuovo titolo", description: "## Context\n- dopo", labels: ["MVP", "Logic", "MVP"], additional_fields: { assignee: "x", customfield_100: "v" } });
+  const i = sim.issues.get(key);
+  assert.equal(i.summary, "[BE] Nuovo titolo");
+  assert.equal(i.description, "h2. Context\n* dopo");
+  assert.deepEqual(i.fields.labels, ["MVP", "Logic"]);
+  assert.ok(sim.calls.includes(`PUT /rest/api/2/issue/${key}`));
+  await assert.rejects(ops.editJiraIssue(user, { cloudId, issueKey: "non valida", summary: "x" }), { code: "tool_error" });
+  await assert.rejects(ops.editJiraIssue(user, { cloudId, issueKey: key, labels: ["con spazio"] }), { code: "tool_error" });
+  await assert.rejects(ops.editJiraIssue(user, { cloudId, issueKey: key, summary: "" }), { code: "tool_error" });
+});

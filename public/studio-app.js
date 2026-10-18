@@ -477,7 +477,8 @@ async function epicMoveRun(){const mv=T.epicMove;if(!mv)return;const p=P(),k=K()
 let SPIKE_DONE=false;
 function migrateSpike(loaded){if(SPIKE_DONE||READONLY||!loaded.has("meta")||!loaded.has("tickets"))return;SPIKE_DONE=true;
   if(S.kit?.types&&"Spike" in S.kit.types)editKit(k=>{const was=k.types.Spike;delete k.types.Spike;if(!k.types["UX Story"])k.types["UX Story"]=!was||was==="Spike"||was==="Task"?"UX Story":was});
-  arr("tickets").filter(t=>t.type==="Spike").forEach(t=>{const{id,...d}=t;put("tickets",id,{...d,type:"UX Story"})})}
+  arr("tickets").filter(t=>t.type==="Spike").forEach(t=>{const{id,...d}=t;put("tickets",id,{...d,type:"UX Story"})});
+  arr("tickets").filter(t=>t.state==="created"&&t.key&&!t.pushed).forEach(t=>{const{id,...d}=t;put("tickets",id,{...d,pushed:pushedOf(t)})})}
 /* Sezioni apribili dei passi (variante A).
    Le schede con un titolo (e i titoli «1 · Documenti» del passo Requisiti, le categorie delle Domande) diventano sezioni:
    numero, titolo e stato nella riga del titolo. Si aprono da sole quando hanno qualcosa da fare, non si chiudono mai da
@@ -516,7 +517,7 @@ function secSpec(id,raw,memo={}){const r=x=>raw.includes(x),pill=(c,t)=>`<span c
     if(r("3. Ipotesi"))return{num:"3",title:"Ipotesi e scelte fatte al tuo posto",ok:!!T.ack||(!total&&created>0),todo:!T.ack&&total>0,status:T.ack?pill("ok","confermate"):!total&&created?pill("ok","niente da confermare"):pill("warn","da confermare")};
     if(r("4. Crea"))return{num:"4",title:"Crea su Jira",ok:ts.length>0&&created===ts.length,todo:!!T.running||(!!T.ack&&total>0)||T.log.length>0,status:plain(`${created} di ${ts.length} ticket in Jira`)};
     if(r("5. Esito")){const odd=ts.filter(t=>t.state==="error"||t.state==="unknown").length,bad=(T.structReport||[]).filter(x=>!x.ok).length;return{num:"5",title:"Esito della creazione",ok:created>0&&!odd&&!bad,todo:!!T.report||odd>0||bad>0,status:plain(n1(created,"ticket creato","ticket creati"))+(odd?pill("err",odd+" da sistemare"):"")+(bad?pill("err",n1(bad,"livello non collegato","livelli non collegati")):T.structReport?.length?pill("ok","struttura collegata"):"")}}
-    if(r("6. Sincronizzazione")){const sy=T.sync,warn=sy&&!sy.empty&&(sy.deleted.length||sy.parentDiff.length);return{num:"6",title:"Sincronizzazione con Jira",ok:!!sy&&!warn,todo:!!warn,status:sy?(warn?pill("warn","differenze trovate"):plain("sincronizzato alle "+new Date(sy.at).toLocaleTimeString(LOCALE(),{hour:"2-digit",minute:"2-digit"}))):plain("da sincronizzare")}}}
+    if(r("6. Sincronizzazione")){const sy=T.sync,warn=sy&&!sy.empty&&(sy.deleted.length||sy.parentDiff.length),dn=ts.filter(t=>dirtyOf(t).length).length;if(dn)return{num:"6",title:"Sincronizzazione con Jira",ok:false,todo:true,status:pill("warn",n1(dn,"ticket da aggiornare","ticket da aggiornare"))};return{num:"6",title:"Sincronizzazione con Jira",ok:!!sy&&!warn,todo:!!warn,status:sy?(warn?pill("warn","differenze trovate"):plain("sincronizzato alle "+new Date(sy.at).toLocaleTimeString(LOCALE(),{hour:"2-digit",minute:"2-digit"}))):plain("da sincronizzare")}}}
   return{num:(raw.match(/^\s*(K?\d+)/)||[])[1]||"",title:raw.replace(/^\s*K?\d+\s*[.·]\s*/,""),todo:false,status:""}}
 /* Sblocco progressivo: in un progetto nuovo ogni sezione compare quando la precedente è completata.
    Una sezione già compilata resta sempre visibile, quindi un progetto completo si vede tutto. Il passo Domande non è
@@ -758,7 +759,7 @@ function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.rele
   h+=bulkBar(k)+"</div>";
   if(T.panel?.kind==="ticket"){const t=ticketList().find(x=>x.id===T.panel.id);if(t)h+=sidePanel("ticket",t.id,`<span class="key">${esc(t.ref)}</span><span class="pill acc">${esc(t.type)}</span><span>${esc(fullTitle(t))}</span>`,ticketForm(t))}
   return h}
-const ticketState=t=>t.state==="created"?`${browse(t.key)}${vOf(t)==="ok"?'<span class="pill ok">verificato</span>':vOf(t)?'<span class="pill warn">da verificare</span>':""}`:t.state==="error"?'<span class="pill err">errore Jira</span>':t.state==="unknown"?'<span class="pill warn">esito incerto</span>':'<span class="pill">bozza</span>';
+const ticketState=t=>t.state==="created"?`${browse(t.key)}${dirtyOf(t).length?'<span class="pill warn">da aggiornare</span>':vOf(t)==="ok"?'<span class="pill ok">verificato</span>':vOf(t)?'<span class="pill warn">da verificare</span>':""}`:t.state==="error"?'<span class="pill err">errore Jira</span>':t.state==="unknown"?'<span class="pill warn">esito incerto</span>':'<span class="pill">bozza</span>';
 const tMatch=(t,q)=>!q||!t||[t.ref,fullTitle(t),t.key,t.epic].some(v=>String(v||"").toLowerCase().includes(q));
 // barra della selezione: epica, release, tipo di lavoro e label in un colpo solo; si eliminano solo le bozze
 function bulkBar(k){const n=T.tsel.size;if(!n||READONLY)return"";const drafts=[...T.tsel].filter(id=>S.tickets[id]?.state!=="created").length,armed=T.arm.tbulk;
@@ -777,7 +778,9 @@ function refreshIssues(id){const sp=$(`.sp[data-panel="ticket:${id}"]`),t=S.tick
 function refreshQuestion(id){const x=S.questions[id],p=$(`#main details.item[data-k="q-${id}"]>summary>.pill`);if(!x||!p)return;
   const [c,l]=x.answer?.trim()?["ok","Risposta"]:x.hypothesis?.trim()?["warn","Ipotesi"]:["err","Aperta"];p.className="pill "+c;p.textContent=l}
 function ticketForm(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked=t.state==="created";
- return`${locked?`<div class="msg info">Creato in Jira come ${browse(t.key)}. Le modifiche qui non aggiornano Jira.${vOf(t)&&vOf(t)!=="ok"?" "+esc(vOf(t)):""}</div>`:""}
+ const dirty=dirtyOf(t);
+ return`${locked?(dirty.length?`<div class="msg warn">Creato in Jira come ${browse(t.key)}. Modificato qui dopo la creazione: ${dirty.map(f=>PUSH_NAMES[f]).join(", ")}. <span class="row" style="display:inline-flex;margin-left:6px">${JB("pushCheck","Aggiorna in Jira",{data:{id:t.id},dis:T.running})}</span></div>${pushPreview(t.id)}`
+   :`<div class="msg info">Creato in Jira come ${browse(t.key)}. Se lo modifichi qui, Trama ti propone di aggiornarlo anche in Jira.${vOf(t)&&vOf(t)!=="ok"?" "+esc(vOf(t)):""}</div>`):""}
  ${t.err?`<div class="msg err">${esc(t.err)}</div>`:""}
  ${(e.length||w.length)&&!locked?`<div class="issues">${e.map(x=>`<span class="pill err">${esc(x)}</span>`).join("")}${w.map(x=>`<span class="pill warn">${esc(x)}</span>`).join("")}</div>`:""}
  <div class="grid">${F("Tipo",sel(b+"type",t.type,TYPES,{empty:false}))}${F("Area (prefisso)",sel(b+"area",t.area,Object.entries(AREAS).map(([k2,a])=>[k2,a.prefix+" "+a.label]),{empty:false}))}
@@ -877,7 +880,7 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
    <p class="small muted" style="margin:0 0 10px">Un solo comando, nell'ordine giusto: Project › Fasi › epiche › ticket › collegamenti, poi rilegge Jira per verificare ogni livello.</p>
    <div class="toolbar">${T.running?B("stopRun","Ferma dopo il ticket in corso",{cls:"danger"}):JB("runCreate",T.arm.run?`Conferma: crea tutto (${(pl.struct.project?1:0)+pl.struct.phases.length+pl.epics.length+pl.ready.length-(T.createDup?0:pl.dup.length)} elementi)`:"Crea su Jira",{cls:T.arm.run?"armed":"primary",dis:!T.ack||errs.length>0})}</div>
    ${(()=>{const why=T.running?"Una creazione è in corso: attendi che finisca, oppure fermala.":errs.length?"Bloccato dal controllo: "+errs.map(e=>e.t).join("; ")+".":!T.ack?"Per attivare il pulsante, conferma le ipotesi nello step 3.":"";return why?`<p class="small" style="margin:10px 0 0;color:var(--warn)">${esc(why)}</p>`:""})()}
-   <details class="item" data-k="adv-create" style="margin-top:12px"><summary><span class="ttl">Azioni avanzate (singoli passaggi)</span></summary><div class="in"><div class="toolbar" style="margin-top:10px">${JB("runStruct",T.arm.struct?`Conferma: crea ${pl.struct.project?"1 Project, ":""}${pl.struct.phases.length} Fasi e collega ${pl.struct.link.length} epiche`:"Crea solo la struttura Jira",{cls:T.arm.struct?"armed":"",dis:T.running||!T.ack||!(pl.struct.phases.length||pl.struct.link.length||pl.epics.length)})}${JB("runLinks","Crea i collegamenti tra ticket",{dis:T.running||!pl.links})}</div></div></details>
+   <details class="item" data-k="adv-create" style="margin-top:12px"><summary><span class="ttl">Azioni avanzate (singoli passaggi)</span></summary><div class="in"><div class="toolbar" style="margin-top:10px">${JB("runStruct",T.arm.struct?`Conferma: crea ${pl.struct.project?"1 Project, ":""}${pl.struct.phases.length} Fasi e collega ${pl.struct.link.length} epiche`:"Crea solo la struttura Jira",{cls:T.arm.struct?"armed":"",dis:T.running||!T.ack||!(pl.struct.phases.length||pl.struct.link.length||pl.epics.length)})}</div></div></details>
    ${(()=>{if(!T.log.length&&lazy(S.runlog)){want("meta","runlog");return`<p class="small muted" style="margin:10px 0 4px">Ultimo log salvato (${new Date(S.runlog.at).toLocaleString(LOCALE())}): caricamento…</p>`}const lines=T.log.length?T.log:(S.runlog?.lines||[]);return lines.length?`${T.log.length?"":`<p class="small muted" style="margin:10px 0 4px">Ultimo log salvato (${new Date(S.runlog.at).toLocaleString(LOCALE())})</p>`}<div class="log">${esc(lines.join("\n"))}</div>`:""})()}</div>`}
   const odd=ts.filter(t=>t.state==="error"||t.state==="unknown"),keys=createdKeys(),created=ts.filter(t=>t.state==="created");
   // 5 · Esito della creazione: una sezione, con le sue parti come righe di secondo livello
@@ -889,6 +892,10 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
   if(esito.length)h+=`<div class="card"><h2>5. Esito della creazione</h2><div class="list">${esito.join("")}</div></div>`;
   // 6 · Sincronizzazione: si ripete nel tempo, resta una sezione a sé
   if(keys.length)h+=`<div class="card"><h2>6. Sincronizzazione con Jira</h2><p class="small muted" style="margin:0 0 10px">Rilegge da Jira tutto ciò che Trama ha creato: stato, Principale e titoli. Quello che è stato eliminato o rinominato a mano in Jira viene riconosciuto e Trama si riallinea (i ticket eliminati tornano in bozza, pronti da ricreare).</p>
+    ${(()=>{const dirty=ticketList().filter(t=>dirtyOf(t).length),pl=pendingLinks();
+      return`<div class="push-box"><h3 class="h-sub">Modifiche da portare in Jira</h3>${dirty.length||pl?`<p class="small" style="margin:0 0 8px">${dirty.length?(dirty.length===1?"1 ticket modificato in Trama dopo la creazione":dirty.length+" ticket modificati in Trama dopo la creazione"):""}${dirty.length&&pl?" · ":""}${pl?(pl===1?"1 collegamento da creare":pl+" collegamenti da creare"):""}</p>
+      ${dirty.length?`<ul class="small" style="margin:0 0 8px">${dirty.slice(0,8).map(t=>`<li>${browse(t.key)} ${esc(fullTitle(t))} · ${dirtyOf(t).map(f=>PUSH_NAMES[f]).join(", ")}</li>`).join("")}${dirty.length>8?`<li>+ ${dirty.length-8} ticket</li>`:""}</ul>`:""}
+      <div class="toolbar">${JB("pushCheck","Controlla e aggiorna Jira",{cls:"primary",dis:T.running})}</div>${pushPreview("all")}`:'<p class="small muted" style="margin:0">Nessuna modifica: Jira è allineato a Trama.</p>'}</div>`})()}
     <div class="toolbar">${JB("syncJira","Sincronizza e verifica")}${T.sync?`<span class="small muted">Ultima sincronizzazione ${new Date(T.sync.at).toLocaleTimeString(LOCALE())} · ${T.sync.total} elementi letti</span>`:""}</div>
     ${T.sync&&!T.sync.empty?`<div class="stat" style="margin-top:12px"><div><b>${T.sync.total-T.sync.deleted.length}</b><span>presenti in Jira</span></div><div><b style="color:${T.sync.deleted.length?"var(--err)":"inherit"}">${T.sync.deleted.length}</b><span>eliminati in Jira</span></div><div><b style="color:${T.sync.parentDiff.length?"var(--warn)":"inherit"}">${T.sync.parentDiff.length}</b><span>con epica diversa</span></div><div><b style="color:${T.sync.renamed.length?"var(--warn)":"inherit"}">${T.sync.renamed.length}</b><span>rinominati</span></div></div>
     ${Object.keys(T.sync.status).length?`<p class="small" style="margin:10px 0 0">Stato: ${Object.entries(T.sync.status).map(([k2,v])=>`<span class="pill">${esc(k2)} · ${v}</span>`).join(" ")}</p>`:""}
@@ -1260,7 +1267,7 @@ function fieldsFor(t){const k=K(),j=S.jira,r=relOf(t.release),f={};
   (j.required||[]).forEach(x=>{const v=k.custom?.[x.key];if(v)f[x.key]=x.allowed?.length?{value:v}:v});return f}
 async function createOne(t){const p=P(),k=K();
   const input={cloudId:p.cloudId,projectKey:p.key,issueTypeName:k.types[t.type]||t.type,summary:fullTitle(t),description:t.desc,contentFormat:"markdown",additional_fields:fieldsFor(t)};
-  try{const r=await jira("createJiraIssue",input);const key=findKey(r);if(!key)throw{code:"upstream_error",message:"chiave non restituita"};await put("tickets",t.id,{...S.tickets[t.id],state:"created",key,err:"",verify:""});logLine(`${t.ref} → ${key}  ${fullTitle(t)}`);return true}
+  try{const r=await jira("createJiraIssue",input);const key=findKey(r);if(!key)throw{code:"upstream_error",message:"chiave non restituita"};await put("tickets",t.id,{...S.tickets[t.id],state:"created",key,err:"",verify:"",pushed:pushedOf(t)});logLine(`${t.ref} → ${key}  ${fullTitle(t)}`);return true}
   catch(e){if(e?.code==="tool_error"){await put("tickets",t.id,{...S.tickets[t.id],state:"error",err:jiraMsg(e)});logLine(`${t.ref} non creato: ${jiraMsg(e)}`);return true}
    if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};await put("tickets",t.id,{...S.tickets[t.id],state:"unknown",err:"Esito incerto: Jira non ha risposto. Usa «Cerca in Jira» prima di riprovare."});logLine(`${t.ref}: esito incerto, creazione fermata.`);return false}}
 // Se Jira risponde con un errore incerto ma il ticket è stato creato lo stesso, lo ritrova e lo riusa
@@ -1274,6 +1281,31 @@ async function createNode(type,summary,description,parentKey,extra={}){const p=P
     logLine(`«${summary}»: risposta incerta di Jira (${err.code}${err.message?": "+String(err.message).slice(0,160):""}). Non risulta creato: nuovo tentativo tra 4 secondi.`);await sleep(4000);
     key=await findCreated(type,summary,parentKey);if(key)return key;
     const r=await jira("createJiraIssue",{cloudId:p.cloudId,projectKey:p.key,issueTypeName:type,summary,contentFormat:"markdown",description,additional_fields:f});key=findKey(r);if(!key)throw{code:"upstream_error",message:"Jira non ha restituito la chiave"};return key}}
+/* Modifiche dopo la creazione. Trama ricorda cosa ha scritto in Jira (pushed) e porta in Jira solo ciò che è cambiato:
+   titolo, descrizione, label, epica. Prima rilegge Jira: se qualcuno ha cambiato titolo o epica in Jira lo dice prima della conferma;
+   le label aggiunte in Jira restano. Nello stesso giro si creano i collegamenti che mancano. */
+const pushedOf=t=>({summary:fullTitle(t),desc:String(t.desc||""),labels:labelsOf(t).slice().sort(),epic:fieldsFor(t).parent?.key||""});
+const PUSH_NAMES={summary:"titolo",desc:"descrizione",labels:"label",epic:"epica"};
+function dirtyOf(t){if(!t||t.state!=="created"||!t.key||!t.pushed)return[];const c=pushedOf(t);return Object.keys(PUSH_NAMES).filter(f=>JSON.stringify(c[f])!==JSON.stringify(t.pushed[f]))}
+function pendingLinks(){const ts=ticketList();let n=0;for(const t of ts){if(t.state!=="created")continue;for(const l of(t.links||[])){if((t.linksDone||[]).includes(l.type+":"+l.to))continue;const o=ts.find(x=>x.ref===l.to);if(o?.state==="created"&&o.key)n++}}return n}
+async function pushPlan(ids){const list=ticketList().filter(t=>(!ids||ids.includes(t.id))&&dirtyOf(t).length);
+  const {map,missing}=list.length?await fetchIssues(list.map(t=>t.key),["summary","labels","parent"]):{map:{},missing:new Set()};
+  return list.map(t=>{const j=map[t.key]?.fields||{},d=dirtyOf(t),warn=[];
+    if(missing.has(t.key))warn.push("non si trova più in Jira: usa «Sincronizza e verifica»");
+    if(d.includes("summary")&&j.summary!=null&&String(j.summary).trim()!==t.pushed.summary.trim())warn.push(`in Jira il titolo era stato cambiato in «${String(j.summary).slice(0,80)}»: verrà sostituito`);
+    if(d.includes("epic")&&(j.parent?.key||"")!==t.pushed.epic)warn.push("in Jira l'epica era stata cambiata: verrà sostituita");
+    if(d.includes("epic")&&!pushedOf(t).epic)warn.push("la nuova epica non esiste ancora in Jira: l'epica resta com'è");
+    return{id:t.id,key:t.key,ref:t.ref,title:fullTitle(t),d,warn,gone:missing.has(t.key),jiraLabels:j.labels||[]}})}
+async function pushItem(it){const t=S.tickets[it.id];if(!t||it.gone)return false;const cur=pushedOf(t),input={cloudId:P().cloudId,issueKey:t.key};
+  if(it.d.includes("summary"))input.summary=cur.summary;if(it.d.includes("desc"))input.description=t.desc;
+  if(it.d.includes("labels")){const add=cur.labels.filter(l=>!t.pushed.labels.includes(l)),rem=t.pushed.labels.filter(l=>!cur.labels.includes(l));input.labels=[...new Set([...it.jiraLabels,...add])].filter(l=>!rem.includes(l))}
+  if(it.d.includes("epic")&&cur.epic)input.parentKey=cur.epic;
+  await jira("editJiraIssue",input);await put("tickets",it.id,{...S.tickets[it.id],pushed:{...cur,epic:input.parentKey||t.pushed.epic},verify:""});
+  logLine(`${t.key} aggiornato in Jira: ${it.d.map(f=>PUSH_NAMES[f]).join(", ")}.`);return true}
+function pushPreview(scope){const pp=T.pushPlan;if(!pp||pp.scope!==scope)return"";const n=pp.items.filter(x=>!x.gone).length;
+  return`<div class="card note" style="margin:10px 0 0"><b>${n?(n===1?"1 ticket da aggiornare in Jira":n+" ticket da aggiornare in Jira"):"Nessun ticket da aggiornare"}${pp.links?` · ${pp.links===1?"1 collegamento da creare":pp.links+" collegamenti da creare"}`:""}</b>
+   <ul class="small" style="margin:6px 0 0">${pp.items.map(x=>`<li><span class="key">${esc(x.key)}</span> ${esc(x.title)} · ${x.d.map(f=>PUSH_NAMES[f]).join(", ")}${x.warn.map(w=>`<br><span class="pill warn">${esc(w)}</span>`).join("")}</li>`).join("")}</ul>
+   <div class="toolbar" style="margin-top:10px">${JB("pushRun",n||pp.links?"Conferma: aggiorna Jira":"Niente da aggiornare",{cls:"primary",dis:T.running||!(n||pp.links)})}${B("pushCancel","Annulla",{ro:1})}</div></div>`}
 async function createEpics(){const pl=planOf();const H0=K().hier;
   const handle=(err,what)=>{if(err?.code==="tool_error"){logLine(`${what} non creato: ${jiraMsg(err)}`);return true}if(LIFECYCLE.includes(err?.code))throw{jira:1,...err};logLine(`${what}: esito incerto (${err?.code||"errore"}${err?.message?": "+String(err.message).slice(0,200):""}). Non risulta creato in Jira: creazione fermata.`);return false};
   if(H0?.enabled){
@@ -1331,16 +1363,24 @@ A.runCreate=el=>arm("run",el,()=>run("runCreate","Creazione…",async()=>{T.runn
    addAutoDecision(`Backlog iniziale creato in Jira (${ticketList().filter(t=>t.state==="created").length} ticket).`,"Strumento (passo 6)")}
   catch(e){logLine(`Errore: ${e?.message||jiraMsg(e)}`);throw e}
   finally{T.running=false;T.arm={};}}));
+A.pushCheck=el=>run("pushCheck","Lettura di Jira…",async()=>{const id=el?.dataset?.id;const items=await pushPlan(id?[id]:null);T.pushPlan={scope:id||"all",items,links:id?0:pendingLinks(),at:Date.now()}});
+A.pushCancel=()=>{T.pushPlan=null;render()};
+A.pushRun=()=>run("pushRun","Aggiornamento di Jira…",async()=>{const pp=T.pushPlan;if(!pp)return;T.running=true;T.stop=false;let ok=0,links=0;
+  try{for(const it of pp.items){if(T.stop)break;try{if(await pushItem(it))ok++}catch(e){if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};logLine(`${it.key} non aggiornato: ${jiraMsg(e)}`)}}
+    if(pp.scope==="all"&&!T.stop){links=await createLinks()}
+    if(ok)await verify();T.pushPlan=null;
+    setMsg("create",ok===pp.items.filter(x=>!x.gone).length?"ok":"warn",`Jira aggiornato: ${ok===1?"1 ticket":ok+" ticket"}${links?`, ${links===1?"1 collegamento creato":links+" collegamenti creati"}`:""}.`);
+    toast(ok===1?"1 ticket aggiornato in Jira.":`${ok} ticket aggiornati in Jira.`)}
+  finally{T.running=false}});
 A.stopRun=()=>{T.stop=true;toast("La creazione si ferma dopo l'operazione in corso.")};
 A.runStruct=el=>arm("struct",el,()=>run("runStruct","Creazione struttura…",async()=>{T.running=true;T.stop=false;T.log=[];logLine("Inizio creazione della struttura (Project, Fasi, epiche).");
   try{const ok=await createEpics();await verifyStructure();logLine(ok?"Struttura completata.":"Struttura interrotta: controlla Jira prima di riprovare.")}
   catch(e){logLine(`Errore: ${e?.message||jiraMsg(e)}`);throw e}
   finally{T.running=false;T.arm={}}}));
-A.runLinks=()=>run("runLinks","Collegamento…",async()=>{T.stop=false;const n=await createLinks();logLine(`${n} collegamenti creati.`)});
 A.retryOne=el=>run("retryOne","Creazione…",async()=>{const t=ticketList().find(x=>x.id===el.dataset.id);if(t&&!issuesOf(t).e.length)await createOne(t);else toast("Correggi prima gli errori del ticket al passo 5.")});
 A.reconcile=el=>run("reconcile","Ricerca…",async()=>{const t=ticketList().find(x=>x.id===el.dataset.id);const p=P();const r=await jira("searchJiraIssuesUsingJql",{cloudId:p.cloudId,jql:`project = "${p.key}" AND summary ~ "${fullTitle(t).replace(/[\[\]"\\]/g," ").replace(/\s+/g," ").trim()}" ORDER BY created DESC`,maxResults:10,fields:["summary"]});
   const hit=findIssues(r).find(i=>String(i.fields?.summary).toLowerCase()===fullTitle(t).toLowerCase());
-  if(hit){await put("tickets",t.id,{...t,state:"created",key:hit.key,err:""});toast(`Trovato in Jira: ${hit.key}.`)}else{await put("tickets",t.id,{...t,state:"draft",err:""});toast("Non trovato in Jira: il ticket torna in bozza e verrà creato alla prossima creazione.")}});
+  if(hit){await put("tickets",t.id,{...t,state:"created",key:hit.key,err:"",pushed:pushedOf(t)});toast(`Trovato in Jira: ${hit.key}.`)}else{await put("tickets",t.id,{...t,state:"draft",err:""});toast("Non trovato in Jira: il ticket torna in bozza e verrà creato alla prossima creazione.")}});
 function createdKeys(){const k=K(),h=k.hier;const set=new Set();ticketList().forEach(t=>{if(t.state==="created"&&t.key)set.add(t.key)});k.epics.forEach(e=>e.key&&set.add(e.key));(h?.phases||[]).forEach(f=>f.key&&set.add(f.key));h?.project?.key&&set.add(h.project.key);
   return[...set].sort((a,b)=>(+a.split("-").pop())-(+b.split("-").pop()))}
 async function syncJira(){const k=K(),h=k.hier;const ts=ticketList().filter(t=>t.state==="created"&&t.key);const keys=createdKeys();
@@ -1348,7 +1388,7 @@ async function syncJira(){const k=K(),h=k.hier;const ts=ticketList().filter(t=>t
   const {map,missing}=await fetchIssues(keys,["summary","issuetype","status","parent"]);
   const res={at:Date.now(),total:keys.length,deleted:[],parentDiff:[],renamed:[],status:{}};
   for(const t of ts){
-    if(missing.has(t.key)){res.deleted.push(`${t.key} ${fullTitle(t)}`);const{key,verify,linksDone,jiraStatus,syncedAt,...rest}=S.tickets[t.id];await put("tickets",t.id,{...rest,state:"draft",err:"Eliminato in Jira: tornato in bozza",linksDone:[]});continue}
+    if(missing.has(t.key)){res.deleted.push(`${t.key} ${fullTitle(t)}`);const{key,verify,linksDone,jiraStatus,syncedAt,pushed,...rest}=S.tickets[t.id];await put("tickets",t.id,{...rest,state:"draft",err:"Eliminato in Jira: tornato in bozza",linksDone:[]});continue}
     const i=map[t.key],f=i?.fields||{},st=f.status?.name||"";res.status[st]=(res.status[st]||0)+1;
     const ep=k.epics.find(e=>e.name===t.epic),par=f.parent?.key||"";
     if(ep?.key&&par&&par!==ep.key)res.parentDiff.push(`${t.key} (in ${par}, previsto ${ep.key})`);

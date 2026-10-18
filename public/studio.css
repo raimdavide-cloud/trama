@@ -524,3 +524,5 @@ html[lang="it"] .lang-btn [data-flag="en"],html[lang="en"] .lang-btn [data-flag=
 .exp-btn{border:1px solid var(--line);background:var(--surface);font-weight:600;padding:7px 12px}
 .exp-btn .chev{width:12px;height:12px}
 .exp-dd .dd-menu{min-width:260px}
+.push-box{margin:0 0 16px;padding:0 0 14px;border-bottom:1px solid var(--line)}
+.push-box .h-sub{margin:0 0 6px;font:700 15px var(--f-display)}
