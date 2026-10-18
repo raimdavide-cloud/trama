@@ -79,7 +79,7 @@ test("homepage: sezioni e lingua in un solo menu nell'header, «Apri Trama» res
   await expect(btn).toContainText("Menu");
   await btn.click();
   await expect(menu).toBeVisible();
-  await expect(menu.getByRole("menuitem")).toHaveText(["Vantaggi", "Per chi", "Come funziona", "Demo", "Esempi", "Regole", "Sicurezza", "Domande"]);
+  await expect(menu.getByRole("menuitem")).toHaveText(["Vantaggi", "Come funziona", "Demo", "Esempi", "Regole", "Sicurezza", "Domande"]);
   await expect(menu.locator('[data-lang="it"]')).toHaveAttribute("aria-checked", "true");
   await expect(menu.getByRole("menuitem").first()).toBeFocused();
   await page.keyboard.press("End");
@@ -119,4 +119,28 @@ test("homepage in inglese: nessun testo resta in italiano, demo ed esempi compre
   await context.addInitScript(() => { try { localStorage.setItem("trama:lang", "en"); } catch {} });
   const missing = await homeMissing(page);
   expect(missing, "testi senza traduzione (aggiungili in public/i18n-home-en.js, elenco: npm run i18n:mancanti-home)").toEqual([]);
+});
+
+test("homepage: ?lang=en mostra l'inglese indicizzabile (canonico, meta, og:locale) e tornando all'italiano il parametro sparisce", async ({ page }) => {
+  await page.goto("/?lang=en#faq");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("html")).not.toHaveClass(/i18n-wait/);
+  await expect(page.locator("h1")).toContainText("From document to backlog");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\?lang=en$/);
+  await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute("content", "en_GB");
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /^Trama turns the requirements document/);
+  expect(await page.evaluate(() => typeof window.TRAMA_EN)).toBe("object");
+  await page.locator("#menuBtn").click();
+  await page.locator('#siteMenu [data-lang="it"]').click();
+  await expect(page.locator("h1")).toContainText("Dal documento al backlog");
+  await expect(page).not.toHaveURL(/lang=/);
+});
+
+test("homepage in italiano: il dizionario inglese non si scarica", async ({ page }) => {
+  const asked = [];
+  page.on("request", (r) => asked.push(r.url()));
+  await page.goto("/");
+  await expect(page.locator("h1")).toContainText("Dal documento al backlog");
+  expect(asked.some((u) => u.includes("i18n-home-en.js"))).toBe(false);
+  expect(asked.some((u) => /fonts\.(googleapis|gstatic)\.com/.test(u))).toBe(false);
 });

@@ -4,20 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Trama · Dal documento di requisiti al backlog Jira</title>
-<meta name="description" content="Trama trasforma il documento di requisiti in un backlog Jira strutturato, passo dopo passo, con Claude e le regole del playbook del gruppo.">
+<meta name="description" content="Trama trasforma il documento di requisiti in un backlog Jira strutturato, passo dopo passo, con l'assistente Tessa e le regole del playbook del gruppo.">
 <meta name="theme-color" content="#23307A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Trama">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap">
+<link rel="preload" href="/fonts/figtree-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts.css">
 <link rel="stylesheet" href="/tokens.css">
 <link rel="stylesheet" href="/trama.css">
-<script src="/i18n-home-en.js"></script>
-<script src="/i18n.js"></script>
+<script src="/i18n.js" data-dict="/i18n-home-en.js"></script>
 <style>
-/* Layout: hero con demo animata, poi una sezione per domanda: perché (vantaggi, per chi), come (passi, demo, esempi, regole), fiducia (sicurezza, FAQ). Una sola banda scura in chiusura. */
-nav.top{display:flex;align-items:center;gap:28px;padding-block:18px}
+/* Layout: hero con demo animata, poi una sezione per domanda: perché (vantaggi per ruolo), come (passi, demo, esempi, regole), fiducia (sicurezza, FAQ). Una sola banda scura in chiusura. */
+/* header fisso: si compatta dopo i primi pixel di scorrimento */
+.site-top{position:sticky;top:0;z-index:50;background:var(--bg);transition:box-shadow .2s}
+.site-top.scrolled{box-shadow:0 1px 0 var(--line),0 8px 24px rgba(20,27,71,.06)}
+nav.top{display:flex;align-items:center;gap:28px;padding-block:18px;transition:padding .2s}
+.site-top.scrolled nav.top{padding-block:10px}
+section[id]{scroll-margin-top:72px}
+@media(prefers-reduced-motion:reduce){.site-top,nav.top{transition:none}}
 nav.top .btn{min-height:42px;padding:0 16px;font-size:15px}
 nav.top{gap:12px}
 nav.top .site-menu{margin-left:auto}
@@ -33,6 +38,8 @@ nav.top .site-menu{margin-left:auto}
 .dd-head b{font-weight:600}
 .dd-menu a[role=menuitem]{display:flex;align-items:center;padding:9px 10px;border-radius:8px;color:var(--fg);font:500 15px var(--f-body);text-decoration:none}
 .dd-menu a[role=menuitem]:hover,.dd-menu a[role=menuitem]:focus-visible{background:var(--sunk);outline:none}
+.dd-menu a[aria-current="true"]{color:var(--primary);font-weight:700}
+.dd-menu a[aria-current="true"]::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--primary);margin-left:auto}
 .dd-sep{height:1px;background:var(--line);margin:6px 4px}
 .dd-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;border-radius:8px;background:none;color:var(--fg);font:500 14px var(--f-body);cursor:pointer;text-align:left}
 .dd-menu button:hover,.dd-menu button:focus-visible{background:var(--sunk);outline:none}
@@ -100,6 +107,19 @@ html[lang="it"] .menu-btn [data-flag="en"],html[lang="en"] .menu-btn [data-flag=
 .mini{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .done-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:var(--ok-soft);color:var(--ok);font-weight:600;font-size:13px}
 .done-badge .ic{width:16px;height:16px}
+/* demo breve dell'hero: dal documento a Jira */
+.flow{display:grid;gap:14px}
+.fl{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface)}
+.fl>.ic{width:22px;height:22px;color:var(--primary)}
+.fl b{display:block;font-size:14.5px}
+.fl small{display:block;font-size:13px;color:var(--muted)}
+.fl+.fl::before{content:"";position:absolute;left:24px;top:-15px;height:14px;border-left:2px dashed var(--line)}
+/* demo della Scheda QA */
+.mdv{font:12.5px/1.65 var(--f-mono);background:var(--sunk);border-radius:var(--r-m);padding:12px 14px;display:grid;gap:2px}
+.mdv b{color:var(--primary);font-weight:600}
+.zipcard{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px dashed var(--primary);border-radius:var(--r-m);font-size:13.5px}
+.zipcard .ic{width:20px;height:20px;color:var(--primary)}
+.zipcard small{display:block;color:var(--muted);font-size:12.5px}
 /* sezioni */
 section{padding-block:96px;border-top:1px solid var(--line)}
 .sec-h{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:48px;align-items:end;margin-bottom:44px}
@@ -145,11 +165,14 @@ section{padding-block:96px;border-top:1px solid var(--line)}
 .gains{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .gain{display:grid;gap:10px;align-content:start}
 .gain .icon-tile{margin-bottom:4px}
+.gain[hidden]{display:none}
+.roles{display:flex;gap:8px;flex-wrap:wrap;margin:-20px 0 22px}
+.role-chip{min-height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 14px var(--f-body);cursor:pointer}
+.role-chip:hover{border-color:var(--primary)}
+.role-chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.role-chip:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .gain .for{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text)}
 .gain p{margin:0;color:var(--muted);font-size:15px;line-height:1.55}
-.who{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.who ul{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:15px}
-.who li{margin:4px 0}
 .trust{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px}
 .trust h3{font:700 18px/1.25 var(--f-display);margin:14px 0 6px}
 .trust p{margin:0;color:var(--muted);font-size:15px;line-height:1.55}
@@ -173,7 +196,7 @@ footer a{color:var(--muted)}
   .hero,.sec-h,.demo-layout,.band-grid{grid-template-columns:minmax(0,1fr)}
   .hero{gap:36px;padding-block:20px 56px}
   .steps,.facts,.trust{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .rules,.who,.gains{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rules,.gains{grid-template-columns:repeat(2,minmax(0,1fr))}
   .example{grid-template-columns:minmax(0,1fr)}
   .example .arrow{transform:rotate(90deg);justify-self:center}
   .chapters{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -181,7 +204,7 @@ footer a{color:var(--muted)}
 @media(max-width:640px){
   body{font-size:16px}
   section{padding-block:64px}
-  .steps,.facts,.trust,.rules,.who,.gains,.chapters{grid-template-columns:minmax(0,1fr)}
+  .steps,.facts,.trust,.rules,.gains,.chapters{grid-template-columns:minmax(0,1fr)}
   .d-grid{grid-template-columns:minmax(0,1fr)}
   .screen{min-height:0;padding:14px}
   .n1{margin-left:12px}.n2{margin-left:24px}.n3{margin-left:36px}
@@ -198,12 +221,16 @@ footer a{color:var(--muted)}
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="canonical" href="https://trama-backlog.vercel.app/">
+<link rel="alternate" hreflang="it" href="https://trama-backlog.vercel.app/">
+<link rel="alternate" hreflang="en" href="https://trama-backlog.vercel.app/?lang=en">
+<link rel="alternate" hreflang="x-default" href="https://trama-backlog.vercel.app/">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Trama">
 <meta property="og:locale" content="it_IT">
+<meta property="og:locale:alternate" content="en_GB">
 <meta property="og:title" content="Trama · Dal documento di requisiti al backlog Jira">
-<meta property="og:description" content="Trama trasforma il documento di requisiti in un backlog Jira strutturato, passo dopo passo, con Claude e le regole del playbook del gruppo.">
+<meta property="og:description" content="Trama trasforma il documento di requisiti in un backlog Jira strutturato, passo dopo passo, con l'assistente Tessa e le regole del playbook del gruppo.">
 <meta property="og:url" content="https://trama-backlog.vercel.app/">
 <meta property="og:image" content="https://trama-backlog.vercel.app/og/trama-og.png?v=2">
 <meta property="og:image:type" content="image/png">
@@ -212,14 +239,14 @@ footer a{color:var(--muted)}
 <meta property="og:image:alt" content="Trama: dal documento al backlog, con le regole.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Trama · Dal documento di requisiti al backlog Jira">
-<meta name="twitter:description" content="Trama trasforma il documento di requisiti in un backlog Jira strutturato, passo dopo passo, con Claude e le regole del playbook del gruppo.">
+<meta name="twitter:description" content="Trama trasforma il documento di requisiti in un backlog Jira strutturato, passo dopo passo, con l'assistente Tessa e le regole del playbook del gruppo.">
 <meta name="twitter:image" content="https://trama-backlog.vercel.app/og/trama-og.png?v=2">
 <meta name="twitter:image:alt" content="Trama: dal documento al backlog, con le regole.">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://trama-backlog.vercel.app/#site","url":"https://trama-backlog.vercel.app/","name":"Trama","inLanguage":"it"},{"@type":"SoftwareApplication","@id":"https://trama-backlog.vercel.app/#app","name":"Trama","url":"https://trama-backlog.vercel.app/","description":"Trama trasforma il documento di requisiti in un backlog Jira strutturato, passo dopo passo, con Claude e le regole del playbook del gruppo.","applicationCategory":"BusinessApplication","operatingSystem":"Web","inLanguage":"it","image":"https://trama-backlog.vercel.app/og/trama-og.png"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://trama-backlog.vercel.app/#site","url":"https://trama-backlog.vercel.app/","name":"Trama","inLanguage":"it"},{"@type":"SoftwareApplication","@id":"https://trama-backlog.vercel.app/#app","name":"Trama","url":"https://trama-backlog.vercel.app/","description":"Trama trasforma il documento di requisiti in un backlog Jira strutturato, passo dopo passo, con l'assistente Tessa e le regole del playbook del gruppo.","applicationCategory":"BusinessApplication","operatingSystem":"Web","inLanguage":"it","image":"https://trama-backlog.vercel.app/og/trama-og.png"}]}</script>
 <!-- seo:end -->
 </head>
 <body>
-<div class="wrap">
+<div class="site-top" id="siteTop"><div class="wrap">
   <nav class="top" aria-label="Principale">
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true" data-no-i18n><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama, home</span></a>
     <div class="dd site-menu" id="menuDd">
@@ -227,7 +254,6 @@ footer a{color:var(--muted)}
       <div class="dd-menu right" id="siteMenu" role="menu" hidden>
         <div class="dd-head"><b>Sezioni</b></div>
         <a role="menuitem" href="#vantaggi">Vantaggi</a>
-        <a role="menuitem" href="#per-chi">Per chi</a>
         <a role="menuitem" href="#passi">Come funziona</a>
         <a role="menuitem" href="#demo">Demo</a>
         <a role="menuitem" href="#esempi">Esempi</a>
@@ -242,6 +268,8 @@ footer a{color:var(--muted)}
     </div>
     <a class="btn primary" href="/studio">Apri Trama</a>
   </nav>
+</div></div>
+<div class="wrap">
 
   <header class="hero">
     <div>
@@ -249,7 +277,7 @@ footer a{color:var(--muted)}
       <h1 class="h-display" style="margin-top:16px">Dal documento al backlog, <span>con le regole.</span></h1>
       <p class="lede">Carichi i requisiti. Trama li scompone in Project, Fasi, epiche e storie con i metadati giusti, e li porta in Jira solo dopo la tua conferma.</p>
       <div class="cta">
-        <a class="btn primary" href="/api/auth/login"><svg class="ic"><use href="/icons.svg#i-link"/></svg>Accedi con Atlassian</a>
+        <a class="btn primary" id="ctaMain" href="/api/auth/login"><svg class="ic"><use href="/icons.svg#i-link"/></svg><span>Accedi con Atlassian</span></a>
         <a class="btn" href="#demo"><svg class="ic"><use href="/icons.svg#i-play"/></svg>Guarda la demo</a>
       </div>
       <div class="hero-note"><span><svg class="ic"><use href="/icons.svg#i-check"/></svg>Con il tuo account Jira</span><span><svg class="ic"><use href="/icons.svg#i-check"/></svg>Nessuna scrittura senza conferma</span><span><svg class="ic"><use href="/icons.svg#i-check"/></svg>Claude Code del tuo piano</span></div>
@@ -269,25 +297,18 @@ footer a{color:var(--muted)}
 
 <section id="vantaggi">
   <div class="wrap">
-    <div class="sec-h"><div><div class="eyebrow">Vantaggi</div><h2 class="h-section">Trama prepara, tutto il team ci guadagna.</h2></div><p>Un backlog scritto con le stesse regole arriva chiaro a chi sviluppa, a chi rivede e a chi coordina. Meno rincorse, più tempo per il lavoro vero.</p></div>
-    <div class="gains">
-      <div class="card gain"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-file"/></svg></div><span class="for">Chi sviluppa</span><h3 class="h-card">Ticket chiari al primo colpo</h3><p>Contesto, user story, criteri verificabili e punti aperti già scritti: si sviluppa senza interpretare.</p></div>
-      <div class="card gain"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-chat"/></svg></div><span class="for">Tutto il team</span><h3 class="h-card">Meno riunioni dell'ultimo minuto</h3><p>I dubbi si chiudono prima di creare i ticket e le risposte restano nel registro: niente call di chiarimento a sprint avviato.</p></div>
-      <div class="card gain"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-check"/></svg></div><span class="for">PO e tech lead</span><h3 class="h-card">Meno revisioni sugli output</h3><p>Stessi modelli, stessi metadati e un controllo qualità per tutti: chi rivede trova il formato giusto e guarda solo il contenuto.</p></div>
-      <div class="card gain"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-tree"/></svg></div><span class="for">Delivery e PMO</span><h3 class="h-card">Progetti Jira tutti uguali</h3><p>Stessa struttura Project › Fase › Epica, stesse label e prefissi: si passa da un progetto all'altro senza reimparare nulla.</p></div>
-      <div class="card gain"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-link"/></svg></div><span class="for">Chi pianifica</span><h3 class="h-card">Dipendenze sotto gli occhi</h3><p>I blocchi tra BE, FE e firmware diventano collegamenti in Jira: l'ordine di lavoro si legge dal backlog.</p></div>
-      <div class="card gain"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-book"/></svg></div><span class="for">Chi arriva dopo</span><h3 class="h-card">Ingresso rapido nel progetto</h3><p>Il registro delle decisioni spiega perché il backlog è fatto così, con fonte e impatto di ogni scelta.</p></div>
-    </div>
-  </div>
-</section>
-
-<section id="per-chi">
-  <div class="wrap">
-    <div class="sec-h"><div><div class="eyebrow">Per chi</div><h2 class="h-section">Un lavoro, tre ruoli.</h2></div><p>Trama nasce per il Product Owner, ma il vantaggio arriva a tutto il team operativo: chi sviluppa riceve ticket chiari, chi coordina trova progetti uguali, chi rivede ha meno da correggere.</p></div>
-    <div class="who">
-      <div class="card"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-users"/></svg></div><h3 class="h-card" style="margin-top:14px">Product Owner</h3><ul><li>Requisiti estratti e messi in ordine in un pomeriggio.</li><li>Domande aperte e ipotesi sempre in vista.</li><li>Backlog creato in Jira con un comando.</li></ul></div>
-      <div class="card"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-book"/></svg></div><h3 class="h-card" style="margin-top:14px">Delivery e PMO</h3><ul><li>Stessa struttura Project › Fase › Epica in tutti i progetti.</li><li>Registro delle decisioni con fonte e impatto.</li><li>Meno revisioni: il backlog è controllato prima di arrivare in Jira.</li></ul></div>
-      <div class="card"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-layers"/></svg></div><h3 class="h-card" style="margin-top:14px">Team di sviluppo</h3><ul><li>Ticket chiari: contesto, storia e criteri verificabili.</li><li>Meno call di chiarimento: i dubbi sono già risolti o scritti nel ticket.</li><li>Dipendenze esplicite tra BE, FE e firmware.</li></ul></div>
+    <div class="sec-h"><div><div class="eyebrow">Vantaggi</div><h2 class="h-section">Trama prepara, tutto il team ci guadagna.</h2></div><p>Trama nasce per il Product Owner, ma il vantaggio arriva a tutto il team: chi sviluppa riceve ticket chiari, chi collauda trova la scheda pronta, chi coordina progetti tutti uguali.</p></div>
+    <div class="roles" role="group" aria-label="Mostra i vantaggi per ruolo"><button type="button" class="role-chip" data-role="all" aria-pressed="true">Tutti</button><button type="button" class="role-chip" data-role="po" aria-pressed="false">Product Owner</button><button type="button" class="role-chip" data-role="dev" aria-pressed="false">Sviluppo</button><button type="button" class="role-chip" data-role="qa" aria-pressed="false">QA</button><button type="button" class="role-chip" data-role="delivery" aria-pressed="false">Delivery e PMO</button></div>
+    <div class="gains" id="gains">
+      <div class="card gain" data-roles="po"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-file"/></svg></div><span class="for">Product Owner</span><h3 class="h-card">Dal documento al backlog in un pomeriggio</h3><p>Requisiti estratti e ordinati, domande e ipotesi sempre in vista, backlog creato in Jira con un comando.</p></div>
+      <div class="card gain" data-roles="dev qa"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-layers"/></svg></div><span class="for">Sviluppo e QA</span><h3 class="h-card">Ticket chiari al primo colpo</h3><p>Contesto, user story, criteri verificabili e punti aperti già scritti: si sviluppa e si collauda senza interpretare.</p></div>
+      <div class="card gain" data-roles="qa"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-check"/></svg></div><span class="for">QA</span><h3 class="h-card">Scheda QA pronta per ogni ticket</h3><p>Criteri come checklist, requisito d'origine, dipendenze e decisioni in un file .md: si collauda senza ricostruire il contesto.</p></div>
+      <div class="card gain" data-roles="qa delivery"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-list"/></svg></div><span class="for">QA e Delivery</span><h3 class="h-card">Piano di test per ogni release</h3><p>Ordine di collaudo dalle dipendenze, rischi aperti e requisiti senza ticket, con tutte le schede in un unico zip.</p></div>
+      <div class="card gain" data-roles="po dev qa delivery"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-chat"/></svg></div><span class="for">Tutto il team</span><h3 class="h-card">Meno riunioni dell'ultimo minuto</h3><p>I dubbi si chiudono prima di creare i ticket e le risposte restano nel registro: niente call di chiarimento a sprint avviato.</p></div>
+      <div class="card gain" data-roles="po dev"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-shield"/></svg></div><span class="for">PO e tech lead</span><h3 class="h-card">Meno revisioni sugli output</h3><p>Stessi modelli, stessi metadati e un controllo qualità per tutti: chi rivede trova il formato giusto e guarda solo il contenuto.</p></div>
+      <div class="card gain" data-roles="delivery"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-tree"/></svg></div><span class="for">Delivery e PMO</span><h3 class="h-card">Progetti Jira tutti uguali</h3><p>Stessa struttura Project › Fase › Epica, stesse label e prefissi: si passa da un progetto all'altro senza reimparare nulla.</p></div>
+      <div class="card gain" data-roles="dev delivery"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-link"/></svg></div><span class="for">Sviluppo e pianificazione</span><h3 class="h-card">Dipendenze sotto gli occhi</h3><p>I blocchi tra BE, FE e firmware diventano collegamenti in Jira: l'ordine di lavoro si legge dal backlog.</p></div>
+      <div class="card gain" data-roles="po dev qa delivery"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-book"/></svg></div><span class="for">Chi arriva dopo</span><h3 class="h-card">Ingresso rapido nel progetto</h3><p>Il registro delle decisioni spiega perché il backlog è fatto così, con fonte e impatto di ogni scelta.</p></div>
     </div>
   </div>
 </section>
@@ -297,7 +318,7 @@ footer a{color:var(--muted)}
     <div class="sec-h"><div><div class="eyebrow">Come funziona</div><h2 class="h-section">Sei passi, sempre nello stesso ordine.</h2></div><p>Ogni passo dice cosa serve per completarlo e quali regole applica. Il registro delle decisioni è sempre a portata, fuori dai passi. Lo stato è condiviso: chi lavora sullo stesso sito Atlassian vede lo stesso progetto.</p></div>
     <ol class="steps">
       <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-link"/></svg></div><span class="ph">Avvio</span><h3>Progetto Jira</h3><p>Legge tipi di ticket, campi obbligatori e nomi esatti dei collegamenti.</p></li>
-      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-file"/></svg></div><span class="ph">Preparazione</span><h3>Requisiti</h3><p>Carichi Word, PDF, Excel o immagini; Claude estrae una riga per requisito, con ID, release e dipendenze. La valida il PO.</p></li>
+      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-file"/></svg></div><span class="ph">Preparazione</span><h3>Requisiti</h3><p>Carichi Word, PDF, Excel o immagini; Tessa estrae una riga per requisito, con ID, release e dipendenze. La valida il PO.</p></li>
       <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-help"/></svg></div><span class="ph">Preparazione</span><h3>Domande di apertura</h3><p>Ogni domanda si chiude con una risposta o un'ipotesi, che entra da sola nel registro.</p></li>
       <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-kit"/></svg></div><span class="ph">Preparazione</span><h3>Kit di progetto</h3><p>Release, epiche, label e struttura Project › Fase › Epica.</p></li>
       <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-layers"/></svg></div><span class="ph">Creazione</span><h3>Backlog</h3><p>UX Story, storie BE e FE, con il controllo di qualità in una scheda a parte.</p></li>
@@ -308,13 +329,14 @@ footer a{color:var(--muted)}
 
 <section id="demo">
   <div class="wrap">
-    <div class="sec-h"><div><div class="eyebrow">Guarda come funziona</div><h2 class="h-section">Quattro momenti, in meno di un minuto.</h2></div><p>Brevi animazioni di Trama con dati di esempio. Scegli un capitolo: parte da solo, puoi metterlo in pausa o rivederlo.</p></div>
+    <div class="sec-h"><div><div class="eyebrow">Guarda come funziona</div><h2 class="h-section">Cinque momenti, in un minuto.</h2></div><p>Brevi animazioni di Trama con dati di esempio. Scegli un capitolo: parte da solo, puoi metterlo in pausa o rivederlo.</p></div>
     <div class="demo-layout">
       <div class="chapters" role="tablist" aria-label="Capitoli della demo">
-        <button class="chapter" role="tab" aria-selected="false" data-demo="extract"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-file"/></svg></span><span><b>Dal documento ai requisiti</b><span>Claude legge Word, PDF, Excel e immagini.</span></span></button>
+        <button class="chapter" role="tab" aria-selected="false" data-demo="extract"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-file"/></svg></span><span><b>Dal documento ai requisiti</b><span>Tessa legge Word, PDF, Excel e immagini.</span></span></button>
         <button class="chapter" role="tab" aria-selected="true" data-demo="split"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-layers"/></svg></span><span><b>Scomposizione con le regole</b><span>UX Story, storie BE e FE, metadati completi.</span></span></button>
         <button class="chapter" role="tab" aria-selected="false" data-demo="jira"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-tree"/></svg></span><span><b>Struttura su Jira</b><span>Project, Fasi, epiche e ticket, collegati e verificati.</span></span></button>
         <button class="chapter" role="tab" aria-selected="false" data-demo="plan"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-shield"/></svg></span><span><b>Qualità del backlog</b><span>Segnalazioni in ordine di gravità, con la correzione.</span></span></button>
+        <button class="chapter" role="tab" aria-selected="false" data-demo="qa"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-check"/></svg></span><span><b>Scheda QA per il collaudo</b><span>Criteri, dipendenze e piano di test pronti.</span></span></button>
       </div>
       <div id="mainPlayer"></div>
     </div>
@@ -353,7 +375,7 @@ footer a{color:var(--muted)}
     <div class="trust">
       <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-users"/></svg></div><h3>Accesso Atlassian</h3><p>Entri con il tuo account. I ticket risultano creati da te, con i tuoi permessi di progetto.</p></div>
       <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-lock"/></svg></div><h3>Token cifrati</h3><p>I token di accesso sono cifrati nel database e non arrivano mai al browser.</p></div>
-      <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-chat"/></svg></div><h3>Claude sul tuo Mac</h3><p>Claude lavora attraverso il tuo Claude Code, senza chiavi API sul server.</p></div>
+      <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-chat"/></svg></div><h3>L'AI sul tuo Mac</h3><p>Tessa lavora attraverso il tuo Claude Code, senza chiavi API sul server.</p></div>
       <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-shield"/></svg></div><h3>Conferma esplicita</h3><p>Nulla viene scritto su Jira senza controllo, elenco delle ipotesi e doppia conferma.</p></div>
     </div>
   </div>
@@ -364,8 +386,10 @@ footer a{color:var(--muted)}
     <div class="sec-h"><div><div class="eyebrow">Domande frequenti</div><h2 class="h-section">Prima di iniziare.</h2></div><p>Quello che chiedono tutti al primo utilizzo.</p></div>
     <div class="faq">
       <details><summary>Trama scrive su Jira da solo?</summary><p>No. Prima esegue un controllo, poi mostra le ipotesi da confermare e chiede una doppia conferma. Solo allora crea, nell'ordine Project › Fasi › epiche › ticket, e rilegge Jira per verificare.</p></details>
-      <details><summary>Quali documenti posso caricare?</summary><p>Word, PDF, Excel, CSV, testo, Markdown e immagini. Le immagini (frame di design, screenshot, foto di lavagne) vengono trascritte da Claude.</p></details>
-      <details><summary>Serve una chiave API di Claude?</summary><p>No. Trama usa Claude Code sul tuo Mac attraverso un piccolo ponte locale, con il tuo abbonamento. Senza ponte acceso tutto funziona tranne le proposte di Claude.</p></details>
+      <details><summary>Chi è Tessa?</summary><p>L'assistente di Trama: legge i documenti, propone requisiti, ticket e ipotesi, controlla la qualità del backlog e risponde in chat su tutto il progetto. Funziona con Claude Code sul tuo computer.</p></details>
+      <details><summary>Cosa c'è per chi collauda?</summary><p>Per ogni ticket una Scheda QA in Markdown: criteri come checklist, requisito d'origine, dipendenze, ipotesi e decisioni. Per ogni release uno zip con il piano di test e tutte le schede.</p></details>
+      <details><summary>Quali documenti posso caricare?</summary><p>Word, PDF, Excel, CSV, testo, Markdown e immagini. Le immagini (frame di design, screenshot, foto di lavagne) vengono trascritte da Tessa.</p></details>
+      <details><summary>Serve una chiave API di Claude?</summary><p>No. Trama usa Claude Code sul tuo Mac attraverso un piccolo ponte locale, con il tuo abbonamento. Senza ponte acceso tutto funziona tranne le proposte di Tessa.</p></details>
       <details><summary>Posso usarlo da telefono o tablet?</summary><p>No: Trama è pensato per il computer, con una finestra larga almeno 900 pixel. Lavora con tabelle, pannelli e documenti lunghi, che su uno schermo piccolo diventerebbero scomodi. Da telefono Trama mostra un avviso.</p></details>
       <details><summary>Come elimino un backlog di prova?</summary><p>Trama non cancella nulla in Jira. Ti prepara la query esatta con i soli ticket creati, da eliminare in blocco in Jira, poi si riallinea con «Sincronizza con Jira».</p></details>
       <details><summary>Chi vede i miei progetti?</summary><p>Chi ha accesso allo stesso sito Atlassian. Ogni progetto è legato al sito su cui lavora.</p></details>
@@ -376,10 +400,10 @@ footer a{color:var(--muted)}
 <section class="band">
   <div class="wrap band-grid">
     <div><div class="eyebrow">Pronto quando lo sei tu</div><h2 class="h-section">Porta il prossimo documento di requisiti.</h2></div>
-    <div><p>Accedi con Atlassian, crea il progetto e segui i passi. Il primo backlog può essere in Jira il giorno stesso.</p><div class="cta" style="margin-top:22px"><a class="btn primary" href="/api/auth/login">Accedi con Atlassian</a><a class="btn" href="/brand">Linee guida del marchio</a></div></div>
+    <div><p>Accedi con Atlassian, crea il progetto e segui i passi. Il primo backlog può essere in Jira il giorno stesso.</p><div class="cta" style="margin-top:22px"><a class="btn primary" id="ctaBand" href="/api/auth/login">Accedi con Atlassian</a><a class="btn" href="/brand">Linee guida del marchio</a></div></div>
   </div>
 </section>
-<div class="wrap"><footer><a class="brand" href="/" style="font-size:18px"><svg viewBox="0 0 32 32" aria-hidden="true" style="width:22px;height:22px"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true" data-no-i18n><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama</span></a><span>Strumento interno del gruppo · Funziona con Jira Cloud e Claude Code</span><span><a href="/installazione">Installazione</a> · <a href="/privacy">Privacy</a> · <a href="/brand">Marchio e linee guida</a></span></footer></div>
+<div class="wrap"><footer><a class="brand" href="/" style="font-size:18px"><svg viewBox="0 0 32 32" aria-hidden="true" style="width:22px;height:22px"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true" data-no-i18n><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama</span></a><span>Strumento interno del gruppo · Funziona con Jira Cloud e Claude Code</span><span><a href="/installazione">Installazione</a> · <a href="/architettura">Architettura</a> · <a href="/privacy">Privacy</a> · <a href="/brand">Marchio e linee guida</a></span></footer></div>
 
 <script src="/home.js"></script>
 </body>

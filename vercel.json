@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "npm install --omit=dev",
-  "buildCommand": "",
+  "buildCommand": "node scripts/versioni.mjs public",
   "outputDirectory": "public",
   "cleanUrls": true,
   "trailingSlash": false,
@@ -38,30 +38,12 @@
         },
         {
           "key": "Content-Security-Policy-Report-Only",
-          "value": "default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' http://127.0.0.1:8790 http://localhost:8790; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; report-uri /api/csp-report"
+          "value": "default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self' http://127.0.0.1:8790 http://localhost:8790; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; report-uri /api/csp-report"
         }
       ]
     },
     {
       "source": "/studio(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/(tokens|trama).css",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/studio-runtime.js",
       "headers": [
         {
           "key": "Cache-Control",
@@ -102,6 +84,21 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=86400"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(js|css|svg|woff2)",
+      "has": [
+        {
+          "type": "query",
+          "key": "v"
+        }
+      ],
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
         }
       ]
     }

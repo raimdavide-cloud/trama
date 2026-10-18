@@ -2,7 +2,22 @@
    A riposo (senza JavaScript o con movimento ridotto) la scena mostra lo stato finale completo. */
 const I=n=>`<svg class="ic"><use href="/icons.svg#${n}"/></svg>`;
 const DEMOS={
- extract:{title:"trama · Passo 2 di 6 · Requisiti",steps:["Carichi il documento: Word, PDF, Excel o immagini.","Claude lo legge e propone un requisito per riga.","Ogni riga ha componenti, release e dipendenze.","Le ambiguità diventano domande aperte.","Il PO controlla e valida la lista."],
+ flow:{title:"trama · dal documento a Jira",step:950,steps:["Il documento del cliente.","Tessa estrae i requisiti.","Trama li scompone in ticket con le regole.","Tutto in Jira, collegato e verificato."],
+  html:`<div class="flow"><div class="fl" data-s="0">${I("i-file")}<div><b>Requisiti_OrtoComune_v2.docx</b><small>Documento del cliente</small></div><span class="pill">Word</span></div>
+   <div class="fl" data-s="1">${I("i-list")}<div><b>75 requisiti</b><small>Con release e dipendenze · 12 domande aperte</small></div><span class="pill ok">validati</span></div>
+   <div class="fl" data-s="2">${I("i-layers")}<div><b>48 ticket</b><small>UX Story, BE, FE Web e FE Mobile · metadati completi</small></div><span class="pill primary">kit</span></div>
+   <div class="fl" data-s="3">${I("i-tree")}<div><b>In Jira</b><small>1 Project · 2 Fasi · 6 epiche · 57 di 57 collegati</small></div><span class="pill ok">verificato</span></div></div>`},
+ qa:{title:"trama · Passo 5 di 6 · Scheda QA",steps:["Apri un ticket nel Backlog.","Trama prepara la Scheda QA: i criteri diventano una checklist.","Aggiunge requisito d'origine, dipendenze e decisioni.","Per la release: piano di test e tutte le schede in uno zip."],
+  html:`<div class="d-grid"><div class="stack"><p class="label-s" data-s="0">Ticket nel Backlog</p>
+   <div class="tk" data-s="0"><span class="key">T-016</span><span class="t" data-no-i18n><em>[FE - Web]</em> Shifts calendar</span><span class="m"><span class="pill">Story</span><span class="pill">2 AC</span></span></div>
+   <div class="req" data-s="0"><span class="key">RF-020</span><b>Calendario dei turni di irrigazione</b><span class="pill primary">MVP</span></div>
+   <div class="zipcard" data-s="3">${I("i-send")}<div><b>schede-qa-mvp.zip</b><small>piano-di-test.md · 31 schede</small></div></div></div>
+   <div class="stack"><p class="label-s" data-s="1">Scheda QA · COM-906.md</p><div class="mdv">
+   <div data-s="1"><b>## Cosa verificare</b></div><div data-s="1" data-no-i18n>☐ AC1 · Week and month views from 360 px</div><div data-s="1" data-no-i18n>☐ AC2 · Loads in under 2 s with 200 shifts</div>
+   <div data-s="2"><b>## Da dove nasce</b></div><div data-s="2">RF-020 · Calendario dei turni di irrigazione</div>
+   <div data-s="2"><b>## Dipendenze</b></div><div data-s="2">Da collaudare dopo: T-015 [BE] Shifts API</div>
+   <div data-s="2"><b>## Decisioni</b></div><div data-s="2">16/10/2026 · App cross-platform (Flutter)</div></div></div></div>`},
+ extract:{title:"trama · Passo 2 di 6 · Requisiti",steps:["Carichi il documento: Word, PDF, Excel o immagini.","Tessa lo legge e propone un requisito per riga.","Ogni riga ha componenti, release e dipendenze.","Le ambiguità diventano domande aperte.","Il PO controlla e valida la lista."],
   html:`<div class="d-grid"><div data-s="0"><p class="label-s">Documento</p><div class="doc"><div class="doc-h">${I("i-file")}Requisiti_OrtoComune_v2.docx</div>
    <p><mark>RF-013 · Richiesta di un lotto con lista d'attesa</mark> ordinata per data.</p><p>RF-020 · Calendario dei turni di irrigazione.</p><p>RF-025 · Sospensione turni per allerta meteo.</p><p>RM-01 · App per iOS e Android: <mark>nativa o cross-platform?</mark></p></div></div>
    <div class="stack"><p class="label-s" data-s="1">Requisiti estratti</p>
@@ -32,7 +47,7 @@ const DEMOS={
    <div class="node n3" data-s="3"><span class="lv">Story</span><b>[BE] Shifts API and rotation rules</b><span class="key">COM-905</span></div>
    <div class="node n3" data-s="3"><span class="lv">Story</span><b>[FE - Web] Shifts calendar</b><span class="key">COM-906</span></div>
    <div data-s="4" style="margin-top:6px"><span class="done-badge">${I("i-check")}Struttura verificata: 57 di 57 livelli collegati</span></div></div>`},
- plan:{title:"trama · Passo 5 di 6 · Qualità del backlog",steps:["Chiedi a Claude un controllo del backlog.","Segnala un criterio vago, con la correzione.","Le altre segnalazioni, in ordine di gravità.","Correggi e ricontrolla: il backlog è pronto."],
+ plan:{title:"trama · Passo 5 di 6 · Qualità del backlog",steps:["Chiedi a Tessa un controllo del backlog.","Segnala un criterio vago, con la correzione.","Le altre segnalazioni, in ordine di gravità.","Correggi e ricontrolla: il backlog è pronto."],
   html:`<div class="d-grid"><div class="stack"><div class="bub u" data-s="0">Controlla la qualità del backlog dell'MVP</div>
    <div class="card" style="padding:12px" data-s="1"><div class="row"><span class="key">T-016</span><span class="pill err">alta</span><span class="pill primary">Criteri vaghi</span></div><p style="margin:8px 0 4px;font-size:13.5px">«Funziona bene su mobile» non è verificabile.</p><p style="margin:0;font-size:13px;color:var(--muted)">Cosa fare: calendario leggibile da 360 px, caricamento sotto 2 s.</p></div></div>
    <div class="stack" data-s="2"><p class="label-s">Altre segnalazioni</p>
@@ -45,7 +60,7 @@ function makePlayer(host,key){
   const d=DEMOS[key],reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
   host.innerHTML=`<div class="player" role="group" aria-label="Demo animata: ${d.title}"><div class="p-bar"><span class="p-dots"><i></i><i></i><i></i></span><span class="p-title">${d.title}</span><span class="pill">demo</span></div><div class="screen">${d.html}</div><div class="p-ctrl"><button class="p-btn" type="button">${I("i-pause")}</button><div class="p-track"><i></i></div><div class="p-cap" aria-live="polite"></div></div></div>`;
   const pl=host.querySelector(".player"),btn=pl.querySelector(".p-btn"),bar=pl.querySelector(".p-track i"),cap=pl.querySelector(".p-cap");
-  const STEP=2700,N=d.steps.length;let step=N-1,timer=null,playing=false,t0=0,raf=null,userPaused=false,io=null;
+  const STEP=d.step||2700,N=d.steps.length;let step=N-1,timer=null,playing=false,t0=0,raf=null,userPaused=false,io=null;
   const show=s=>{step=s;pl.querySelectorAll("[data-s]").forEach(e=>e.classList.toggle("on",+e.dataset.s<=s));pl.querySelectorAll("[data-x]").forEach(e=>e.classList.toggle("off",+e.dataset.x<=s));cap.innerHTML=`<b>${s+1}/${N}</b>${d.steps[s]}`};
   const setBtn=()=>{btn.innerHTML=playing?I("i-pause"):(step>=N-1?I("i-replay"):I("i-play"));btn.setAttribute("aria-label",playing?"Metti in pausa la demo":"Riproduci la demo")};
   const tick=()=>{if(!playing)return;bar.style.width=Math.min(100,((step+(performance.now()-t0)/STEP)/N)*100)+"%";raf=requestAnimationFrame(tick)};
@@ -57,7 +72,7 @@ function makePlayer(host,key){
   if(!reduce){io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!playing&&!userPaused)play();else if(!e.isIntersecting&&playing)stop()}),{threshold:.35});io.observe(pl)}
   return{destroy(){stop();io&&io.disconnect()}}}
 
-makePlayer(document.getElementById("heroPlayer"),"extract");
+makePlayer(document.getElementById("heroPlayer"),"flow");
 let current=makePlayer(document.getElementById("mainPlayer"),"split");
 document.querySelector(".chapters").addEventListener("click",e=>{const b=e.target.closest(".chapter");if(!b)return;document.querySelectorAll(".chapter").forEach(x=>x.setAttribute("aria-selected",x===b?"true":"false"));current.destroy();current=makePlayer(document.getElementById("mainPlayer"),b.dataset.demo)});
 
@@ -90,7 +105,7 @@ Decisione: l'app mobile è cross-platform (Flutter).
 Chi: Cliente · Fonte: Domande di apertura
 Impatto: un solo ticket FE - Mobile per funzione;
 label Android e iOS solo per i casi di piattaforma.
-Regola del kit: K5 · Label</div><p class="ex-note">Da quel momento Claude scompone i requisiti mobile con un ticket solo.</p>`},
+Regola del kit: K5 · Label</div><p class="ex-note">Da quel momento Tessa scompone i requisiti mobile con un ticket solo.</p>`},
  {in:`<h4>Ticket in bozza</h4><div class="tk"><span class="key">T-016</span><span class="t" data-no-i18n><em>[FE - Web]</em> Shifts calendar</span><span class="m"><span class="pill">Story</span></span></div><div class="ticket-doc" tabindex="0" role="region" aria-label="Esempio di ticket completo" data-no-i18n><b>## Acceptance criteria</b>
 * The calendar works well.</div>`,
   out:`<h4>Segnalazione del controllo qualità</h4><div class="card" style="padding:16px"><div class="row"><span class="key">T-016</span><span class="pill err">alta</span><span class="pill primary">Criteri vaghi</span></div><p style="margin:10px 0 4px">«Works well» non è verificabile.</p><p style="margin:0;color:var(--muted);font-size:15px">Cosa fare: indicare viste, larghezza minima e tempi.</p></div>
@@ -110,10 +125,28 @@ document.querySelector(".tabs").addEventListener("click",e=>{const t=e.target.cl
  const items=()=>[...menu.querySelectorAll('[role^="menuitem"]')];
  const close=focus=>{menu.hidden=true;btn.setAttribute("aria-expanded","false");if(focus)btn.focus()};
  btn.addEventListener("click",()=>{const open=menu.hidden;menu.hidden=!open;btn.setAttribute("aria-expanded",String(open));if(open)items()[0].focus()});
- menu.addEventListener("click",e=>{const a=e.target.closest("a[role=menuitem]");if(a)return close(false);const b=e.target.closest("[data-lang]");if(!b)return;if(b.dataset.lang===window.I18N?.lang)return close(true);window.I18N?.set(b.dataset.lang);location.reload()});
+ menu.addEventListener("click",e=>{const a=e.target.closest("a[role=menuitem]");if(a)return close(false);const b=e.target.closest("[data-lang]");if(!b)return;if(b.dataset.lang===window.I18N?.lang)return close(true);window.I18N?.apply(b.dataset.lang)});
  menu.addEventListener("keydown",e=>{const it=items(),i=it.indexOf(document.activeElement);
   if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();it[(i+(e.key==="ArrowDown"?1:it.length-1))%it.length].focus()}
   else if(e.key==="Home"||e.key==="End"){e.preventDefault();it[e.key==="Home"?0:it.length-1].focus()}
   else if(e.key==="Tab")close(false)});
  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!menu.hidden)close(true)});
  document.addEventListener("click",e=>{if(!menu.hidden&&!dd.contains(e.target))close(false)});}
+
+/* Vantaggi per ruolo: il filtro mostra le schede di quel ruolo (quelle per tutto il team restano sempre) */
+{const box=document.getElementById("gains"),chips=[...document.querySelectorAll(".role-chip")];
+ document.querySelector(".roles").addEventListener("click",e=>{const c=e.target.closest(".role-chip");if(!c)return;const r=c.dataset.role;
+  chips.forEach(x=>x.setAttribute("aria-pressed",String(x===c)));
+  box.querySelectorAll(".gain").forEach(g=>{g.hidden=r!=="all"&&!g.dataset.roles.split(" ").includes(r)})});}
+
+/* Header fisso: si compatta appena si scorre; nel menu è evidenziata la sezione che si sta leggendo */
+{const top=document.getElementById("siteTop"),set=()=>top.classList.toggle("scrolled",scrollY>8);addEventListener("scroll",set,{passive:true});set();
+ const links=new Map([...document.querySelectorAll('#siteMenu a[role=menuitem]')].map(a=>[a.getAttribute("href").slice(1),a]));
+ const mark=id=>links.forEach((a,k)=>k===id?a.setAttribute("aria-current","true"):a.removeAttribute("aria-current"));
+ const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)mark(e.target.id)}),{rootMargin:"-40% 0px -55% 0px"});
+ links.forEach((a,id)=>{const s=document.getElementById(id);if(s)io.observe(s)});
+ addEventListener("scroll",()=>{if(scrollY<200)mark(null)},{passive:true});}
+
+/* Chi ha già fatto l'accesso va dritto ai suoi progetti */
+fetch("/api/me?quiet=1",{credentials:"same-origin"}).then(r=>r.ok?r.json():null).then(me=>{if(!me?.user)return;
+ for(const id of ["ctaMain","ctaBand"]){const a=document.getElementById(id);if(!a)continue;a.href="/studio";const s=a.querySelector("span")||a;s.textContent="Apri i tuoi progetti"}}).catch(()=>{});
