@@ -5,6 +5,7 @@
    Claude bridge, Step, Kick-off questions, Create in Jira, custom field. */
 window.TRAMA_EN = {
 exact: {
+"Claude rilegge i ticket e segnala: ticket troppo grandi, criteri di accettazione vaghi, dipendenze mancanti, possibili duplicati, ambiti poco chiari. Non modifica nulla da solo: decidi tu cosa applicare.": "Claude rereads the tickets and flags: tickets that are too big, vague acceptance criteria, missing dependencies, possible duplicates, unclear scope. It changes nothing on its own: you decide what to apply.",
 // ---- aggiornare Jira, nuova versione del documento, presenza
 "Modifiche da portare in Jira": "Changes to bring into Jira",
 "Nessuna modifica: Jira è allineato a Trama.": "No changes: Jira is aligned with Trama.",
@@ -891,6 +892,9 @@ exact: {
 "ieri": "yesterday",
 },
 templates: {
+"Confronto tra «{q}» e i requisiti attuali. Scegli cosa applicare: i ticket dei requisiti cambiati o rimossi diventano «{q}».": "Comparing “{q1}” with the current requirements. Choose what to apply: tickets of changed or removed requirements become “to review”.",
+"Da rivedere: il requisito {k} non c'è più in «{q}».": "To review: requirement {k} is no longer in “{q}”.",
+"in Jira il titolo era stato cambiato in «{q}»: verrà sostituito": "the title had been changed in Jira to “{q}”: it will be replaced",
 "Kit aggiornato: +{n} release, +{n} epiche.": "Kit updated: +{n} releases, +{n} epics.",
 "{n} collegamenti da creare": "{n} links to create",
 "{n} collegamento da creare": "{n} link to create",
@@ -1227,14 +1231,11 @@ wild: {
 "Creato in Jira come {*}. Modificato qui dopo la creazione: {*}.": "Created in Jira as {*}. Changed here after creation: {*}.",
 "Creato in Jira come {*}. Se lo modifichi qui, Trama ti propone di aggiornarlo anche in Jira.": "Created in Jira as {*}. If you change it here, Trama offers to update it in Jira too.",
 "Da rivedere: il requisito {k} è cambiato in «{q}» ({*}).": "To review: requirement {k} changed in “{q}” ({*}).",
-"Da rivedere: il requisito {k} non c'è più in «{q}».": "To review: requirement {k} is no longer in “{q}”.",
 "Nuova versione: {*}": "New version: {*}",
-"Confronto tra «{q}» e i requisiti attuali. Scegli cosa applicare: i ticket dei requisiti cambiati o rimossi diventano «da rivedere».": "Comparing “{q}” with the current requirements. Choose what to apply: tickets of changed or removed requirements become “to review”.",
 "{*} ha appena modificato questo ticket.": "{*} has just changed this ticket.",
 "{*} sta guardando questo ticket.": "{*} is looking at this ticket.",
 "{*} stanno guardando questo ticket.": "{*} are looking at this ticket.",
 "Applicate {n} modifiche: {*}.": "{n} changes applied: {*}.",
-"in Jira il titolo era stato cambiato in «{q}»: verrà sostituito": "the title had been changed in Jira to “{q}”: it will be replaced",
 "Jira aggiornato: {*}.": "Jira updated: {*}.",
 "{*} aggiornato in Jira: {*}.": "{*} updated in Jira: {*}.",
 "{*} non aggiornato: {*}": "{*} not updated: {*}",
