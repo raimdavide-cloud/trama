@@ -13,6 +13,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap">
 <link rel="stylesheet" href="/tokens.css">
 <link rel="stylesheet" href="/trama.css">
+<script src="/i18n-home-en.js"></script>
+<script src="/i18n.js"></script>
 <style>
 /* Layout: hero con demo animata, poi una sezione per domanda (come funziona, esempi, regole, per chi, sicurezza, FAQ). Una sola banda scura in chiusura. */
 nav.top{display:flex;align-items:center;gap:28px;padding-block:18px}
@@ -20,6 +22,23 @@ nav.top .links{display:flex;gap:24px;margin-left:auto}
 nav.top .links a{color:var(--muted);text-decoration:none;font-weight:500;font-size:15px}
 nav.top .links a:hover{color:var(--fg)}
 nav.top .btn{min-height:42px;padding:0 16px;font-size:15px}
+nav.top .lang{margin-left:-12px}
+.dd{position:relative}
+.dd-btn{display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid transparent;border-radius:999px;padding:5px 9px;color:var(--fg);cursor:pointer;font:600 13px var(--f-mono);letter-spacing:.04em}
+.dd-btn:hover,.dd-btn[aria-expanded="true"]{background:var(--sunk)}
+.dd-btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.dd-btn .chev{width:12px;height:12px;color:var(--muted)}
+.dd-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:60;min-width:220px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 1px 2px rgba(20,27,71,.06),0 12px 32px rgba(20,27,71,.14)}
+.dd-head{padding:8px 10px 10px;font-size:14px}
+.dd-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;border-radius:8px;background:none;color:var(--fg);font:500 14px var(--f-body);cursor:pointer;text-align:left}
+.dd-menu button:hover,.dd-menu button:focus-visible{background:var(--sunk);outline:none}
+.dd-menu button span{flex:1}
+.dd-menu button[aria-checked="true"]{background:var(--accent-soft);font-weight:700}
+.dd-menu button[aria-checked="false"] .lang-ok{visibility:hidden}
+.lang-ok{width:16px;height:16px;color:var(--fg)}
+.flag{width:20px;height:20px;flex:none;display:block}
+.lang-flag{display:inline-flex}
+html[lang="it"] .lang-btn [data-flag="en"],html[lang="en"] .lang-btn [data-flag="it"]{display:none}
 .hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:56px;align-items:center;padding-block:40px 72px}
 .hero .h-display span{color:var(--primary)}
 .hero .lede{margin:22px 0 30px}
@@ -149,7 +168,7 @@ footer a{color:var(--muted)}
   .example{grid-template-columns:minmax(0,1fr)}
   .example .arrow{transform:rotate(90deg);justify-self:center}
   nav.top .links{display:none}
-  nav.top .btn{margin-left:auto}
+  nav.top .lang{margin-left:auto}
   .chapters{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:640px){
@@ -195,8 +214,16 @@ footer a{color:var(--muted)}
 <body>
 <div class="wrap">
   <nav class="top" aria-label="Principale">
-    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama, home</span></a>
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true" data-no-i18n><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama, home</span></a>
     <div class="links"><a href="#demo">Demo</a><a href="#passi">Come funziona</a><a href="#esempi">Esempi</a><a href="#regole">Regole</a><a href="#sicurezza">Sicurezza</a><a href="#faq">Domande</a></div>
+    <div class="dd lang" id="langDd">
+    <button type="button" class="dd-btn lang-btn" id="langBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="langMenu"><span class="lang-flag" data-flag="it"><svg class="flag" viewBox="0 0 24 24" aria-hidden="true"><clipPath id="fl-it"><circle cx="12" cy="12" r="11"/></clipPath><g clip-path="url(#fl-it)"><rect width="8" height="24" fill="#009246"/><rect x="8" width="8" height="24" fill="#FFFFFF"/><rect x="16" width="8" height="24" fill="#CE2B37"/></g><circle cx="12" cy="12" r="11" fill="none" stroke="#DADDEA"/></svg></span><span class="lang-flag" data-flag="en"><svg class="flag" viewBox="0 0 24 24" aria-hidden="true"><clipPath id="fl-en"><circle cx="12" cy="12" r="11"/></clipPath><g clip-path="url(#fl-en)"><rect width="24" height="24" fill="#012169"/><path d="M0 0L24 24M24 0L0 24" stroke="#FFFFFF" stroke-width="4.5"/><path d="M0 0L24 24M24 0L0 24" stroke="#C8102E" stroke-width="1.6"/><path d="M12 0V24M0 12H24" stroke="#FFFFFF" stroke-width="7"/><path d="M12 0V24M0 12H24" stroke="#C8102E" stroke-width="4"/></g><circle cx="12" cy="12" r="11" fill="none" stroke="#DADDEA"/></svg></span><span class="lang-c" aria-hidden="true" data-no-i18n><span data-flag="it">ITA</span><span data-flag="en">ENG</span></span><span class="sr-only">Lingua</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="dd-menu right" id="langMenu" role="menu" hidden>
+      <div class="dd-head"><b>Lingua</b></div>
+      <button type="button" role="menuitemradio" class="lang-it" data-act="setLang" data-lang="it" lang="it" data-no-i18n><svg class="flag" viewBox="0 0 24 24" aria-hidden="true"><clipPath id="fl-it"><circle cx="12" cy="12" r="11"/></clipPath><g clip-path="url(#fl-it)"><rect width="8" height="24" fill="#009246"/><rect x="8" width="8" height="24" fill="#FFFFFF"/><rect x="16" width="8" height="24" fill="#CE2B37"/></g><circle cx="12" cy="12" r="11" fill="none" stroke="#DADDEA"/></svg><span>Italiano</span><svg class="ic lang-ok" aria-hidden="true"><use href="/icons.svg#i-check"/></svg></button>
+      <button type="button" role="menuitemradio" class="lang-en" data-act="setLang" data-lang="en" lang="en" data-no-i18n><svg class="flag" viewBox="0 0 24 24" aria-hidden="true"><clipPath id="fl-en"><circle cx="12" cy="12" r="11"/></clipPath><g clip-path="url(#fl-en)"><rect width="24" height="24" fill="#012169"/><path d="M0 0L24 24M24 0L0 24" stroke="#FFFFFF" stroke-width="4.5"/><path d="M0 0L24 24M24 0L0 24" stroke="#C8102E" stroke-width="1.6"/><path d="M12 0V24M0 12H24" stroke="#FFFFFF" stroke-width="7"/><path d="M12 0V24M0 12H24" stroke="#C8102E" stroke-width="4"/></g><circle cx="12" cy="12" r="11" fill="none" stroke="#DADDEA"/></svg><span>English</span><svg class="ic lang-ok" aria-hidden="true"><use href="/icons.svg#i-check"/></svg></button>
+    </div>
+  </div>
     <a class="btn primary" href="/studio">Apri Trama</a>
   </nav>
 
@@ -322,7 +349,7 @@ footer a{color:var(--muted)}
     <div><p>Accedi con Atlassian, crea il progetto e segui i passi. Il primo backlog può essere in Jira il giorno stesso.</p><div class="cta" style="margin-top:22px"><a class="btn primary" href="/api/auth/login">Accedi con Atlassian</a><a class="btn" href="/brand">Linee guida del marchio</a></div></div>
   </div>
 </section>
-<div class="wrap"><footer><a class="brand" href="/" style="font-size:18px"><svg viewBox="0 0 32 32" aria-hidden="true" style="width:22px;height:22px"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true"><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama</span></a><span>Strumento interno del gruppo · Funziona con Jira Cloud e Claude Code</span><span><a href="/installazione">Installazione</a> · <a href="/privacy">Privacy</a> · <a href="/brand">Marchio e linee guida</a></span></footer></div>
+<div class="wrap"><footer><a class="brand" href="/" style="font-size:18px"><svg viewBox="0 0 32 32" aria-hidden="true" style="width:22px;height:22px"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg><span class="wm" aria-hidden="true" data-no-i18n><svg class="wm-t" viewBox="0 0 21 47" aria-hidden="true" focusable="false"><use href="/icons.svg#tx-t" width="21" height="47"/></svg>rama</span><span class="sr-only">Trama</span></a><span>Strumento interno del gruppo · Funziona con Jira Cloud e Claude Code</span><span><a href="/installazione">Installazione</a> · <a href="/privacy">Privacy</a> · <a href="/brand">Marchio e linee guida</a></span></footer></div>
 
 <script src="/home.js"></script>
 </body>

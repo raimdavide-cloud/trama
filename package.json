@@ -19,7 +19,8 @@
     "bridge:pack": "node scripts/pack-bridge.mjs",
     "test:visual": "playwright test --project=visual",
     "perf": "node scripts/misura-prestazioni.mjs",
-    "i18n:mancanti": "node scripts/i18n/raccogli.mjs"
+    "i18n:mancanti": "node scripts/i18n/raccogli.mjs",
+    "i18n:mancanti-home": "node scripts/i18n/raccogli-home.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0"
