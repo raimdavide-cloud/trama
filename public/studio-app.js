@@ -7,7 +7,10 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const clone=o=>JSON.parse(JSON.stringify(o??null));
 const today=()=>new Date().toISOString().slice(0,10);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,4200)}
+function toast(t,undo){const el=$("#toast");clearTimeout(toast.t);el.hidden=false;
+  // con «Annulla»: qualche secondo in più per ripensarci
+  if(undo){el.innerHTML=`<span>${esc(t)}</span><button type="button" class="toast-undo">Annulla</button>`;el.querySelector("button").onclick=()=>{clearTimeout(toast.t);el.hidden=true;undo()}}else el.textContent=t;
+  toast.t=setTimeout(()=>el.hidden=true,undo?9000:4200)}
 function setPath(o,path,v){const ks=path.split(".");let x=o;ks.slice(0,-1).forEach((k,i)=>{if(x[k]==null||typeof x[k]!=="object")x[k]=/^\d+$/.test(ks[i+1])?[]:{};x=x[k]});x[ks.at(-1)]=v;return o}
 function getPath(o,path){return path.split(".").reduce((x,k)=>x==null?x:x[k],o)}
 const ls={get(k,d){try{const v=localStorage.getItem("bs:"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("bs:"+k,JSON.stringify(v))}catch(e){}}};
@@ -122,7 +125,7 @@ REGOLE:
 /* ================= stato ================= */
 const COLS=["docs","reqs","questions","tickets","decisions"];
 const S={project:{},kit:defaultKit(),jira:{},chat:{turns:[]},quality:{},docs:{},reqs:{},questions:{},tickets:{},decisions:{}};
-const T={qsel:new Set(),sites:null,projects:null,uploads:[],pre:null,ack:false,log:[],report:null,hyg:null,rel:"",onlyIssues:false,arm:{},running:false,stop:false};
+const T={qsel:new Set(),tsel:new Set(),tq:"",prevGen:{},touched:new Set(),sites:null,projects:null,uploads:[],pre:null,ack:false,log:[],report:null,hyg:null,rel:"",onlyIssues:false,arm:{},running:false,stop:false};
 const busy={}, msgs={}, openSet=new Set(ls.get("open",[]));
 // passi già visitati da questo utente (su questo browser): la loro intestazione si mostra compatta
 const SEEN=new Set(ls.get("seenSteps",[]));const markSeen=()=>{const id=STEPS[cur]?.id;if(id&&!SEEN.has(id)){SEEN.add(id);ls.set("seenSteps",[...SEEN])}};addEventListener("pagehide",markSeen);
@@ -145,13 +148,18 @@ function dbErr(e){const c=e?.code;
   scheduleRender()}
 function saveMeta(id,data){S[id]=data;id==="chat"?renderChat():scheduleRender();if(DB)queue(()=>DB.doc("meta/"+id).set(data))}
 let QSYNC=false;
-function put(c,id,data){S[c]={...S[c],[id]:data};scheduleRender();const r=DB?queue(()=>DB.collection(c).doc(id).set(data)):undefined;if(c==="questions"&&!QSYNC)queueMicrotask(syncQDecisions);return r}
+function put(c,id,data){S[c]={...S[c],[id]:data};scheduleRender();if(c==="tickets"){T.touched.add(id);qaAutoSoon()}const r=DB?queue(()=>DB.collection(c).doc(id).set(data)):undefined;if(c==="questions"&&!QSYNC)queueMicrotask(syncQDecisions);return r}
 // Ogni risposta o ipotesi entra da sola nel registro delle decisioni; se la risposta cambia, si aggiorna la stessa riga
 function syncQDecisions(){if(QSYNC||READONLY)return;QSYNC=true;try{let n=0;
   arr("questions").forEach(q=>{const a=q.answer?.trim(),h=q.hypothesis?.trim();if(!(a||h))return;const text=a?`${q.q} → ${a}`:`(Ipotesi) ${q.q} → ${h}`,who=q.who||(a?"Cliente":"PO (ipotesi)"),d=q.decisionId&&S.decisions[q.decisionId];
    if(d){if(d.autoText!==text||d.source==="Domande di apertura (Fase 0)"){put("decisions",q.decisionId,{...d,text,who,autoText:text,source:d.source==="Domande di apertura (Fase 0)"?"Domande di apertura":d.source})}return}
    const id=uid();put("decisions",id,{date:today(),text,autoText:text,who,type:"Perimetro funzionale",source:"Domande di apertura",impact:"",kit:"",replaces:"",at:Date.now()+n++});put("questions",q.id,{...S.questions[q.id],decisionId:id})})}finally{QSYNC=false}}
 function del(c,id){const o={...S[c]};delete o[id];S[c]=o;scheduleRender();if(DB)queue(()=>DB.collection(c).doc(id).delete())}
+// eliminazione con «Annulla»: si tiene una copia completa e per qualche secondo si può rimettere tutto com'era
+async function trash(c,ids,msg){ids=ids.filter(id=>S[c]?.[id]);if(!ids.length)return;const snap=[];
+  for(const id of ids){let d=S[c][id];if(lazy(d))d=await full(c,id).catch(()=>null);snap.push([id,d])}
+  ids.forEach(id=>del(c,id));
+  toast(msg,()=>{const ok=snap.filter(([,d])=>d&&!lazy(d));ok.forEach(([id,d])=>put(c,id,d));toast(ok.length===1?"Ripristinato.":`Ripristinati ${ok.length} elementi.`)})}
 // Apertura leggera: testo dei documenti, log della creazione e controllo di qualità arrivano come segnaposto e si caricano quando servono
 const lazy=d=>!!BS.isLazy?.(d);
 async function full(c,id){const get=()=>c==="meta"?S[id]:S[c]?.[id];if(!lazy(get())||!DB)return get();
@@ -361,8 +369,8 @@ const rqCount=(n,t)=>n<t?`${n} di ${t} requisiti · <button type="button" class=
    Clic o Invio su una riga apre il pannello; ↑ ↓ passano alla riga vicina; Esc chiude. */
 T.panel=null;T.panelIds=[];
 const COMP_SHORT={"Web App":"Web","Mobile App":"Mobile","Back-end/Cloud":"BE","Firmware":"FW"};
-function dtRow(kind,id,cells){const sel=T.panel?.kind===kind&&T.panel.id===id;
-  return`<tr class="dt-r${sel?" sel":""}" data-k="${kind==="req"?"req":"t"}-${id}" data-act="openRow" data-kind="${kind}" data-id="${id}" tabindex="0"${sel?' aria-current="true"':""}>${cells}</tr>`}
+function dtRow(kind,id,cells,extra=""){const sel=T.panel?.kind===kind&&T.panel.id===id;
+  return`<tr class="dt-r${sel?" sel":""}" data-k="${kind==="req"?"req":"t"}-${id}" data-act="openRow" data-kind="${kind}" data-id="${id}" tabindex="0"${sel?' aria-current="true"':""}${extra}>${cells}</tr>`}
 function sidePanel(kind,id,head,body){const ids=T.panelIds||[],i=ids.indexOf(id);
   return`<aside class="sp" aria-label="Dettaglio della riga" data-panel="${kind}:${id}"><div class="sp-h"><div class="sp-t" tabindex="-1">${head}</div><div class="sp-nav">
    <button type="button" class="icon-btn" data-act="spMove" data-d="-1" aria-label="Riga precedente (freccia su)" title="Riga precedente (↑)" ${i>0?"":"disabled"}>↑</button>
@@ -613,13 +621,13 @@ STEPS.push({id:"questions",phase:"Preparazione",short:"Domande di apertura",sub:
  rules:["Ogni risposta mancante oggi diventa una riclassificazione di ticket domani.","Dove manca la risposta si scrive un'ipotesi esplicita (0.3).","Aprire il registro delle decisioni con le decisioni prese in Fase 0 (checklist della prima settimana)."],
  checks:()=>{const q=arr("questions");return[{t:"Domande di apertura caricate",ok:q.length>0},{t:"Ogni domanda ha una risposta o un'ipotesi",ok:q.length>0&&q.every(x=>x.answer?.trim()||x.hypothesis?.trim())}]},
  view(){const q=arr("questions").sort((a,b)=>(a.order??0)-(b.order??0));const open=q.filter(x=>!x.answer?.trim()&&!x.hypothesis?.trim());
-  let h=`<div class="toolbar">${B("seedQuestions","Carica le domande standard",{cls:q.length?"":"primary",dis:q.some(x=>x.std)})}${B("importReqQuestions","Importa le domande dai requisiti",{dis:!reqList().some(r=>r.questions)})}${AIB("suggestQuestions","Suggerisci altre domande (Claude)",{dis:!arr("docs").length&&!reqList().length})}${AIB("proposeHyp","Proponi ipotesi per le aperte (Claude)",{dis:!open.length})}${B("copyQuestions","Copia le aperte per il cliente",{ro:1,dis:!open.length})}</div>`;
+  let h=`<div class="toolbar">${q.some(x=>x.std)?"":B("seedQuestions","Carica le domande standard",{cls:q.length?"":"primary"})}${B("importReqQuestions","Importa le domande dai requisiti",{dis:!reqList().some(r=>r.questions)})}${AIB("suggestQuestions","Suggerisci altre domande (Claude)",{dis:!arr("docs").length&&!reqList().length})}${AIB("proposeHyp","Proponi ipotesi per le aperte (Claude)",{dis:!open.length})}${B("copyQuestions","Copia le aperte per il cliente",{ro:1,dis:!open.length})}</div>`;
   if(q.length)h+=`<div class="stat card"><div><b>${q.length}</b><span>domande</span></div><div><b>${q.filter(x=>x.answer?.trim()).length}</b><span>con risposta</span></div><div><b>${q.filter(x=>!x.answer?.trim()&&x.hypothesis?.trim()).length}</b><span>con ipotesi</span></div><div><b>${open.length}</b><span>aperte</span></div></div>`;
   const cats=[...new Set(q.map(x=>x.cat))];T.qsel=new Set(q.filter(x=>T.qsel.has(x.id)).map(x=>x.id));const ns=T.qsel.size;
   h+=cats.map(c=>`<div class="group"><div class="group-h"><h2 style="margin:0">${esc(c)}</h2></div><div class="list">${q.filter(x=>x.cat===c).map(x=>{const st=x.answer?.trim()?["ok","Risposta"]:x.hypothesis?.trim()?["warn","Ipotesi"]:["err","Aperta"],on=T.qsel.has(x.id),armed=T.arm["q:"+x.id];
     return (READONLY?"":`<div class="q-row${on?" sel":""}"><input type="checkbox" class="q-pick" value="${x.id}" ${on?"checked":""} aria-label="Seleziona la domanda: ${esc(x.q)}">`)+det("q-"+x.id,`<span class="pill ${st[0]}">${st[1]}</span><span class="ttl">${esc(x.q)}</span>${x.answer?.trim()?`<span class="q-ans">${esc(x.answer.trim())}</span>`:x.hypothesis?.trim()?`<span class="q-ans"><b>Ipotesi:</b> ${esc(x.hypothesis.trim())}</span>`:""}`,
     `<div class="grid">${F("Risposta del cliente o del PO",bind("questions:"+x.id+":answer",x.answer,{area:1,rows:2}))}${F("Ipotesi esplicita (se manca la risposta)",bind("questions:"+x.id+":hypothesis",x.hypothesis,{area:1,rows:2}))}${F("Chi ha risposto",bind("questions:"+x.id+":who",x.who,{ph:"Cliente, PO, team"}))}</div>
-    <div class="toolbar" style="margin-top:10px">${B("delQ","Elimina",{cls:"danger",data:{id:x.id}})}</div>`)+(READONLY?"":`<button type="button" class="icon-btn q-del${armed?" armed":""}" data-act="delQRow" data-id="${x.id}" aria-label="${armed?"Conferma: elimina la domanda":"Elimina la domanda"}: ${esc(x.q)}" title="${armed?"Clicca di nuovo per eliminare":"Elimina la domanda"}">${armed?"Elimina?":ICO("i-trash")}</button></div>`)}).join("")}</div></div>`).join("")||'<p class="empty">Nessuna domanda ancora. Carica le domande standard del playbook per iniziare.</p>';
+`)+(READONLY?"":`<button type="button" class="icon-btn q-del${armed?" armed":""}" data-act="delQRow" data-id="${x.id}" aria-label="${armed?"Conferma: elimina la domanda":"Elimina la domanda"}: ${esc(x.q)}" title="${armed?"Clicca di nuovo per eliminare":"Elimina la domanda"}">${armed?"Elimina?":ICO("i-trash")}</button></div>`)}).join("")}</div></div>`).join("")||'<p class="empty">Nessuna domanda ancora. Carica le domande standard del playbook per iniziare.</p>';
   if(ns)h+=`<div class="q-bar" role="region" aria-label="Domande selezionate"><span class="q-bar-n" aria-live="polite">${ns===1?"1 domanda selezionata":ns+" domande selezionate"}</span>${ns<q.length?B("qSelAll",`Seleziona tutte (${q.length})`):""}${B("qSelNone","Annulla")}<button type="button" data-act="qDelSel" class="${T.arm.qbulk?"armed":"danger"}">${T.arm.qbulk?`Conferma: elimina ${ns===1?"1 domanda":ns+" domande"}`:`Elimina ${ns===1?"1 domanda":ns+" domande"}`}</button></div>`;
   return h},
  ask:["Quali domande aperte bloccano la scomposizione in ticket?","Scrivi una mail formale in inglese al cliente con le domande aperte"]});
@@ -636,7 +644,7 @@ STEPS.push({id:"kit",phase:"Preparazione",short:"Kit di progetto",sub:"Release, 
   {t:"Epiche per area funzionale (K3)",ok:k.epics.length>0},
   {t:"Struttura Jira Project › Fase › Epica completa (K4)",ok:hierProblems().length===0}]},
  view(){const k=K(),j=S.jira;const linkOpts=(j.links||[]).map(l=>[l.name,`${l.name} (${l.outward} / ${l.inward})`]);const typeOpts=(j.types||[]).map(t=>t.name);
-  let h=`<div class="toolbar">${AIB("proposeKit","Proponi il kit con Claude",{cls:k.epics.length?"":"primary",dis:!reqList().length})}${JB("readConfig","Ricontrolla su Jira",{dis:!P().key})}<span class="small muted">Claude compila solo i campi vuoti; quello che hai già scritto resta.</span></div>`;
+  let h=`<div class="toolbar">${B("kitImport","Parti da un kit esistente",{cls:k.epics.length?"":"primary"})}${AIB("proposeKit","Proponi il kit con Claude",{dis:!reqList().length})}${JB("readConfig","Ricontrolla su Jira",{dis:!P().key})}<span class="small muted">Claude compila solo i campi vuoti; quello che hai già scritto resta.</span></div>`;
   h+=`<div class="card"><h2>K1 · Identificativi del tracker</h2><div class="grid">
     ${F("Sito",`<input value="${esc(P().siteUrl||"—")}" disabled>`)}${F("Chiave di progetto",`<input value="${esc(P().key||"—")}" disabled>`)}
     ${Object.keys(k.types).map(t=>F("Tipo «"+t+"» in Jira",typeOpts.length?sel("meta:kit:types."+t,k.types[t],typeOpts.includes(k.types[t])?typeOpts:[k.types[t],...typeOpts],{empty:false}):bind("meta:kit:types."+t,k.types[t]))).join("")}
@@ -657,9 +665,37 @@ STEPS.push({id:"kit",phase:"Preparazione",short:"Kit di progetto",sub:"Release, 
     ${F("Contratti e vincoli già decisi (con ticket di riferimento)",bind("meta:kit:constraints",k.constraints,{area:1,rows:4}),"wide")}
     ${F("Ambienti e cadenza di rilascio",bind("meta:kit:envs",k.envs,{area:1,rows:3,ph:"Dev, Test, Pre-produzione, Prod; deploy in pre-produzione il giovedì; nessun deploy il venerdì"}),"wide")}</div></div>`;
   h+="</div></details>";
+  if(T.panel?.kind==="kitimp")h+=kitImportPanel();
   return h},
  ask:["Le epiche coprono tutti i requisiti?","Come è organizzata la struttura Project › Fase › Epica?"]});
 
+/* Kit riusabile: da un modello o dal kit di un altro progetto dello stesso sito. Riempie i campi vuoti e aggiunge
+   release ed epiche che mancano; con «Sostituisci» sovrascrive anche ciò che c'è. Le chiavi Jira non si copiano mai. */
+const KIT_TEMPLATES=[
+ {id:"app",name:"App web e mobile con back-end",kit:{releases:[{name:"MVP",label:"MVP",date:""},{name:"Release 1.0",label:"Release1",date:""}],epics:[{name:"Account e accesso",release:"MVP"},{name:"Notifiche",release:"Release 1.0"},{name:"Cross-cutting polish",release:"MVP"}],envs:"Dev, Test, Pre-produzione, Prod"}},
+ {id:"web",name:"Applicazione web con back-end",kit:{releases:[{name:"MVP",label:"MVP",date:""},{name:"Release 1.0",label:"Release1",date:""}],epics:[{name:"Account e accesso",release:"MVP"},{name:"Amministrazione",release:"Release 1.0"},{name:"Cross-cutting polish",release:"MVP"}],envs:"Dev, Test, Pre-produzione, Prod"}},
+ {id:"iot",name:"Prodotto IoT con firmware",kit:{releases:[{name:"Prototipo",label:"Release1",date:""},{name:"Release 1.0",label:"Release2",date:""}],epics:[{name:"Provisioning dei dispositivi",release:"Prototipo"},{name:"Telemetria",release:"Prototipo"},{name:"Aggiornamenti firmware (OTA)",release:"Release 1.0"},{name:"Cross-cutting polish",release:"Prototipo"}],extraLabels:"Hardware",envs:"Banco di prova, Test sul campo, Produzione"}}];
+const KIT_RULES=["types","links","custom","extraLabels","glossary","constraints","envs","lang","autoAssign"];
+function kitMerge(k,src,parts,over){const empty=v=>v==null||v===""||(typeof v==="object"&&!Object.values(v).some(x=>x!==""&&x!=null));
+  if(parts.rules){KIT_RULES.forEach(f=>{if(src[f]===undefined)return;if(f==="custom"){const req=new Set((S.jira.required||[]).map(x=>x.key));Object.entries(src.custom||{}).forEach(([key,v])=>{if((!req.size||req.has(key))&&(over||!k.custom?.[key]))(k.custom=k.custom||{})[key]=v});return}
+      if(typeof src[f]==="object"&&!Array.isArray(src[f])){k[f]={...k[f]};Object.entries(src[f]).forEach(([a,v])=>{if(v!==""&&(over||empty(k[f][a])))k[f][a]=v})}else if(over||empty(k[f]))k[f]=src[f]});
+    if(src.hier){const h=k.hier;["projectType","phaseType"].forEach(f=>{if(src.hier[f]&&(over||!h[f]))h[f]=src.hier[f]});if(src.hier.enabled!==undefined&&over)h.enabled=src.hier.enabled;h.examples={...h.examples};Object.entries(src.hier.examples||{}).forEach(([a,v])=>{if(v&&(over||!h.examples[a]))h.examples[a]=v})}}
+  let rel=0,ep=0;
+  if(parts.releases)(src.releases||[]).forEach(r=>{if(!r.name)return;const cur=k.releases.find(x=>x.name===r.name);if(!cur){k.releases.push({name:r.name,label:r.label||"",date:r.date||""});rel++}else if(over){cur.label=r.label||cur.label}});
+  if(parts.epics)(src.epics||[]).forEach(e=>{if(!e.name||k.epics.some(x=>x.name===e.name))return;k.epics.push({name:e.name,release:k.releases.some(r=>r.name===e.release)?e.release:"",key:""});ep++});
+  return{rel,ep}}
+async function kitSource(v){if(v.startsWith("tpl:"))return KIT_TEMPLATES.find(x=>x.id===v.slice(4))?.kit||null;
+  if(T.kiCache?.[v])return T.kiCache[v];const r=await BS.api(`/api/projects/${encodeURIComponent(v.slice(4))}/items/meta/kit`);(T.kiCache=T.kiCache||{})[v]=r?.item?.data||null;return T.kiCache[v]}
+function kitImportPanel(){const ki=T.ki||(T.ki={src:"",parts:{rules:true,releases:true,epics:false},over:false});const others=(PROJECTS||[]).filter(p=>p.id!==PID);if(PROJECTS===null&&!T.kiLoading){T.kiLoading=true;loadProjects().finally(()=>{T.kiLoading=false;scheduleRender()})}
+  const src=ki.src&&(ki.src.startsWith("tpl:")?KIT_TEMPLATES.find(x=>"tpl:"+x.id===ki.src)?.kit:T.kiCache?.[ki.src]);
+  const sum=src?`<div class="card note small" style="margin:10px 0"><b>Cosa contiene</b><ul style="margin:4px 0 0">${(src.releases||[]).length?`<li>Release: ${src.releases.map(r=>esc(r.name)).join(", ")}</li>`:""}${(src.epics||[]).length?`<li>Epiche: ${src.epics.map(e=>esc(e.name)).join(", ")}</li>`:""}${src.links?.blocks||src.links?.relates?`<li>Collegamenti: ${esc([src.links.relates,src.links.blocks].filter(Boolean).join(", "))}</li>`:""}${src.lang?`<li>Lingue: ${esc(Object.values(src.lang).join(" · "))}</li>`:""}${src.envs?`<li>Ambienti: ${esc(src.envs)}</li>`:""}</ul></div>`:ki.src?'<p class="small muted">Lettura del kit…</p>':"";
+  const ck=(p,l)=>`<label class="row small"><input type="checkbox" class="ki-part" value="${p}" ${ki.parts[p]?"checked":""}> ${l}</label>`;
+  return sidePanel("kitimp","kitimp",`<span>Parti da un kit esistente</span>`,`<p class="small muted" style="margin:0 0 10px">Copia nel kit di questo progetto le regole, le release o le epiche di un modello o di un altro progetto. Le chiavi Jira non si copiano: release ed epiche si creano su Jira come sempre.</p>
+   <label class="f">Da dove<select id="kiSrc"><option value="">Scegli…</option><optgroup label="Modelli di Trama">${KIT_TEMPLATES.map(x=>`<option value="tpl:${x.id}" ${ki.src==="tpl:"+x.id?"selected":""}>${esc(x.name)}</option>`).join("")}</optgroup>${others.length?`<optgroup label="Altri progetti">${others.map(p=>`<option value="prj:${esc(p.id)}" ${ki.src==="prj:"+p.id?"selected":""}>${esc(p.name||p.id)}</option>`).join("")}</optgroup>`:""}</select></label>
+   ${PROJECTS===null?'<p class="small muted">Carico i progetti…</p>':""}${sum}
+   <fieldset class="ki-parts"><legend class="small">Cosa copiare</legend>${ck("rules","Regole: tipi, collegamenti, campi obbligatori, label, glossario, lingue, vincoli, ambienti, struttura Jira")}${ck("releases","Release che mancano")}${ck("epics","Epiche che mancano")}</fieldset>
+   <label class="row small" style="margin:8px 0 0"><input type="checkbox" id="kiOver" ${ki.over?"checked":""}> Sostituisci anche i campi già compilati</label>
+   <div class="toolbar" style="margin-top:12px">${B("kitImportRun",T.arm.kimp?"Conferma: copia nel kit":"Copia nel kit",{cls:T.arm.kimp?"armed":"primary",dis:!src})}${B("spClose","Chiudi",{ro:1})}</div>`)}
 /* ---------- 6. Backlog ---------- */
 function relOf(name){return K().releases.find(r=>r.name===name)}
 function fullTitle(t){const a=AREAS[t.area];const raw=String(t.title||"").replace(/^\s*\[[^\]]+\]\s*/,"");return(a?a.prefix+" ":"")+raw}
@@ -696,7 +732,7 @@ STEPS.push({id:"backlog",phase:"Creazione",short:"Backlog",sub:"Scomposizione e 
    h+=`<div class="stat card"><div><b>${ts.length}</b><span>ticket</span></div>${Object.entries(byArea).map(([a,n])=>`<div><b>${n}</b><span>${AREAS[a]?.label||a}</span></div>`).join("")}<div><b style="color:${errs?"var(--err)":"var(--ok)"}">${errs}</b><span>con errori</span></div><div><b>${ts.filter(t=>t.state==="created").length}</b><span>creati in Jira</span></div></div>`}
   const qs=qSum();
   const tabs=[["tickets","Ticket",`<span class="pill">${ts.length}</span>`],
-   ["quality","Qualità",qs.n?`<span class="pill ${qs.high?"err":qs.open?"warn":"ok"}">${qs.open?qs.open+" da vedere":"a posto"}</span>`:'<span class="pill">non eseguita</span>']];
+   ["quality","Qualità",T.qaAuto?'<span class="pill">controllo in corso</span>':qs.n?`<span class="pill ${qs.high?"err":qs.open?"warn":"ok"}">${qs.open?qs.open+" da vedere":"a posto"}</span>`:'<span class="pill">non eseguita</span>']];
   h+=`<div class="tabs" role="tablist" aria-label="Sezioni del backlog">${tabs.map(([id,l,bdg])=>`<button type="button" class="tab" role="tab" id="tab-${id}" aria-selected="${id===T.bTab}" aria-controls="panel-${id}" tabindex="${id===T.bTab?0:-1}" data-act="bTab" data-tab="${id}">${l}${bdg}</button>`).join("")}</div>`;
   h+=`<div role="tabpanel" id="panel-${T.bTab}" aria-labelledby="tab-${T.bTab}" tabindex="0">${T.bTab==="quality"?qualityPanel():ticketsPanel(k,rs,ts,rels)}</div>`;
   return h},
@@ -709,19 +745,31 @@ function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.rele
    ${T.prog.genTickets?progBlock("genTickets"):T.genLog?`<div class="log" style="margin-top:10px">${esc(T.genLog)}</div>`:""}</div>`;
   const groups0=[...inRel.map(r=>({r,ts:ts.filter(t=>t.req===r.code)})),{r:null,ts:ts.filter(t=>!rs.some(r=>r.code===t.req)&&(T.rel==="*"||t.release===T.rel))}].filter(g=>g.ts.length);
   const groups=T.bReq?groups0.filter(g=>g.r?.code===T.bReq):groups0;
-  h+=`<div class="card"><h2>Ticket per requisito</h2><div class="toolbar list-bar">${T.bReq?`<span class="pill primary">Solo ${esc(T.bReq)}</span><button type="button" class="link" data-act="bReqClear">Mostra tutti</button>`:""}<span style="flex:1"></span><label class="row small"><input type="checkbox" id="onlyIssues" ${T.onlyIssues?"checked":""}> Solo con problemi</label>${B("addTicket","Aggiungi a mano")}${B("qaZip","Schede QA (.zip)",{ro:1,dis:!ts.length})}${B("exportTickets","Esporta CSV",{ro:1,dis:!ts.length})}</div>`;
+  const tq=T.tq.trim().toLowerCase();T.tsel=new Set([...T.tsel].filter(id=>S.tickets[id]));
+  h+=`<div class="card"><h2>Ticket per requisito</h2><div class="toolbar list-bar"><input type="search" id="tSearch" class="t-search" placeholder="Cerca per rif., titolo o chiave" aria-label="Cerca ticket per riferimento, titolo o chiave Jira" value="${esc(T.tq)}" autocomplete="off">${T.bReq?`<span class="pill primary">Solo ${esc(T.bReq)}</span><button type="button" class="link" data-act="bReqClear">Mostra tutti</button>`:""}<span style="flex:1"></span><label class="row small"><input type="checkbox" id="onlyIssues" ${T.onlyIssues?"checked":""}> Solo con problemi</label>${B("addTicket","Aggiungi a mano")}<div class="dd exp-dd"><button type="button" class="dd-btn exp-btn" aria-haspopup="menu" aria-expanded="false" ${ts.length?"":"disabled"}>Esporta <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dd-menu right" role="menu" hidden><button type="button" role="menuitem" data-act="exportTickets">Backlog in CSV</button><button type="button" role="menuitem" data-act="qaZip">Schede QA e piano di test (.zip)</button></div></div></div>`;
   const ids=[];
   const bodies=groups.map(({r,ts:gts})=>{const shown=T.onlyIssues?gts.filter(t=>{const i=issuesOf(t);return i.e.length||i.w.length}):gts;if(!shown.length)return"";const bad=gts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;shown.forEach(t=>ids.push(t.id));
-   return`<tbody><tr class="dt-g"><th colspan="6" scope="rowgroup"><div class="dt-gh">${r?`<span class="key">${esc(r.code)}</span><span class="dt-t">${esc(r.title)}</span>`:`<span>Ticket senza requisito</span>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")}):""}</div></th></tr>${shown.map(ticketRow).join("")}</tbody>`}).join("");
-  T.panelIds=ids;
-  h+=bodies?`<div class="dt-wrap"><table class="dt"><colgroup><col style="width:calc(92px*var(--colk,1))"><col style="width:calc(96px*var(--colk,1))"><col><col style="width:calc(180px*var(--colk,1))"><col style="width:calc(150px*var(--colk,1))"><col style="width:calc(160px*var(--colk,1))"></colgroup>
-   <thead><tr><th scope="col">Rif.</th><th scope="col">Tipo</th><th scope="col">Titolo</th><th scope="col">Epica</th><th scope="col">Problemi</th><th scope="col">Stato</th></tr></thead>${bodies}</table></div>`:(ts.length?'<p class="empty">Nessun ticket corrisponde al filtro.</p>':'<p class="empty">Nessun ticket ancora. Scegli la release e fai generare i ticket a Claude, oppure aggiungili a mano.</p>');
-  h+="</div>";
+   const vis=shown.filter(t=>tMatch(t,tq));
+   return`<tbody${vis.length?"":" hidden"}><tr class="dt-g"><th colspan="${READONLY?6:7}" scope="rowgroup"><div class="dt-gh">${r?`<span class="key">${esc(r.code)}</span><span class="dt-t">${esc(r.title)}</span>`:`<span>Ticket senza requisito</span>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r&&T.prevGen[r.code]?B("restoreGen",T.arm["rg"+r.code]?"Conferma: torna ai ticket di prima":"Torna ai ticket di prima",{cls:T.arm["rg"+r.code]?"armed":"link",data:{code:r.code}}):""}${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")}):""}</div></th></tr>${shown.map(t=>ticketRow(t,!tMatch(t,tq))).join("")}</tbody>`}).join("");
+  T.panelIds=ids.filter(id=>tMatch(S.tickets[id],tq));
+  const visIds=T.panelIds,allOn=visIds.length>0&&visIds.every(id=>T.tsel.has(id));
+  h+=bodies?`<div class="dt-wrap"><table class="dt"><colgroup>${READONLY?"":'<col style="width:44px">'}<col style="width:calc(92px*var(--colk,1))"><col style="width:calc(96px*var(--colk,1))"><col><col style="width:calc(180px*var(--colk,1))"><col style="width:calc(150px*var(--colk,1))"><col style="width:calc(160px*var(--colk,1))"></colgroup>
+   <thead><tr>${READONLY?"":`<th scope="col" class="dt-ck"><input type="checkbox" id="tAll" aria-label="Seleziona tutti i ticket visibili" ${allOn?"checked":""}></th>`}<th scope="col">Rif.</th><th scope="col">Tipo</th><th scope="col">Titolo</th><th scope="col">Epica</th><th scope="col">Problemi</th><th scope="col">Stato</th></tr></thead>${bodies}</table></div>`:(ts.length?'<p class="empty">Nessun ticket corrisponde al filtro.</p>':'<p class="empty">Nessun ticket ancora. Scegli la release e fai generare i ticket a Claude, oppure aggiungili a mano.</p>');
+  h+=bulkBar(k)+"</div>";
   if(T.panel?.kind==="ticket"){const t=ticketList().find(x=>x.id===T.panel.id);if(t)h+=sidePanel("ticket",t.id,`<span class="key">${esc(t.ref)}</span><span class="pill acc">${esc(t.type)}</span><span>${esc(fullTitle(t))}</span>`,ticketForm(t))}
   return h}
 const ticketState=t=>t.state==="created"?`${browse(t.key)}${vOf(t)==="ok"?'<span class="pill ok">verificato</span>':vOf(t)?'<span class="pill warn">da verificare</span>':""}`:t.state==="error"?'<span class="pill err">errore Jira</span>':t.state==="unknown"?'<span class="pill warn">esito incerto</span>':'<span class="pill">bozza</span>';
-function ticketRow(t){const{e,w}=issuesOf(t),locked=t.state==="created";
- return dtRow("ticket",t.id,`<td><span class="key">${esc(t.ref)}</span></td><td><span class="pill acc">${esc(t.type)}</span></td><td class="dt-t" title="${esc(fullTitle(t))}">${esc(fullTitle(t))}</td><td class="dt-t muted" title="${esc(t.epic||"")}">${esc(t.epic||"—")}</td><td>${!locked&&e.length?`<span class="pill err">${e.length===1?"1 errore":e.length+" errori"}</span> `:""}${!locked&&w.length?`<span class="pill warn">${w.length===1?"1 avviso":w.length+" avvisi"}</span>`:""}</td><td class="dt-st">${ticketState(t)}</td>`)}
+const tMatch=(t,q)=>!q||!t||[t.ref,fullTitle(t),t.key,t.epic].some(v=>String(v||"").toLowerCase().includes(q));
+// barra della selezione: epica, release, tipo di lavoro e label in un colpo solo; si eliminano solo le bozze
+function bulkBar(k){const n=T.tsel.size;if(!n||READONLY)return"";const drafts=[...T.tsel].filter(id=>S.tickets[id]?.state!=="created").length,armed=T.arm.tbulk;
+  const opt=(id,label,list)=>`<select id="${id}" aria-label="${label}"><option value="">${label}: invariata</option>${list.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("")}</select>`;
+  return`<div class="q-bar t-bar" role="region" aria-label="Ticket selezionati"><span class="q-bar-n" aria-live="polite">${n===1?"1 ticket selezionato":n+" ticket selezionati"}</span>
+   ${opt("tbEpic","Epica",k.epics.map(e=>e.name).filter(Boolean))}${opt("tbRel","Release",k.releases.map(r=>r.name).filter(Boolean))}${opt("tbWork","Tipo di lavoro",WORK)}
+   <input id="tbLabel" placeholder="Aggiungi label" aria-label="Label da aggiungere, separate da virgola" autocomplete="off">
+   ${B("tBulkApply","Applica",{cls:"primary"})}${B("tSelNone","Annulla")}
+   <button type="button" data-act="tBulkDel" class="${armed?"armed":"danger"}" ${drafts?"":"disabled"}>${armed?`Conferma: elimina ${drafts===1?"1 bozza":drafts+" bozze"}`:drafts===1?"Elimina 1 bozza":`Elimina ${drafts} bozze`}</button></div>`}
+function ticketRow(t,hide){const{e,w}=issuesOf(t),locked=t.state==="created";
+ return dtRow("ticket",t.id,`${READONLY?"":`<td class="dt-ck"><input type="checkbox" class="t-pick" value="${esc(t.id)}" ${T.tsel.has(t.id)?"checked":""} aria-label="Seleziona ${esc(t.ref)}"></td>`}<td><span class="key">${esc(t.ref)}</span></td><td><span class="pill acc">${esc(t.type)}</span></td><td class="dt-t" title="${esc(fullTitle(t))}">${esc(fullTitle(t))}</td><td class="dt-t muted" title="${esc(t.epic||"")}">${esc(t.epic||"—")}</td><td>${!locked&&e.length?`<span class="pill err">${e.length===1?"1 errore":e.length+" errori"}</span> `:""}${!locked&&w.length?`<span class="pill warn">${w.length===1?"1 avviso":w.length+" avvisi"}</span>`:""}</td><td class="dt-st">${ticketState(t)}</td>`,hide?" hidden":"")}
 /* Mentre si scrive nel pannello Trama non ridisegna (il cursore resterebbe a metà): «cosa manca» si aggiorna da solo. */
 function refreshIssues(id){const sp=$(`.sp[data-panel="ticket:${id}"]`),t=S.tickets[id];if(!sp||!t||t.state==="created")return;const{e,w}=issuesOf({...t,id});
   const html=e.map(x=>`<span class="pill err">${esc(x)}</span>`).join("")+w.map(x=>`<span class="pill warn">${esc(x)}</span>`).join("");let box=sp.querySelector(".issues");
@@ -829,7 +877,7 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
    <p class="small muted" style="margin:0 0 10px">Un solo comando, nell'ordine giusto: Project › Fasi › epiche › ticket › collegamenti, poi rilegge Jira per verificare ogni livello.</p>
    <div class="toolbar">${T.running?B("stopRun","Ferma dopo il ticket in corso",{cls:"danger"}):JB("runCreate",T.arm.run?`Conferma: crea tutto (${(pl.struct.project?1:0)+pl.struct.phases.length+pl.epics.length+pl.ready.length-(T.createDup?0:pl.dup.length)} elementi)`:"Crea su Jira",{cls:T.arm.run?"armed":"primary",dis:!T.ack||errs.length>0})}</div>
    ${(()=>{const why=T.running?"Una creazione è in corso: attendi che finisca, oppure fermala.":errs.length?"Bloccato dal controllo: "+errs.map(e=>e.t).join("; ")+".":!T.ack?"Per attivare il pulsante, conferma le ipotesi nello step 3.":"";return why?`<p class="small" style="margin:10px 0 0;color:var(--warn)">${esc(why)}</p>`:""})()}
-   <details class="item" data-k="adv-create" style="margin-top:12px"><summary><span class="ttl">Azioni avanzate (singoli passaggi)</span></summary><div class="in"><div class="toolbar" style="margin-top:10px">${JB("runStruct",T.arm.struct?`Conferma: crea ${pl.struct.project?"1 Project, ":""}${pl.struct.phases.length} Fasi e collega ${pl.struct.link.length} epiche`:"Crea solo la struttura Jira",{cls:T.arm.struct?"armed":"",dis:T.running||!T.ack||!(pl.struct.phases.length||pl.struct.link.length||pl.epics.length)})}${JB("runLinks","Crea i collegamenti tra ticket",{dis:T.running||!pl.links})}${JB("runVerify","Verifica i ticket creati",{dis:T.running||!ts.some(t=>t.state==="created")})}</div></div></details>
+   <details class="item" data-k="adv-create" style="margin-top:12px"><summary><span class="ttl">Azioni avanzate (singoli passaggi)</span></summary><div class="in"><div class="toolbar" style="margin-top:10px">${JB("runStruct",T.arm.struct?`Conferma: crea ${pl.struct.project?"1 Project, ":""}${pl.struct.phases.length} Fasi e collega ${pl.struct.link.length} epiche`:"Crea solo la struttura Jira",{cls:T.arm.struct?"armed":"",dis:T.running||!T.ack||!(pl.struct.phases.length||pl.struct.link.length||pl.epics.length)})}${JB("runLinks","Crea i collegamenti tra ticket",{dis:T.running||!pl.links})}</div></div></details>
    ${(()=>{if(!T.log.length&&lazy(S.runlog)){want("meta","runlog");return`<p class="small muted" style="margin:10px 0 4px">Ultimo log salvato (${new Date(S.runlog.at).toLocaleString(LOCALE())}): caricamento…</p>`}const lines=T.log.length?T.log:(S.runlog?.lines||[]);return lines.length?`${T.log.length?"":`<p class="small muted" style="margin:10px 0 4px">Ultimo log salvato (${new Date(S.runlog.at).toLocaleString(LOCALE())})</p>`}<div class="log">${esc(lines.join("\n"))}</div>`:""})()}</div>`}
   const odd=ts.filter(t=>t.state==="error"||t.state==="unknown"),keys=createdKeys(),created=ts.filter(t=>t.state==="created");
   // 5 · Esito della creazione: una sezione, con le sue parti come righe di secondo livello
@@ -841,7 +889,7 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
   if(esito.length)h+=`<div class="card"><h2>5. Esito della creazione</h2><div class="list">${esito.join("")}</div></div>`;
   // 6 · Sincronizzazione: si ripete nel tempo, resta una sezione a sé
   if(keys.length)h+=`<div class="card"><h2>6. Sincronizzazione con Jira</h2><p class="small muted" style="margin:0 0 10px">Rilegge da Jira tutto ciò che Trama ha creato: stato, Principale e titoli. Quello che è stato eliminato o rinominato a mano in Jira viene riconosciuto e Trama si riallinea (i ticket eliminati tornano in bozza, pronti da ricreare).</p>
-    <div class="toolbar">${JB("syncJira","Sincronizza con Jira")}${T.sync?`<span class="small muted">Ultima sincronizzazione ${new Date(T.sync.at).toLocaleTimeString(LOCALE())} · ${T.sync.total} elementi letti</span>`:""}</div>
+    <div class="toolbar">${JB("syncJira","Sincronizza e verifica")}${T.sync?`<span class="small muted">Ultima sincronizzazione ${new Date(T.sync.at).toLocaleTimeString(LOCALE())} · ${T.sync.total} elementi letti</span>`:""}</div>
     ${T.sync&&!T.sync.empty?`<div class="stat" style="margin-top:12px"><div><b>${T.sync.total-T.sync.deleted.length}</b><span>presenti in Jira</span></div><div><b style="color:${T.sync.deleted.length?"var(--err)":"inherit"}">${T.sync.deleted.length}</b><span>eliminati in Jira</span></div><div><b style="color:${T.sync.parentDiff.length?"var(--warn)":"inherit"}">${T.sync.parentDiff.length}</b><span>con epica diversa</span></div><div><b style="color:${T.sync.renamed.length?"var(--warn)":"inherit"}">${T.sync.renamed.length}</b><span>rinominati</span></div></div>
     ${Object.keys(T.sync.status).length?`<p class="small" style="margin:10px 0 0">Stato: ${Object.entries(T.sync.status).map(([k2,v])=>`<span class="pill">${esc(k2)} · ${v}</span>`).join(" ")}</p>`:""}
     ${T.sync.deleted.length?`<div class="msg warn small" style="margin-top:10px"><b>Eliminati in Jira, tornati in bozza:</b> ${T.sync.deleted.slice(0,12).map(esc).join(" · ")}${T.sync.deleted.length>12?" …":""}</div>`:""}
@@ -922,23 +970,43 @@ const FIND_TYPES={too_big:"Troppo grande",vague_acceptance:"Criteri vaghi",missi
 const SEV_ORD={high:0,medium:1,low:2};
 function ticketBrief(t,n=900){return `${t.ref} | ${t.type} | ${fullTitle(t)} | req ${t.req||"-"} | epica ${t.epic||"-"} | collegamenti: ${linksText(t)||"-"}\n${String(t.desc||"").slice(0,n)}`}
 // conteggi delle segnalazioni: dal segnaposto finché il controllo non è caricato
+// Controllo automatico: 15 secondi dopo l'ultima modifica, Tessa rilegge solo i ticket nuovi o cambiati (al massimo 20 per volta).
+// Serve il ponte attivo; si spegne dalla scheda Qualità. Le segnalazioni chiuse a mano restano come sono.
+let QA_T=null;
+function qaAutoSoon(){clearTimeout(QA_T);QA_T=setTimeout(qaAuto,15000)}
+async function qaAuto(){QA_T=null;if(READONLY||!SAMPLE||!DB||busy.qualityCheck||T.qaAuto||T.running)return;
+  let q=S.quality||{};if(lazy(q)){try{q=await full("meta","quality")}catch{return}}if(q.auto===false)return;const ts=ticketList();
+  if(!q.seen){q={...q,seen:Object.fromEntries(ts.filter(t=>!T.touched.has(t.id)).map(t=>[t.ref,tfp(t)]))};saveMeta("quality",q)}
+  const changed=ts.filter(t=>q.seen[t.ref]!==tfp(t)&&String(t.title||"").trim()&&String(t.desc||"").trim()).slice(0,20);if(!changed.length)return;
+  T.qaAuto=changed.length;scheduleRender();
+  try{const found=await qualityFind(changed,ts);const cur=lazy(S.quality)?q:S.quality||q,refs=new Set(changed.map(t=>t.ref)),live=new Set(ts.map(t=>t.ref));
+    const keep=(cur.findings||[]).filter(f=>live.has(f.ref)&&!(refs.has(f.ref)&&f.status==="open"));const seen={...(cur.seen||{})};changed.forEach(t=>seen[t.ref]=tfp(t));
+    saveMeta("quality",{...cur,count:cur.count||ts.length,autoAt:Date.now(),findings:[...keep,...found],seen})}
+  catch(e){console.warn("Controllo automatico non riuscito:",e?.e?.message||e?.message||e)}
+  finally{T.qaAuto=0;scheduleRender();const sn=S.quality?.seen||{};if(ticketList().some(t=>sn[t.ref]!==tfp(t)))qaAutoSoon()}}
 function qSum(){const q=S.quality||{};if(lazy(q))return q.sum||{n:0,open:0,high:0};const f=q.findings||[],o=f.filter(x=>x.status==="open");return{n:f.length,open:o.length,high:o.filter(x=>x.severity==="high").length}}
 function qualityPanel(){if(lazy(S.quality)){want("meta","quality");return'<p class="small muted" style="margin:10px 0">Caricamento del controllo di qualità…</p>'}const q=S.quality||{},f=q.findings||[],open=f.filter(x=>x.status==="open");const high=open.filter(x=>x.severity==="high").length;
   const row=x=>`<div class="card" style="margin:0;padding:12px 14px"><div class="row" style="gap:6px"><span class="key">${esc(x.ref)}</span><span class="pill ${x.severity==="high"?"err":x.severity==="medium"?"warn":""}">${x.severity==="high"?"alta":x.severity==="medium"?"media":"bassa"}</span><span class="pill acc">${esc(FIND_TYPES[x.type]||x.type)}</span></div>
     <p style="margin:8px 0 4px">${esc(x.message)}</p><p class="small muted" style="margin:0"><b>Cosa fare:</b> ${esc(x.suggestion)}</p>
     <div class="toolbar" style="margin:10px 0 0">${B("qClarify","Aggiungi ai «Points to clarify»",{data:{id:x.id}})}${B("qIgnore","Ignora",{cls:"link",data:{id:x.id}})}</div></div>`;
   return   `<p class="small muted" style="margin:10px 0">Claude rilegge i ticket e segnala: ticket troppo grandi, criteri di accettazione vaghi, dipendenze mancanti, possibili duplicati, ambiti poco chiari. Non modifica nulla da solo: decidi tu cosa applicare.</p>
-   <div class="toolbar">${AIB("qualityCheck",f.length?"Analizza di nuovo":"Analizza il backlog",{cls:"primary",dis:!ticketList().length})}${f.length?B("clearQuality","Svuota",{cls:"danger"}):""}</div>
-   ${q.at?`<p class="small muted" style="margin:0 0 10px">Analisi del ${new Date(q.at).toLocaleString(LOCALE())} su ${q.count} ticket</p>`:""}
+   <div class="toolbar">${AIB("qualityCheck",f.length?"Analizza di nuovo":"Analizza il backlog",{cls:"primary",dis:!ticketList().length})}</div>
+   <label class="row small" style="margin:0 0 10px"><input type="checkbox" id="qaAutoBox" ${q.auto===false?"":"checked"} ${READONLY?"disabled":""}> Controlla da sola i ticket nuovi o modificati (con il ponte attivo)</label>
+   ${T.qaAuto?`<p class="small muted" style="margin:0 0 10px">Controllo automatico in corso su ${T.qaAuto===1?"1 ticket":T.qaAuto+" ticket"}…</p>`:""}
+   ${q.at?`<p class="small muted" style="margin:0 0 10px">Analisi completa del ${new Date(q.at).toLocaleString(LOCALE())} su ${q.count} ticket${q.autoAt?` · ultimo controllo automatico ${new Date(q.autoAt).toLocaleString(LOCALE())}`:""}</p>`:q.autoAt?`<p class="small muted" style="margin:0 0 10px">Ultimo controllo automatico ${new Date(q.autoAt).toLocaleString(LOCALE())}</p>`:""}
    ${open.length?`<div class="row" style="gap:6px;margin:0 0 10px">${[["high","alta","err"],["medium","media","warn"],["low","bassa",""]].map(([s0,l,c])=>{const n=open.filter(x=>x.severity===s0).length;return n?`<span class="pill ${c}">${n} ${l}</span>`:""}).join("")}</div>`:""}
     ${open.length?`<div class="list">${[...open].sort((a,b)=>SEV_ORD[a.severity]-SEV_ORD[b.severity]).map(row).join("")}</div>`:f.length?'<p class="empty">Nessun problema aperto.</p>':""}`}
-A.qualityCheck=()=>run("qualityCheck","Claude sta leggendo…",async()=>{const ts=ticketList();if(!ts.length)return;const refs=new Set(ts.map(t=>t.ref)),all=ts.map(t=>`${t.ref} ${fullTitle(t)} (${t.type}, epica ${t.epic||"-"})`).join("\n");const findings=[];
-  for(let i=0;i<ts.length;i+=10){const chunk=ts.slice(i,i+10);busy.qualityCheck=`Analizzo ${Math.min(i+10,ts.length)} di ${ts.length}…`;scheduleRender();
+// impronta di un ticket per il controllo automatico: cambia quando cambia qualcosa che conta per la qualità
+const tfp=t=>{const x=[t.ref,t.type,t.title,t.epic,t.release,t.desc,linksText(t)].join("\u0001");let h=0;for(let i=0;i<x.length;i++)h=(h*31+x.charCodeAt(i))|0;return h.toString(36)};
+async function qualityFind(ts,list,step){const refs=new Set(list.map(t=>t.ref)),all=list.map(t=>`${t.ref} ${fullTitle(t)} (${t.type}, epica ${t.epic||"-"})`).join("\n");const findings=[];
+  for(let i=0;i<ts.length;i+=10){const chunk=ts.slice(i,i+10);step?.(i,ts.length);
     const prompt=`${RULES}\n\nCOMPITO: controlla la qualità di questi ticket e segnala SOLO problemi reali, concreti e utili (massimo 10 per questo gruppo). Criteri:\n- too_big: mescola più lavori o richiede più di una settimana; proponi come dividerlo.\n- vague_acceptance: criteri di accettazione assenti o non verificabili ("funziona bene", "veloce"); proponi criteri verificabili.\n- missing_dependency: dipende da un altro ticket, da firmware/librerie o dal design e manca il collegamento (blocks/relates); indica da quale ticket.\n- duplicate: si sovrappone a un altro ticket della lista; indica quale.\n- unclear_scope: ambito o ruolo utente poco chiari.\n- missing_clarification: c'è una decisione aperta che non compare in «Points to clarify».\nNon inventare problemi: se un ticket è a posto, non citarlo.\n\nELENCO COMPLETO (per trovare duplicati e dipendenze):\n${all}\n\nTICKET DA ANALIZZARE:\n${chunk.map(t=>ticketBrief(t)).join("\n---\n")}\n\nRispondi SOLO con JSON: {"findings":[{"ref":"T-001","type":"too_big|vague_acceptance|missing_dependency|duplicate|unclear_scope|missing_clarification|other","severity":"high|medium|low","message":"una frase in italiano","suggestion":"cosa fare, in italiano"}]}`;
     let out;try{out=await ask(prompt)}catch(e){throw{ai:1,e}}
-    (out?.findings||[]).forEach(x=>{if(refs.has(x.ref)&&x.message)findings.push({id:uid(),ref:x.ref,type:FIND_TYPES[x.type]?x.type:"other",severity:SEV_ORD[x.severity]!=null?x.severity:"medium",message:String(x.message),suggestion:String(x.suggestion||""),status:"open"})})}
-  saveMeta("quality",{at:Date.now(),count:ts.length,findings});setMsg("backlog","ok",findings.length?`Analisi completata: ${findings.length} segnalazioni.`:"Analisi completata: nessun problema rilevato.")});
-A.clearQuality=()=>saveMeta("quality",{});
+    const mine=new Set(chunk.map(t=>t.ref));(out?.findings||[]).forEach(x=>{if(refs.has(x.ref)&&mine.has(x.ref)&&x.message)findings.push({id:uid(),ref:x.ref,type:FIND_TYPES[x.type]?x.type:"other",severity:SEV_ORD[x.severity]!=null?x.severity:"medium",message:String(x.message),suggestion:String(x.suggestion||""),status:"open"})})}
+  return findings}
+A.qualityCheck=()=>run("qualityCheck","Claude sta leggendo…",async()=>{const ts=ticketList();if(!ts.length)return;let q=S.quality||{};if(lazy(q))q=await full("meta","quality");
+  const findings=await qualityFind(ts,ts,(i,n)=>{busy.qualityCheck=`Analizzo ${Math.min(i+10,n)} di ${n}…`;scheduleRender()});
+  saveMeta("quality",{...(q.auto===false?{auto:false}:{}),at:Date.now(),count:ts.length,findings,seen:Object.fromEntries(ts.map(t=>[t.ref,tfp(t)]))});setMsg("backlog","ok",findings.length?`Analisi completata: ${findings.length} segnalazioni.`:"Analisi completata: nessun problema rilevato.")});
 A.qIgnore=el=>{const q=clone(S.quality);const f=q.findings.find(x=>x.id===el.dataset.id);if(f){f.status="ignored";saveMeta("quality",q)}};
 A.qClarify=el=>{const q=clone(S.quality),f=q.findings.find(x=>x.id===el.dataset.id);if(!f)return;const t=ticketList().find(x=>x.ref===f.ref);
   if(!t){toast("Ticket non trovato.");return}if(t.state==="created"){toast(`${f.ref} è già in Jira: aggiungi il punto direttamente in Jira.`);return}
@@ -1025,12 +1093,12 @@ async function addFiles(files){if(READONLY)return;for(const f of files){const u=
     const id=uid();await put("docs",id,{name:f.name,kind,text:text.slice(0,MAXCH),chars:Math.min(text.length,MAXCH),truncated:text.length>MAXCH,at:Date.now()});u.s="ok";u.note=text.length.toLocaleString(LOCALE())+" caratteri"}
   catch(e){u.s="err";u.note=e?.code?aiMsg(e):(e?.message||"estrazione non riuscita")}scheduleRender()}}
 A.pasteDoc=()=>{const n=$("#pasteName").value.trim()||"Testo incollato "+today(),t=$("#pasteText").value.trim();if(!t){toast("Incolla un testo prima di aggiungerlo.");return}put("docs",uid(),{name:n,kind:"Testo",text:t.slice(0,MAXCH),chars:Math.min(t.length,MAXCH),truncated:t.length>MAXCH,at:Date.now()});$("#pasteText").value="";$("#pasteName").value="";toast("Testo aggiunto ai documenti.")};
-A.delDoc=el=>arm("doc"+el.dataset.id,el,()=>del("docs",el.dataset.id));
+A.delDoc=el=>arm("doc"+el.dataset.id,el,()=>trash("docs",[el.dataset.id],"Documento eliminato."));
 
 /* passo 3 */
 function nextReqCode(){const used=new Set(reqList().map(r=>r.code));let i=1;while(used.has("REQ-"+String(i).padStart(3,"0")))i++;return"REQ-"+String(i).padStart(3,"0")}
 A.addReq=()=>{const id=uid();put("reqs",id,{code:nextReqCode(),title:"Nuovo requisito",desc:"",components:[],release:"",ui:"",extDeps:"",intDeps:"",questions:"",designReady:false,order:Date.now()});T.panel={kind:"req",id};if(STEPS[cur].id!=="reqs")A.go({dataset:{i:STEPS.findIndex(x=>x.id==="reqs")}});T.panel={kind:"req",id};scheduleRender()};
-A.delReq=el=>arm("req"+el.dataset.id,el,()=>del("reqs",el.dataset.id));
+A.delReq=el=>arm("req"+el.dataset.id,el,()=>trash("reqs",[el.dataset.id],"Requisito eliminato."));
 A.validateReqs=()=>{const r=reqList(),bad=r.filter(x=>!x.release);if(bad.length){setMsg("reqs","warn",`${bad.length} requisiti non hanno la release (${bad.slice(0,6).map(x=>x.code).join(", ")}). Indicala prima di validare.`);return}
   editProject(p=>p.reqsValidatedAt=Date.now());setMsg("reqs","ok","Lista dei requisiti validata dal PO.")};
 A.extractReqs=()=>run("extractReqs","Claude sta leggendo…",async()=>{const ids=$$(".docPick:checked").map(x=>x.value);if(!ids.length){toast("Seleziona almeno un documento.");return}
@@ -1067,14 +1135,13 @@ A.proposeHyp=()=>run("proposeHyp","Claude sta pensando…",async()=>{const open=
   await loadDocs();let out;try{out=await ask(`${RULES}\n\nCOMPITO: per ogni domanda aperta proponi un'ipotesi esplicita, prudente e facile da correggere, basata sui documenti. Se i documenti non danno indizi, proponi l'ipotesi più comune e dillo. In italiano, una o due frasi.\nDomande:\n${open.map(q=>`[${q.id}] ${q.q}`).join("\n")}\n\nRequisiti:\n${reqList().map(reqLine).join("\n").slice(0,30000)}\nDocumenti:${ctxDocs(50000)}\n\nRispondi SOLO con JSON: {"items":[{"id":"id della domanda","hypothesis":"…"}]}`)}catch(e){throw{ai:1,e}}
   let n=0;(out?.items||[]).forEach(it=>{const q=S.questions[it.id];if(q&&!q.hypothesis&&it.hypothesis){put("questions",it.id,{...q,hypothesis:"Ipotesi: "+String(it.hypothesis).replace(/^ipotesi:\s*/i,""),who:q.who||"PO (ipotesi da confermare)"});n++}});
   setMsg("questions","warn",`${n} ipotesi proposte. Sono ipotesi: rileggile e correggile prima di registrarle.`)});
-A.delQ=el=>{T.qsel.delete(el.dataset.id);del("questions",el.dataset.id)};
 // domande: elimina dalla riga chiusa (due clic) o in gruppo dalla barra della selezione
 const refocus=s=>requestAnimationFrame(()=>requestAnimationFrame(()=>$(s)?.focus({preventScroll:true})));
 A.delQRow=el=>{const id=el.dataset.id,k="q:"+id;const next=el.closest(".q-row")?.nextElementSibling?.querySelector(".q-del");const nid=next?.dataset.id;
-  arm(k,el,()=>{T.qsel.delete(id);del("questions",id);toast("Domanda eliminata.");if(nid)refocus(`.q-del[data-id="${nid}"]`)});if(T.arm[k])refocus(`.q-del[data-id="${id}"]`)};
+  arm(k,el,()=>{T.qsel.delete(id);trash("questions",[id],"Domanda eliminata.");if(nid)refocus(`.q-del[data-id="${nid}"]`)});if(T.arm[k])refocus(`.q-del[data-id="${id}"]`)};
 A.qSelAll=()=>{arr("questions").forEach(x=>T.qsel.add(x.id));delete T.arm.qbulk;render();refocus('[data-act="qDelSel"]')};
 A.qSelNone=()=>{T.qsel.clear();delete T.arm.qbulk;render();refocus(".q-pick")};
-A.qDelSel=el=>arm("qbulk",el,()=>{const ids=[...T.qsel];T.qsel.clear();ids.forEach(id=>del("questions",id));toast(ids.length===1?"Domanda eliminata.":ids.length+" domande eliminate.");refocus(".q-pick")});
+A.qDelSel=el=>arm("qbulk",el,()=>{const ids=[...T.qsel];T.qsel.clear();trash("questions",ids,ids.length===1?"Domanda eliminata.":ids.length+" domande eliminate.");refocus(".q-pick")});
 A.copyQuestions=el=>{const t=arr("questions").filter(x=>!x.answer?.trim()&&!x.hypothesis?.trim()).map((q,i)=>`${i+1}. ${q.q}`).join("\n");copyText(t,el)};
 
 /* passo 5 */
@@ -1146,12 +1213,28 @@ A.genTickets=()=>run("genTickets","Claude sta scomponendo…",async()=>{const ts
   progStart("genTickets",{label:"Claude sta scomponendo i requisiti in ticket",unit:"gruppo",total:todo.length,detail:`Requisiti 0 di ${todo.length}`});T.fresh=new Set();const before=new Set(Object.keys(S.tickets));
   try{for(let i=0;i<todo.length;i+=3){if(T.prog.genTickets?.stop)break;const batch=todo.slice(i,i+3);Object.assign(T.prog.genTickets,{done:i,label:`Claude scompone ${batch.map(r=>r.code).join(", ")}`,detail:`Requisiti ${i} di ${todo.length} · ${tot} ticket finora`});progPaint("genTickets");T.genLog+=`Requisiti ${batch.map(r=>r.code).join(", ")}… `;scheduleRender();try{const n=await genFor(batch);tot+=n;T.genLog+=`${n} ticket\n`;Object.keys(S.tickets).forEach(id=>{if(!before.has(id))T.fresh.add(id)});Object.assign(T.prog.genTickets,{done:Math.min(i+3,todo.length),detail:`Requisiti ${Math.min(i+3,todo.length)} di ${todo.length} · ${tot} ticket finora`,items:[...T.fresh].map(id=>S.tickets[id]).filter(Boolean).slice(-4).map(t=>({code:t.ref,title:fullTitle(t)}))});progPaint("genTickets")}catch(e){T.genLog+="non riuscito\n";throw e}}}finally{stopped=progEnd("genTickets")}
   setMsg("backlog","ok",`${stopped?"Scomposizione fermata. ":""}${tot} ticket generati. Apri ognuno per controllare titolo, epica, descrizione e ipotesi; correggi gli errori segnalati in rosso.`)});
-A.regenReq=el=>{const code=el.dataset.code;arm("regen"+code,el,()=>run("regenReq","Rigenero…",async()=>{ticketList().filter(t=>t.req===code&&t.state!=="created").forEach(t=>del("tickets",t.id));const r=reqList().find(x=>x.code===code);const n=await genFor([r]);setMsg("backlog","ok",`${code}: ${n} ticket rigenerati.`)}));if(T.arm["regen"+code])toast("Premi di nuovo «Rigenera» per sostituire i ticket di "+code+".")};
+A.regenReq=el=>{const code=el.dataset.code;arm("regen"+code,el,()=>run("regenReq","Rigenero…",async()=>{const old=ticketList().filter(t=>t.req===code&&t.state!=="created").map(t=>[t.id,S.tickets[t.id]]);old.forEach(([id])=>del("tickets",id));const r=reqList().find(x=>x.code===code);const n=await genFor([r]);
+  if(old.length)T.prevGen[code]=old;setMsg("backlog","ok",`${code}: ${n} ticket rigenerati.`);if(old.length)toast(`${code}: ${n} ticket rigenerati.`,()=>restoreGen(code))}));if(T.arm["regen"+code])toast("Premi di nuovo «Rigenera» per sostituire i ticket di "+code+".")};
+// torna ai ticket che c'erano prima di «Rigenera» (finché la pagina resta aperta)
+function restoreGen(code){const old=T.prevGen[code];if(!old)return;ticketList().filter(t=>t.req===code&&t.state!=="created").forEach(t=>del("tickets",t.id));old.forEach(([id,d])=>put("tickets",id,d));delete T.prevGen[code];toast(`${code}: tornati i ticket di prima.`)}
+A.restoreGen=el=>arm("rg"+el.dataset.code,el,()=>restoreGen(el.dataset.code));
 A.addTicket=()=>{const id=uid(),k=K();put("tickets",id,{ref:fmtRef(nextRef()),req:"",type:"Story",area:"be",title:"",epic:"",release:k.releases[0]?.name||"",work:"Back-End",labels:[],desc:TEMPLATES.Story,links:[],assumptions:[],state:"draft",order:Date.now()});T.rel="*";T.bTab="tickets";T.panel={kind:"ticket",id};scheduleRender()};
-A.delTicket=el=>arm("t"+el.dataset.id,el,()=>del("tickets",el.dataset.id));
+A.delTicket=el=>arm("t"+el.dataset.id,el,()=>{T.tsel.delete(el.dataset.id);T.panel=null;trash("tickets",[el.dataset.id],"Ticket eliminato.")});
 A.applyTemplate=el=>arm("tpl"+el.dataset.id,el,()=>{const t=S.tickets[el.dataset.id];put("tickets",el.dataset.id,{...t,desc:TEMPLATES[t.type]})});
 A.exportTickets=()=>{const k=K();exportCsv("backlog.csv",["Ref","Requisito","Tipo","Titolo","Epica","Label","Collegamenti","Chiave Jira","Descrizione"],ticketList().map(t=>[t.ref,t.req,k.types[t.type]||t.type,fullTitle(t),t.epic,labelsOf(t).join(" "),linksText(t),t.key||"",t.desc]))};
 const qaTicket=el=>ticketList().find(x=>x.id===el.dataset.id);
+A.kitImport=()=>{T.ki=null;T.panel={kind:"kitimp",id:"kitimp"};render()};
+A.kitImportRun=el=>arm("kimp",el,async()=>{const ki=T.ki,src=await kitSource(ki.src);if(!src)return;const before=clone(K());let n={rel:0,ep:0};
+  editKit(k=>{n=kitMerge(k,src,ki.parts,ki.over)});T.panel=null;
+  toast(`Kit aggiornato${n.rel||n.ep?`: ${[n.rel?(n.rel===1?"1 release":n.rel+" release"):"",n.ep?(n.ep===1?"1 epica":n.ep+" epiche"):""].filter(Boolean).join(" e ")} in più`:""}.`,()=>{saveMeta("kit",before);toast("Kit come prima.")})});
+A.tSelNone=()=>{T.tsel.clear();delete T.arm.tbulk;render();refocus("#tSearch")};
+A.tBulkApply=()=>{const ep=$("#tbEpic")?.value,rel=$("#tbRel")?.value,wk=$("#tbWork")?.value,lb=String($("#tbLabel")?.value||"").split(",").map(x=>canonLabel(x.trim())).filter(Boolean);
+  if(!ep&&!rel&&!wk&&!lb.length){toast("Scegli cosa cambiare: epica, release, tipo di lavoro o label.");return}
+  const ids=[...T.tsel].filter(id=>S.tickets[id]),snap=ids.map(id=>[id,S.tickets[id]]);
+  ids.forEach(id=>{const t=S.tickets[id];put("tickets",id,{...t,...(ep?{epic:ep}:{}),...(rel?{release:rel}:{}),...(wk?{work:wk}:{}),...(lb.length?{labels:[...new Set([...(t.labels||[]),...lb])]}:{})})});
+  toast(ids.length===1?"Aggiornato 1 ticket.":`Aggiornati ${ids.length} ticket.`,()=>{snap.forEach(([id,d])=>put("tickets",id,d));toast("Modifiche annullate.")})};
+A.tBulkDel=el=>arm("tbulk",el,()=>{const ids=[...T.tsel].filter(id=>S.tickets[id]&&S.tickets[id].state!=="created");ids.forEach(id=>T.tsel.delete(id));if(T.panel?.kind==="ticket"&&ids.includes(T.panel.id))T.panel=null;
+  trash("tickets",ids,ids.length===1?"Eliminata 1 bozza.":`Eliminate ${ids.length} bozze.`)});
 A.qaCopy=el=>{const t=qaTicket(el);if(t)copyText(QA.sheet(t,qaCtx()).md,el)};
 A.qaDownload=async el=>{const t=qaTicket(el);if(!t)return;const q=QA.sheet(t,qaCtx());if(await saveFile(q.name,new Blob([q.md],{type:"text/markdown;charset=utf-8"})))toast("Scheda QA scaricata.")};
 A.qaZip=async()=>{const k=K(),rels=T.rel==="*"?[...k.releases.map(r=>r.name),...(ticketList().some(t=>!t.release||!k.releases.some(r=>r.name===t.release))?[null]:[])]:[T.rel];
@@ -1254,7 +1337,6 @@ A.runStruct=el=>arm("struct",el,()=>run("runStruct","Creazione struttura…",asy
   catch(e){logLine(`Errore: ${e?.message||jiraMsg(e)}`);throw e}
   finally{T.running=false;T.arm={}}}));
 A.runLinks=()=>run("runLinks","Collegamento…",async()=>{T.stop=false;const n=await createLinks();logLine(`${n} collegamenti creati.`)});
-A.runVerify=()=>run("runVerify","Verifica…",async()=>{await verifyStructure();const v=await verify();T.report=buildReport(v)});
 A.retryOne=el=>run("retryOne","Creazione…",async()=>{const t=ticketList().find(x=>x.id===el.dataset.id);if(t&&!issuesOf(t).e.length)await createOne(t);else toast("Correggi prima gli errori del ticket al passo 5.")});
 A.reconcile=el=>run("reconcile","Ricerca…",async()=>{const t=ticketList().find(x=>x.id===el.dataset.id);const p=P();const r=await jira("searchJiraIssuesUsingJql",{cloudId:p.cloudId,jql:`project = "${p.key}" AND summary ~ "${fullTitle(t).replace(/[\[\]"\\]/g," ").replace(/\s+/g," ").trim()}" ORDER BY created DESC`,maxResults:10,fields:["summary"]});
   const hit=findIssues(r).find(i=>String(i.fields?.summary).toLowerCase()===fullTitle(t).toLowerCase());
@@ -1277,14 +1359,16 @@ async function syncJira(){const k=K(),h=k.hier;const ts=ticketList().filter(t=>t
     if(kk.hier){(kk.hier.phases||[]).forEach(f=>{if(f.key&&missing.has(f.key)){res.deleted.push(`${f.key} Fase «${f.name}»`);f.key=""}});if(kk.hier.project?.key&&missing.has(kk.hier.project.key)){res.deleted.push(`${kk.hier.project.key} Project «${kk.hier.project.name}»`);kk.hier.project.key=""}}});
   await verifyStructure();T.sync=res;T.report=null;
   const nd=res.deleted.length;logLine(`Sincronizzazione: ${keys.length-nd} elementi presenti in Jira, ${nd} eliminati (riportati in bozza), ${res.parentDiff.length} con epica diversa, ${res.renamed.length} rinominati.`)}
-A.syncJira=()=>run("syncJira","Sincronizzazione…",async()=>{await syncJira();setMsg("create",T.sync.deleted.length?"warn":"ok",T.sync.empty?"Non c'è ancora nulla creato da sincronizzare.":T.sync.deleted.length?`Sincronizzato: ${T.sync.deleted.length} elementi eliminati in Jira sono tornati in bozza.`:"Sincronizzato: tutto ciò che Trama ha creato è presente in Jira.")});
+// un solo pulsante: rilegge Jira (eliminati, stati, epiche, struttura) e verifica i campi dei ticket creati
+A.syncJira=()=>run("syncJira","Sincronizzazione…",async()=>{await syncJira();const v=T.sync.empty?null:await verify();
+  setMsg("create",T.sync.deleted.length||v&&v.ok<v.tot?"warn":"ok",T.sync.empty?"Non c'è ancora nulla creato da sincronizzare.":`${T.sync.deleted.length?`Sincronizzato: ${T.sync.deleted.length} elementi eliminati in Jira sono tornati in bozza.`:"Sincronizzato: tutto ciò che Trama ha creato è presente in Jira."} Verifica: ${v.ok} di ${v.tot} ticket con tutti i campi salvati.`)});
 function addAutoDecision(text,source){const id=uid();put("decisions",id,{date:today(),text,who:"PO",type:"Organizzazione del backlog",source,impact:"",kit:"",replaces:"",at:Date.now()})}
 
 /* passo 8 */
 A.decForm=()=>{T.decForm=!T.decForm;render();if(T.decForm){$("#decForm")?.scrollIntoView({block:"nearest"});$("#dText")?.focus()}};
 A.addDecision=()=>{const text=$("#dText").value.trim();if(!text){toast("Scrivi la decisione.");return}
   put("decisions",uid(),{date:$("#dDate").value||today(),who:$("#dWho").value.trim(),type:$("#dType").value,text,source:$("#dSrc").value.trim(),impact:$("#dImp").value.trim(),kit:$("#dKit").value.trim(),replaces:$("#dRep").value,at:Date.now()});T.decForm=false;toast("Decisione aggiunta al registro.")};
-A.delDecision=el=>arm("d"+el.dataset.id,el,()=>del("decisions",el.dataset.id));
+A.delDecision=el=>arm("d"+el.dataset.id,el,()=>trash("decisions",[el.dataset.id],"Decisione eliminata."));
 A.exportDecisions=()=>{const d=arr("decisions").sort((a,b)=>String(a.date).localeCompare(String(b.date)));exportCsv("registro-decisioni.csv",["#","Data","Decisione","Chi","Tipo","Fonte","Impatto","Regola del kit","Sostituisce"],d.map((x,i)=>[i+1,x.date,x.text,x.who,x.type,x.source,x.impact,x.kit,x.replaces?"#"+(d.findIndex(y=>y.id===x.replaces)+1):""]))};
 
 /* export e copia */
@@ -1295,7 +1379,7 @@ function copyText(t,el){const done=()=>{if(el){const o=el.textContent;el.textCon
   try{navigator.clipboard.writeText(t).then(done,fb)}catch(e){fb()}}
 
 /* ================= eventi ================= */
-document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.disabled)return;const ln=e.target.closest("a[href]");if(ln&&ln!==b&&b.contains(ln))return;e.preventDefault();const f=A[b.dataset.act];if(f)f(b)});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.disabled)return;if(b.tagName==="TR"&&e.target.closest("input,label"))return;const ln=e.target.closest("a[href]");if(ln&&ln!==b&&b.contains(ln))return;e.preventDefault();const f=A[b.dataset.act];if(f)f(b)});
 document.addEventListener("toggle",e=>{const d=e.target;if(d.matches?.("details[data-k]")){d.open?openSet.add(d.dataset.k):openSet.delete(d.dataset.k);if(d.open&&d.dataset.k.startsWith("doc-")&&lazy(S.docs[d.dataset.k.slice(4)]))want("docs",d.dataset.k.slice(4));ls.set("open",[...openSet].slice(-200))}},true);
 document.addEventListener("click",e=>{const sm=e.target.closest("details.sec>summary");if(!sm)return;const d=sm.parentElement;if(d.classList.contains("locked")){e.preventDefault();return}
   setTimeout(()=>{if(d.classList.contains("step")){secAct(d);recapCta()}else{secRemember(d);secAllLabel()}},0)});
@@ -1313,6 +1397,11 @@ document.addEventListener("keydown",e=>{const t=e.target,typing=t.closest?.("inp
 // ricerca nei requisiti: filtra le righe senza ridisegnare la pagina, così il cursore resta nel campo
 document.addEventListener("input",e=>{if(e.target.id!=="decSearch")return;T.dq.q=e.target.value;const all=arr("decisions"),vis=new Set(decFilter(all).map(x=>x.id));
   $$('#main tr[data-dec]').forEach(r=>{r.hidden=!vis.has(r.dataset.dec)});const c=$("#decCount");if(c)c.innerHTML=decCount(vis.size,all.length)});
+// ricerca nei ticket: come per i requisiti, filtra senza ridisegnare
+document.addEventListener("input",e=>{if(e.target.id!=="tSearch")return;T.tq=e.target.value;const q=T.tq.trim().toLowerCase();
+  $$('#main tr[data-k^="t-"]').forEach(r=>{r.hidden=!tMatch(S.tickets[r.dataset.id],q)});
+  $$("#main .dt tbody").forEach(b=>{b.hidden=!b.querySelector("tr.dt-r:not([hidden])")});T.panelIds=$$('#main tr[data-k^="t-"]:not([hidden])').map(r=>r.dataset.id);
+  const all=$("#tAll");if(all)all.checked=T.panelIds.length>0&&T.panelIds.every(id=>T.tsel.has(id))});
 document.addEventListener("input",e=>{if(e.target.id!=="rqSearch")return;T.rq.q=e.target.value;const all=reqList(),vis=new Set(reqFilter(all).map(x=>x.id));
   $$('#main tr[data-k^="req-"]').forEach(d=>{d.hidden=!vis.has(d.dataset.k.slice(4))});T.panelIds=reqFilter(all).map(x=>x.id);const c=$("#rqCount");if(c)c.innerHTML=rqCount(vis.size,all.length)});
 document.addEventListener("change",e=>{const el=e.target;
@@ -1320,6 +1409,12 @@ document.addEventListener("change",e=>{const el=e.target;
   if(el.id==="relPick"){T.rel=el.value;render();return}
   if(el.id==="decType"||el.id==="decSrc"){T.dq[el.id==="decType"?"type":"src"]=el.value;render();return}
   if(el.id==="rqShow"||el.id==="rqRel"){T.rq[el.id==="rqShow"?"show":"rel"]=el.value;render();return}
+  if(el.classList.contains("t-pick")){el.checked?T.tsel.add(el.value):T.tsel.delete(el.value);delete T.arm.tbulk;render();refocus(`.t-pick[value="${el.value}"]`);return}
+  if(el.id==="tAll"){const ids=$$('#main tr[data-k^="t-"]:not([hidden])').map(r=>r.dataset.id);ids.forEach(id=>el.checked?T.tsel.add(id):T.tsel.delete(id));delete T.arm.tbulk;render();refocus("#tAll");return}
+  if(el.id==="kiSrc"){T.ki.src=el.value;delete T.arm.kimp;if(el.value.startsWith("prj:")&&!T.kiCache?.[el.value])kitSource(el.value).then(scheduleRender,e=>toast(e.message||"Kit non letto."));render();refocus("#kiSrc");return}
+  if(el.classList.contains("ki-part")){T.ki.parts[el.value]=el.checked;delete T.arm.kimp;return}
+  if(el.id==="kiOver"){T.ki.over=el.checked;delete T.arm.kimp;return}
+  if(el.id==="qaAutoBox"){(async()=>{let q=S.quality||{};if(lazy(q))q=await full("meta","quality");saveMeta("quality",{...q,auto:el.checked});toast(el.checked?"Controllo automatico attivo.":"Controllo automatico spento.")})();return}
   if(el.classList.contains("q-pick")){el.checked?T.qsel.add(el.value):T.qsel.delete(el.value);delete T.arm.qbulk;render();refocus(`.q-pick[value="${el.value}"]`);return}
   if(el.id==="onlyIssues"){T.onlyIssues=el.checked;render();return}
   if(el.id==="ackBox"){T.ack=el.checked;render();return}
