@@ -250,3 +250,22 @@ test("chi chiude la scheda mentre un salvataggio è in corso riceve l'avviso del
   await page.close({ runBeforeUnload: true });
   expect((await dialog).type()).toBe("beforeunload");
 });
+
+test("chat: l'assistente è Tessa e nella chat Claude non compare mai, in italiano e in inglese", async ({ page, context }) => {
+  await openStudio(page);
+  const fab = page.locator("#chatFab");
+  await expect(fab).toHaveAttribute("aria-label", "Chiedi a Tessa: apri la chat");
+  await expect(fab.locator(".tessa")).toHaveCount(1); // l'icona del filo nel labirinto
+  await fab.click();
+  const chat = page.locator("#chat");
+  await expect(chat.locator(".chat-h h2")).toHaveText("Tessa");
+  const visible = async () => [await chat.innerText(), await page.locator("#chatIn").getAttribute("placeholder"), await chat.getAttribute("aria-label"), await fab.getAttribute("aria-label")].join(" ");
+  expect(await visible()).not.toMatch(/Claude/);
+  await context.addInitScript(() => { try { localStorage.setItem("trama:lang", "en"); } catch {} });
+  await page.reload();
+  await expect(page.locator(".progress b")).toHaveText(/steps completed/);
+  if ((await fab.getAttribute("aria-expanded")) !== "true") await fab.click(); // Trama ricorda se la chat era aperta
+  await expect(chat.locator(".chat-h h2")).toHaveText("Tessa");
+  await expect(fab).toHaveAttribute("aria-label", "Ask Tessa: close the chat");
+  expect(await visible()).not.toMatch(/Claude/);
+});

@@ -61,12 +61,12 @@
     <aside id="stepper" aria-label="Passi del processo"></aside>
     <main id="main"></main>
     <aside id="recap" aria-label="Riepilogo del backlog"></aside>
-    <aside id="chat" aria-label="Chat con Claude"><i class="rz" data-r="n"></i><i class="rz" data-r="s"></i><i class="rz" data-r="w"></i><i class="rz" data-r="e"></i><i class="rz" data-r="nw"></i><i class="rz" data-r="ne"></i><i class="rz" data-r="sw"></i><i class="rz" data-r="se"></i>
-      <div class="chat-top"><div class="chat-h"><h2><span class="chat-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path class="bubble" d="M10 4.5h12a6.5 6.5 0 0 1 6.5 6.5v6.5a6.5 6.5 0 0 1-6.5 6.5h-6.4l-5.6 4.2V24A6.5 6.5 0 0 1 3.5 17.5V11A6.5 6.5 0 0 1 10 4.5z"/><rect class="wf wf1" x="8" y="8.9" width="16" height="2.6" rx="1.3"/><rect class="wf wf3" x="8" y="17.1" width="16" height="2.6" rx="1.3"/><rect class="wp" x="14.7" y="7.1" width="2.6" height="14.4" rx="1.3"/><rect class="wf wf2" x="8" y="13" width="16" height="2.6" rx="1.3"/></svg></span>Chat con Claude</h2><span class="chip plain" id="chatCtx"></span><button id="chatMemBtn" class="link" type="button" aria-expanded="false" aria-controls="chatMem">Memoria</button><button id="chatReset" class="link" type="button" hidden title="Riporta la finestra in basso a destra">Reimposta</button><button id="chatClose" class="link" type="button" aria-label="Riduci la chat a icona" title="Riduci a icona: la conversazione resta"><span class="d">Riduci</span><span class="m">Chiudi</span></button></div><div id="chatMem" hidden></div></div>
+    <aside id="chat" aria-label="Chat con Tessa"><i class="rz" data-r="n"></i><i class="rz" data-r="s"></i><i class="rz" data-r="w"></i><i class="rz" data-r="e"></i><i class="rz" data-r="nw"></i><i class="rz" data-r="ne"></i><i class="rz" data-r="sw"></i><i class="rz" data-r="se"></i>
+      <div class="chat-top"><div class="chat-h"><h2><span class="chat-mark"><svg class="tessa " viewBox="0 0 32 32" aria-hidden="true"><path class="tz-maze" d="M16 16h3v-4h-7v8h11V9H9v14h17"/><path class="tz-thread" pathLength="100" d="M16 16h3v-4h-7v8h11V9H9v14h17"/><circle class="tz-dot" cx="16" cy="16" r="1.9"/></svg></span>Tessa</h2><span class="chip plain" id="chatCtx"></span><button id="chatMemBtn" class="link" type="button" aria-expanded="false" aria-controls="chatMem">Memoria</button><button id="chatReset" class="link" type="button" hidden title="Riporta la finestra in basso a destra">Reimposta</button><button id="chatClose" class="link" type="button" aria-label="Riduci la chat a icona" title="Riduci a icona: la conversazione resta"><span class="d">Riduci</span><span class="m">Chiudi</span></button></div><div id="chatMem" hidden></div></div>
       <div id="chatLog" aria-live="polite"></div>
       <div class="sugg" id="chatSugg"></div>
       <form id="chatForm">
-        <textarea id="chatIn" placeholder="Chiedi a Claude: un dubbio sul requisito, una decisione da registrare, un ticket da correggere…" aria-label="Messaggio per Claude"></textarea>
+        <textarea id="chatIn" placeholder="Chiedi a Tessa: un dubbio sul requisito, una decisione da registrare, un ticket da correggere…" aria-label="Messaggio per Tessa"></textarea>
         <div class="row">
           <label class="btn" id="chatImgLbl" hidden>Allega immagine<input type="file" id="chatImg" accept="image/png,image/jpeg,image/webp,image/gif" hidden></label>
           <span class="small muted" id="chatImgName"></span>
@@ -78,7 +78,7 @@
     </aside>
   </div>
 </div>
-<button id="chatFab" type="button" aria-label="Chiedi a Claude: apri la chat" aria-expanded="false" aria-controls="chat" title="Chat con Claude"><span class="fab-lb">Chiedi a Claude</span><span class="fab-ic"><svg class="fab-bub" viewBox="0 0 32 32" aria-hidden="true"><path class="bubble" d="M10 4.5h12a6.5 6.5 0 0 1 6.5 6.5v6.5a6.5 6.5 0 0 1-6.5 6.5h-6.4l-5.6 4.2V24A6.5 6.5 0 0 1 3.5 17.5V11A6.5 6.5 0 0 1 10 4.5z"/><rect class="wf wf1" x="8" y="8.9" width="16" height="2.6" rx="1.3"/><rect class="wf wf3" x="8" y="17.1" width="16" height="2.6" rx="1.3"/><rect class="wp" x="14.7" y="7.1" width="2.6" height="14.4" rx="1.3"/><rect class="wf wf2" x="8" y="13" width="16" height="2.6" rx="1.3"/></svg><svg class="fab-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></span></button>
+<button id="chatFab" type="button" aria-label="Chiedi a Tessa: apri la chat" aria-expanded="false" aria-controls="chat" title="Chat con Tessa"><span class="fab-lb">Chiedi a Tessa</span><span class="fab-ic"><svg class="tessa fab-bub" viewBox="0 0 32 32" aria-hidden="true"><path class="tz-maze" d="M16 16h3v-4h-7v8h11V9H9v14h17"/><path class="tz-thread" pathLength="100" d="M16 16h3v-4h-7v8h11V9H9v14h17"/><circle class="tz-dot" cx="16" cy="16" r="1.9"/></svg><svg class="fab-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></span></button>
 <div id="toast" hidden role="status"></div>
 
 <script src="/i18n-en.js"></script>

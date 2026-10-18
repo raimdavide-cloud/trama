@@ -218,6 +218,22 @@ function aiMsg(e){const c=e?.code;return({
   bridge_token:"Il ponte richiede un token: inseriscilo nelle impostazioni del ponte.",
   bridge_forbidden:"Il ponte non accetta richieste da questo sito: controlla APP_URL nel .env del ponte.",
   bridge_login:"Claude Code non è autenticato: nel terminale esegui «claude», accedi con il tuo account, poi riprova."}[c]||"Richiesta a Claude non riuscita ("+(c||"errore")+"). Riprova.")}
+// nella chat l'assistente è solo Tessa: gli errori non nominano il modello né il ponte di Claude
+// i messaggi di errore salvati in passato nella cronologia (generati da Trama, non scritti da Tessa) si mostrano nella versione nuova
+const OLD_CHAT_ERRS=()=>{const m=new Map();for(const c of ["not_granted","sampling_disabled","no_ai","bridge_offline","bridge_login","invalid_request","rate_limited","invalid_json","refused","empty_completion","images_unavailable"])m.set(aiMsg({code:c}),chatErr({code:c}));return m};
+function tessaText(t){let out=String(t||"");for(const [o,n] of OLD_CHAT_ERRS())if(o!==n)out=out.split(o).join(n);return out.replace(/Richiesta a Claude non riuscita \(([^)]*)\)\. Riprova\./g,"Richiesta non riuscita ($1). Riprova.")}
+function chatErr(e){const c=e?.code;return({
+  not_granted:"Tessa non è disponibile per questo account.",
+  sampling_disabled:"Tessa non è collegata: avvia il ponte sul tuo computer (guida nella pagina Installazione) e riprova.",
+  no_ai:"Tessa non è collegata: avvia il ponte sul tuo computer (guida nella pagina Installazione) e riprova.",
+  bridge_offline:"Tessa non risponde: avvia il ponte sul tuo computer (guida nella pagina Installazione) e riprova.",
+  bridge_login:"Tessa non è ancora pronta: completa l'accesso nel terminale del ponte (guida nella pagina Installazione), poi riprova.",
+  invalid_request:"Tessa non ha accettato la richiesta: riprova con meno contenuto.",
+  rate_limited:"Troppe domande in poco tempo: riprova tra qualche minuto.",
+  invalid_json:"La risposta non era nel formato atteso. Riprova.",
+  refused:"Tessa non può rispondere a questa richiesta. Riformulala.",
+  empty_completion:"Tessa non ha prodotto una risposta. Prova con una domanda più breve.",
+  images_unavailable:"In questa vista non si possono inviare immagini a Tessa."}[c]||(/Claude/.test(aiMsg(e))?"Richiesta non riuscita ("+(c||"errore")+"). Riprova.":aiMsg(e)))}
 async function ask(prompt,opts={}){if(!SAMPLE)throw{code:"no_ai"};return SAMPLE.json(prompt,{modelTier:"default",cache:false,...opts})}
 function ctxDocs(max){let out="",left=max;for(const d of arr("docs")){if(left<=500)break;const t=(d.text||"").slice(0,left);out+=`\n=== DOCUMENTO: ${d.name} ===\n${t}\n`;left-=t.length}return out}
 const kitBrief=()=>{const k=K();return JSON.stringify({productName:k.productName,releases:k.releases,epics:k.epics.map(e=>({name:e.name,release:e.release})),language:k.lang,glossary:k.glossary,constraints:k.constraints,hierarchy:k.hier?.enabled?{project:k.hier.project,phases:(k.hier.phases||[]).map(f=>({name:f.name,key:f.key})),types:{project:k.hier.projectType,phase:k.hier.phaseType,epic:k.types.Epic}}:null})};
@@ -1405,12 +1421,12 @@ function suggList(){const turns=(S.chat?.turns||[]).filter(t=>t.role!=="note"),l
   return[...(ideas[s.id]||[]).map(q=>({label:q,prompt:q})),...follow,...dynSugg(),...stat].filter(x=>{const k=sKey(x.label);if(seen.has(k)||u[k])return false;seen.add(k);return true})}
 let SUGG_STALE=false;
 function renderSugg(){if(!$("#chat")?.classList.contains("open")){SUGG_STALE=true;return}SUGG_STALE=false;const l=suggList().slice(0,3);
-  $("#chatSugg").innerHTML=l.map(x=>`<button type="button" data-sugg="${esc(x.label)}" data-p="${esc(x.prompt)}">${esc(x.label)}</button>`).join("")+(SAMPLE?`<button type="button" class="ideas" data-ideas ${ideasBusy?"disabled":""}>${ideasBusy?"Claude sta pensando…":"Nuove idee"}</button>`:"")}
+  $("#chatSugg").innerHTML=l.map(x=>`<button type="button" data-sugg="${esc(x.label)}" data-p="${esc(x.prompt)}">${esc(x.label)}</button>`).join("")+(SAMPLE?`<button type="button" class="ideas" data-ideas ${ideasBusy?"disabled":""}>${ideasBusy?"Tessa sta pensando…":"Nuove idee"}</button>`:"")}
 async function newIdeas(){if(!SAMPLE||ideasBusy)return;ideasBusy=true;renderSugg();const sid=STEPS[cur].id;
   try{const used=Object.keys(usedSugg()).map(k=>k.split("|")[1]).slice(-20);
-    const r=await ask(`${RULES}\n\n${digest()}\n\nRequisiti:\n${reqList().slice(0,30).map(reqLine).join("\n").slice(0,6000)}\n\nCOMPITO: proponi 4 domande brevi (massimo 90 caratteri l'una) che il Product Owner potrebbe fare adesso a Claude, al passo ${cur+1}, sul PROGETTO SPECIFICO (cita ID o argomenti reali). Non ripetere queste, già usate: ${JSON.stringify(used)}. Rispondi con un array JSON di stringhe.`,{modelTier:"quick"});
+    const r=await ask(`${RULES}\n\n${digest()}\n\nRequisiti:\n${reqList().slice(0,30).map(reqLine).join("\n").slice(0,6000)}\n\nCOMPITO: proponi 4 domande brevi (massimo 90 caratteri l'una) che il Product Owner potrebbe fare adesso a Tessa, al passo ${cur+1}, sul PROGETTO SPECIFICO (cita ID o argomenti reali). Non ripetere queste, già usate: ${JSON.stringify(used)}. Rispondi con un array JSON di stringhe.`,{modelTier:"quick"});
     ideas[sid]=(Array.isArray(r)?r:r?.questions||[]).map(x=>String(x).trim()).filter(Boolean).slice(0,4)}
-  catch(e){toast(aiMsg(e))}finally{ideasBusy=false;renderSugg()}}
+  catch(e){toast(chatErr(e))}finally{ideasBusy=false;renderSugg()}}
 $("#chatSugg").addEventListener("click",e=>{
   if(e.target.closest("[data-ideas]"))return newIdeas();
   const b=e.target.closest("[data-sugg]");if(!b)return;const label=b.dataset.sugg,p=b.dataset.p;
@@ -1420,7 +1436,7 @@ $("#chatSugg").addEventListener("click",e=>{
 /* --- pannello «Memoria» --- */
 let memArm=false;
 function renderMem(){const el=$("#chatMem");if(el.hidden)return;const p=P(),turns=(S.chat?.turns||[]).filter(t=>t.role!=="note");
-  el.innerHTML=`<div class="mem-t">Cosa ricorda Claude a ogni messaggio</div>
+  el.innerHTML=`<div class="mem-t">Cosa ricorda Tessa a ogni messaggio</div>
   <ul class="mem-l"><li><b>Dove sei:</b> ${STEPS[cur].aux?"voce":"passo "+(cur+1)+" di "+STEPS.filter(x=>!x.aux).length} (${esc(STEPS[cur].short)}) con i suoi controlli</li>
   <li><b>Progetto:</b> ${esc(p.name||"-")}${p.key?" · Jira "+esc(p.key):""}</li>
   <li><b>Contenuti:</b> ${arr("docs").length} ${arr("docs").length===1?"documento":"documenti"}, ${reqList().length} requisiti, ${arr("questions").length} domande, ${ticketList().length} ticket, ${arr("decisions").length} decisioni, kit e configurazione Jira</li>
@@ -1440,17 +1456,17 @@ function actCard(t,a,i){const st=a.status||"open",v=st==="open"?actionView(a):{t
 function turnHtml(t,idx){
   if(t.role==="user")return`<div class="bub u" data-no-i18n>${esc(t.content)}</div>`;
   if(t.role==="note")return`<div class="bub n">${esc(t.content)}</div>`;
-  return`<div class="bub a"><div data-no-i18n>${md(t.content)}</div>${(t.meta?.actions||[]).map((a,i)=>actCard(t,a,i)).join("")}<div class="bub-foot"><button type="button" class="link" data-copy="${idx}">Copia</button></div></div>`}
+  return`<div class="bub a"><div class="bub-who"><svg class="tessa bub-av" viewBox="0 0 32 32" aria-hidden="true"><path class="tz-maze" d="M16 16h3v-4h-7v8h11V9H9v14h17"/><path class="tz-thread" pathLength="100" d="M16 16h3v-4h-7v8h11V9H9v14h17"/><circle class="tz-dot" cx="16" cy="16" r="1.9"/></svg>Tessa</div><div data-no-i18n>${md(tessaText(t.content))}</div>${(t.meta?.actions||[]).map((a,i)=>actCard(t,a,i)).join("")}<div class="bub-foot"><button type="button" class="link" data-copy="${idx}">Copia</button></div></div>`}
 function renderChat(){const turns=S.chat?.turns||[];const log=$("#chatLog");const keep=log.scrollTop,atBottom=!log.children.length||log.scrollHeight-keep-log.clientHeight<80;
-  log.innerHTML=(turns.length?"":`<div class="bub n">Chiedi a Claude qualsiasi cosa sul progetto: conosce documenti, requisiti, kit, backlog e decisioni, sa a che passo sei e ricorda le conversazioni precedenti.${SAMPLE?" Può proporti modifiche: le applichi tu con un clic.":""}</div>`)+
+  log.innerHTML=(turns.length?"":`<div class="bub n">Sono Tessa: chiedimi qualsiasi cosa sul progetto. Conosco documenti, requisiti, kit, backlog e decisioni, so a che passo sei e ricordo le conversazioni precedenti.${SAMPLE?" Può proporti modifiche: le applichi tu con un clic.":""}</div>`)+
    turns.map(turnHtml).join("")+
-   (chatPending?`<div class="bub u" data-no-i18n>${esc(chatPending.q)}</div><div class="bub a" id="liveBub">${chatPending.a?`<div data-no-i18n>${md(chatPending.a)}</div>`:'<span class="muted">Claude sta pensando…</span>'}</div>`:"");
+   (chatPending?`<div class="bub u" data-no-i18n>${esc(chatPending.q)}</div><div class="bub a" id="liveBub"><div class="bub-who"><svg class="tessa bub-av" viewBox="0 0 32 32" aria-hidden="true"><path class="tz-maze" d="M16 16h3v-4h-7v8h11V9H9v14h17"/><path class="tz-thread" pathLength="100" d="M16 16h3v-4h-7v8h11V9H9v14h17"/><circle class="tz-dot" cx="16" cy="16" r="1.9"/></svg>Tessa</div>${chatPending.a?`<div data-no-i18n>${md(chatPending.a)}</div>`:'<span class="muted">Tessa sta pensando…</span>'}</div>`:"");
   if(atBottom)log.scrollTop=log.scrollHeight;else log.scrollTop=keep;$("#chatFab").classList.toggle("busy",!!chatPending);$("#chatSend").disabled=!!chatPending||!SAMPLE;$("#chatStop").hidden=!chatPending;
-  $("#chatImgLbl").hidden=!(SAMPLE&&LIM?.images);$("#chatIn").placeholder=SAMPLE?"Chiedi a Claude: un dubbio sul requisito, una decisione da registrare, un ticket da correggere…":caps.sample==="login"?"Claude Code non è autenticato: esegui «claude» nel terminale e accedi.":"Per usare Claude, avvia il ponte sul tuo computer (guida nella pagina Installazione)";
+  $("#chatImgLbl").hidden=!(SAMPLE&&LIM?.images);$("#chatIn").placeholder=SAMPLE?"Chiedi a Tessa: un dubbio sul requisito, una decisione da registrare, un ticket da correggere…":caps.sample==="login"?"Tessa non è ancora pronta: completa l'accesso nel terminale del ponte (guida nella pagina Installazione).":"Per parlare con Tessa, avvia il ponte sul tuo computer (guida nella pagina Installazione)";
   renderSugg();renderMem()}
 $("#chatLog").addEventListener("click",e=>{
   const cp=e.target.closest("[data-copy]");
-  if(cp){const t=(S.chat?.turns||[])[+cp.dataset.copy];navigator.clipboard?.writeText(t?.content||"").then(()=>toast("Risposta copiata."),()=>toast("Non sono riuscito a copiare."));return}
+  if(cp){const t=(S.chat?.turns||[])[+cp.dataset.copy];navigator.clipboard?.writeText(t?.content||"").then(()=>toast("Risposta copiata."),()=>toast("Copia non riuscita: seleziona il testo e copialo a mano."));return}
   const ap=e.target.closest("[data-apply]"),b=ap||e.target.closest("[data-skip]");if(!b)return;
   const[id,i]=b.dataset[ap?"apply":"skip"].split(":");
   const a=(S.chat?.turns||[]).find(x=>x.id===id)?.meta?.actions?.[+i];if(!a||a.status!=="open")return;
@@ -1461,6 +1477,9 @@ $("#chatLog").addEventListener("click",e=>{
   if(ap)toast(msg)});
 function chatContext(){const k=K(),p=P(),ts=ticketList(),id=STEPS[cur].id,wantDocs=["docs","reqs","questions"].includes(id),wantTickets=["backlog","create","log"].includes(id);
   return`${RULES}
+
+CHI SEI
+Ti chiami Tessa, l'assistente di Trama: il nome viene da «tessere». Parli in prima persona come Tessa e ti presenti solo come Tessa: non nominare Claude, Anthropic o il modello che usi. Se ti chiedono che cosa sei, rispondi che sei l'assistente AI di Trama; non negare di essere un'intelligenza artificiale e non dire di essere un altro modello.
 
 COME RISPONDERE
 Rispondi in ${window.I18N?.lang==="en"?"inglese (l'interfaccia è in inglese)":(k.lang.po||"italiano")}, in modo breve e concreto, citando gli ID (REQ-…, T-…) quando ti riferisci a qualcosa. Stai lavorando dentro "Trama", uno strumento con ${STEPS.filter(x=>!x.aux).length} passi: ${STEPS.filter(x=>!x.aux).map((s,i)=>`${i+1} ${s.short}`).join(", ")}, più il Registro delle decisioni, sempre consultabile, e una pagina con le Regole del playbook. Hai sempre davanti lo stato completo del progetto e la memoria delle conversazioni: non chiedere all'utente informazioni che puoi leggere da lì.
@@ -1496,7 +1515,7 @@ async function sendChat(q){if(!SAMPLE||chatPending)return;
   if(img)opts.images=[img];
   let answer="",meta=null;
   try{const r=await SAMPLE(input,opts),sp=splitProto(r.text);answer=sp.text+(r.truncated?"\n\n(Risposta interrotta per lunghezza: chiedi di continuare.)":"");meta=cleanMeta(sp.meta)}
-  catch(e){const sp=splitProto(e?.text||"");answer=(sp.text?sp.text+"\n\n":"")+(e?.code==="cancelled"?"(Fermato.)":aiMsg(e))}
+  catch(e){const sp=splitProto(e?.text||"");answer=(sp.text?sp.text+"\n\n":"")+(e?.code==="cancelled"?"(Fermato.)":chatErr(e))}
   chatPending=null;commitChat(c=>{c.turns.push({role:"user",content,at:Date.now()},{role:"assistant",content:answer,at:Date.now(),id:uid(),...(meta?{meta}:{})})});if(!$("#chat").classList.contains("open"))$("#chatFab").classList.add("dot");foldMemory()}
 $("#chatForm").addEventListener("submit",e=>{e.preventDefault();const q=$("#chatIn").value.trim();if(!q)return;$("#chatIn").value="";sendChat(q)});
 $("#chatIn").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("#chatForm").requestSubmit()}});
@@ -1504,7 +1523,7 @@ $("#chatStop").onclick=()=>chatCtl?.abort();
 $("#chatImg").onchange=e=>{chatImg=e.target.files[0]||null;$("#chatImgName").textContent=chatImg?chatImg.name:"";e.target.value=""};
 document.addEventListener("pointerover",e=>{const el=e.target.closest&&e.target.closest("summary .ttl,summary .q-ans,.sugg button,.st small,.st>span:last-child");if(el&&!el.title&&el.scrollWidth>el.clientWidth+1)el.title=el.textContent.trim()},{passive:true});
 const chatEl=$("#chat"),fabEl=$("#chatFab");
-function setChatOpen(open,focus=true){chatEl.classList.toggle("open",open);document.body.classList.toggle("chat-open",open);fabEl.setAttribute("aria-expanded",String(open));fabEl.setAttribute("aria-label",open?"Chiedi a Claude: chiudi la chat":"Chiedi a Claude: apri la chat");fabEl.title=open?"Chiudi la chat":"Chat con Claude";
+function setChatOpen(open,focus=true){chatEl.classList.toggle("open",open);document.body.classList.toggle("chat-open",open);fabEl.setAttribute("aria-expanded",String(open));fabEl.setAttribute("aria-label",open?"Chiedi a Tessa: chiudi la chat":"Chiedi a Tessa: apri la chat");fabEl.title=open?"Chiudi la chat":"Chat con Tessa";
   if(open){if(SUGG_STALE)renderSugg();fabEl.classList.remove("dot","hint");const log=$("#chatLog");log.scrollTop=log.scrollHeight;if(focus)$("#chatIn").focus()}else if(focus)fabEl.focus();
   ls.set("chatOpen",open)}
 fabEl.onclick=()=>setChatOpen(!chatEl.classList.contains("open"));
