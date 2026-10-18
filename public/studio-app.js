@@ -122,7 +122,7 @@ REGOLE:
 /* ================= stato ================= */
 const COLS=["docs","reqs","questions","tickets","decisions"];
 const S={project:{},kit:defaultKit(),jira:{},chat:{turns:[]},quality:{},docs:{},reqs:{},questions:{},tickets:{},decisions:{}};
-const T={sites:null,projects:null,uploads:[],pre:null,ack:false,log:[],report:null,hyg:null,rel:"",onlyIssues:false,arm:{},running:false,stop:false};
+const T={qsel:new Set(),sites:null,projects:null,uploads:[],pre:null,ack:false,log:[],report:null,hyg:null,rel:"",onlyIssues:false,arm:{},running:false,stop:false};
 const busy={}, msgs={}, openSet=new Set(ls.get("open",[]));
 // passi già visitati da questo utente (su questo browser): la loro intestazione si mostra compatta
 const SEEN=new Set(ls.get("seenSteps",[]));const markSeen=()=>{const id=STEPS[cur]?.id;if(id&&!SEEN.has(id)){SEEN.add(id);ls.set("seenSteps",[...SEEN])}};addEventListener("pagehide",markSeen);
@@ -615,11 +615,12 @@ STEPS.push({id:"questions",phase:"Preparazione",short:"Domande di apertura",sub:
  view(){const q=arr("questions").sort((a,b)=>(a.order??0)-(b.order??0));const open=q.filter(x=>!x.answer?.trim()&&!x.hypothesis?.trim());
   let h=`<div class="toolbar">${B("seedQuestions","Carica le domande standard",{cls:q.length?"":"primary",dis:q.some(x=>x.std)})}${B("importReqQuestions","Importa le domande dai requisiti",{dis:!reqList().some(r=>r.questions)})}${AIB("suggestQuestions","Suggerisci altre domande (Claude)",{dis:!arr("docs").length&&!reqList().length})}${AIB("proposeHyp","Proponi ipotesi per le aperte (Claude)",{dis:!open.length})}${B("copyQuestions","Copia le aperte per il cliente",{ro:1,dis:!open.length})}</div>`;
   if(q.length)h+=`<div class="stat card"><div><b>${q.length}</b><span>domande</span></div><div><b>${q.filter(x=>x.answer?.trim()).length}</b><span>con risposta</span></div><div><b>${q.filter(x=>!x.answer?.trim()&&x.hypothesis?.trim()).length}</b><span>con ipotesi</span></div><div><b>${open.length}</b><span>aperte</span></div></div>`;
-  const cats=[...new Set(q.map(x=>x.cat))];
-  h+=cats.map(c=>`<div class="group"><div class="group-h"><h2 style="margin:0">${esc(c)}</h2></div><div class="list">${q.filter(x=>x.cat===c).map(x=>{const st=x.answer?.trim()?["ok","Risposta"]:x.hypothesis?.trim()?["warn","Ipotesi"]:["err","Aperta"];
-    return det("q-"+x.id,`<span class="pill ${st[0]}">${st[1]}</span><span class="ttl">${esc(x.q)}</span>${x.answer?.trim()?`<span class="q-ans">${esc(x.answer.trim())}</span>`:x.hypothesis?.trim()?`<span class="q-ans"><b>Ipotesi:</b> ${esc(x.hypothesis.trim())}</span>`:""}`,
+  const cats=[...new Set(q.map(x=>x.cat))];T.qsel=new Set(q.filter(x=>T.qsel.has(x.id)).map(x=>x.id));const ns=T.qsel.size;
+  h+=cats.map(c=>`<div class="group"><div class="group-h"><h2 style="margin:0">${esc(c)}</h2></div><div class="list">${q.filter(x=>x.cat===c).map(x=>{const st=x.answer?.trim()?["ok","Risposta"]:x.hypothesis?.trim()?["warn","Ipotesi"]:["err","Aperta"],on=T.qsel.has(x.id),armed=T.arm["q:"+x.id];
+    return (READONLY?"":`<div class="q-row${on?" sel":""}"><input type="checkbox" class="q-pick" value="${x.id}" ${on?"checked":""} aria-label="Seleziona la domanda: ${esc(x.q)}">`)+det("q-"+x.id,`<span class="pill ${st[0]}">${st[1]}</span><span class="ttl">${esc(x.q)}</span>${x.answer?.trim()?`<span class="q-ans">${esc(x.answer.trim())}</span>`:x.hypothesis?.trim()?`<span class="q-ans"><b>Ipotesi:</b> ${esc(x.hypothesis.trim())}</span>`:""}`,
     `<div class="grid">${F("Risposta del cliente o del PO",bind("questions:"+x.id+":answer",x.answer,{area:1,rows:2}))}${F("Ipotesi esplicita (se manca la risposta)",bind("questions:"+x.id+":hypothesis",x.hypothesis,{area:1,rows:2}))}${F("Chi ha risposto",bind("questions:"+x.id+":who",x.who,{ph:"Cliente, PO, team"}))}</div>
-    <div class="toolbar" style="margin-top:10px">${B("delQ","Elimina",{cls:"danger",data:{id:x.id}})}</div>`)}).join("")}</div></div>`).join("")||'<p class="empty">Nessuna domanda ancora. Carica le domande standard del playbook per iniziare.</p>';
+    <div class="toolbar" style="margin-top:10px">${B("delQ","Elimina",{cls:"danger",data:{id:x.id}})}</div>`)+(READONLY?"":`<button type="button" class="icon-btn q-del${armed?" armed":""}" data-act="delQRow" data-id="${x.id}" aria-label="${armed?"Conferma: elimina la domanda":"Elimina la domanda"}: ${esc(x.q)}" title="${armed?"Clicca di nuovo per eliminare":"Elimina la domanda"}">${armed?"Elimina?":ICO("i-trash")}</button></div>`)}).join("")}</div></div>`).join("")||'<p class="empty">Nessuna domanda ancora. Carica le domande standard del playbook per iniziare.</p>';
+  if(ns)h+=`<div class="q-bar" role="region" aria-label="Domande selezionate"><span class="q-bar-n" aria-live="polite">${ns===1?"1 domanda selezionata":ns+" domande selezionate"}</span>${ns<q.length?B("qSelAll",`Seleziona tutte (${q.length})`):""}${B("qSelNone","Annulla")}<button type="button" data-act="qDelSel" class="${T.arm.qbulk?"armed":"danger"}">${T.arm.qbulk?`Conferma: elimina ${ns===1?"1 domanda":ns+" domande"}`:`Elimina ${ns===1?"1 domanda":ns+" domande"}`}</button></div>`;
   return h},
  ask:["Quali domande aperte bloccano la scomposizione in ticket?","Scrivi una mail formale in inglese al cliente con le domande aperte"]});
 
@@ -1056,7 +1057,14 @@ A.proposeHyp=()=>run("proposeHyp","Claude sta pensando…",async()=>{const open=
   await loadDocs();let out;try{out=await ask(`${RULES}\n\nCOMPITO: per ogni domanda aperta proponi un'ipotesi esplicita, prudente e facile da correggere, basata sui documenti. Se i documenti non danno indizi, proponi l'ipotesi più comune e dillo. In italiano, una o due frasi.\nDomande:\n${open.map(q=>`[${q.id}] ${q.q}`).join("\n")}\n\nRequisiti:\n${reqList().map(reqLine).join("\n").slice(0,30000)}\nDocumenti:${ctxDocs(50000)}\n\nRispondi SOLO con JSON: {"items":[{"id":"id della domanda","hypothesis":"…"}]}`)}catch(e){throw{ai:1,e}}
   let n=0;(out?.items||[]).forEach(it=>{const q=S.questions[it.id];if(q&&!q.hypothesis&&it.hypothesis){put("questions",it.id,{...q,hypothesis:"Ipotesi: "+String(it.hypothesis).replace(/^ipotesi:\s*/i,""),who:q.who||"PO (ipotesi da confermare)"});n++}});
   setMsg("questions","warn",`${n} ipotesi proposte. Sono ipotesi: rileggile e correggile prima di registrarle.`)});
-A.delQ=el=>del("questions",el.dataset.id);
+A.delQ=el=>{T.qsel.delete(el.dataset.id);del("questions",el.dataset.id)};
+// domande: elimina dalla riga chiusa (due clic) o in gruppo dalla barra della selezione
+const refocus=s=>requestAnimationFrame(()=>requestAnimationFrame(()=>$(s)?.focus({preventScroll:true})));
+A.delQRow=el=>{const id=el.dataset.id,k="q:"+id;const next=el.closest(".q-row")?.nextElementSibling?.querySelector(".q-del");const nid=next?.dataset.id;
+  arm(k,el,()=>{T.qsel.delete(id);del("questions",id);toast("Domanda eliminata.");if(nid)refocus(`.q-del[data-id="${nid}"]`)});if(T.arm[k])refocus(`.q-del[data-id="${id}"]`)};
+A.qSelAll=()=>{arr("questions").forEach(x=>T.qsel.add(x.id));delete T.arm.qbulk;render();refocus('[data-act="qDelSel"]')};
+A.qSelNone=()=>{T.qsel.clear();delete T.arm.qbulk;render();refocus(".q-pick")};
+A.qDelSel=el=>arm("qbulk",el,()=>{const ids=[...T.qsel];T.qsel.clear();ids.forEach(id=>del("questions",id));toast(ids.length===1?"Domanda eliminata.":ids.length+" domande eliminate.");refocus(".q-pick")});
 A.copyQuestions=el=>{const t=arr("questions").filter(x=>!x.answer?.trim()&&!x.hypothesis?.trim()).map((q,i)=>`${i+1}. ${q.q}`).join("\n");copyText(t,el)};
 
 /* passo 5 */
@@ -1294,6 +1302,7 @@ document.addEventListener("change",e=>{const el=e.target;
   if(el.id==="relPick"){T.rel=el.value;render();return}
   if(el.id==="decType"||el.id==="decSrc"){T.dq[el.id==="decType"?"type":"src"]=el.value;render();return}
   if(el.id==="rqShow"||el.id==="rqRel"){T.rq[el.id==="rqShow"?"show":"rel"]=el.value;render();return}
+  if(el.classList.contains("q-pick")){el.checked?T.qsel.add(el.value):T.qsel.delete(el.value);delete T.arm.qbulk;render();refocus(`.q-pick[value="${el.value}"]`);return}
   if(el.id==="onlyIssues"){T.onlyIssues=el.checked;render();return}
   if(el.id==="ackBox"){T.ack=el.checked;render();return}
   if(el.id==="createDup"){T.createDup=el.checked;render();return}

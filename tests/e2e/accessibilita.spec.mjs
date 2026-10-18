@@ -24,6 +24,25 @@ for (const path of ["/", "/brand", "/installazione", "/privacy", "/componenti", 
   });
 }
 
+test("accessibilità: domande con una selezione attiva e un cestino armato", async ({ page }) => {
+  await page.goto(PROJECT);
+  await page.locator("#stepList .st", { hasText: "Domande di apertura" }).click();
+  if ((await page.locator("[data-act=secAll]").textContent()) === "Apri tutto") await page.locator("[data-act=secAll]").click();
+  await page.locator("#main .q-pick").nth(0).check();
+  await page.locator("#main .q-pick").nth(1).check();
+  await page.locator("#main .q-del").nth(3).click();
+  await expect(page.locator("#main .q-bar")).toBeVisible();
+  await audit(page, "domande selezionate");
+});
+
+test("accessibilità: homepage in inglese con il menu della lingua aperto", async ({ page, context }) => {
+  await context.addInitScript(() => { try { localStorage.setItem("trama:lang", "en"); } catch {} });
+  await page.goto("/");
+  await page.locator("#langBtn").click();
+  await expect(page.locator("#langMenu")).toBeVisible();
+  await audit(page, "homepage in inglese");
+});
+
 test("accessibilità: pagina dei progetti", async ({ page }) => {
   await page.goto("/studio");
   await expect(page.locator(".proj-card")).toHaveCount(1);

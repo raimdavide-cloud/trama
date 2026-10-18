@@ -402,6 +402,23 @@ body.panel-open #chatFab{right:calc(min(580px,46vw) + 20px)}
 .sec-b .list>details.item:first-child,.sec-b>details.item:first-child{border-top:0}
 .sec-b details.item>summary{padding:10px 4px}
 .sec-b details.item>.in{border-top:0;padding:4px 4px 14px 21px}
+/* domande: casella a sinistra e cestino a destra, fuori dal summary; nascosti finché non servono, senza spostare nulla */
+.q-row{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:start;column-gap:2px;border-top:1px solid var(--line)}
+.list>.q-row:first-child{border-top:0}
+.q-row>details.item,.sec-b .q-row>details.item{border:0;border-radius:0;background:none;min-width:0}
+.q-row>details.item>summary{padding-left:4px}
+.q-row>input.q-pick{width:16px;height:16px;margin:14px 0 0 4px;accent-color:var(--primary);cursor:pointer}
+.q-del{width:32px;height:32px;margin-top:5px}
+.q-del .ic{width:17px;height:17px}
+.q-del:hover{color:var(--err);background:var(--sunk)}
+.q-del.armed{width:auto;padding:0 10px;font:600 13px var(--f-body);background:var(--err);color:var(--surface)}
+.q-pick,.q-del{opacity:0;transition:opacity .12s}
+.q-row:hover .q-pick,.q-row:hover .q-del,.q-row:focus-within .q-pick,.q-row:focus-within .q-del,#main:has(.q-bar) .q-pick,.q-pick:checked,.q-del.armed{opacity:1}
+.q-row.sel{background:var(--primary-soft)}
+@media(hover:none){.q-pick,.q-del{opacity:1}}
+@media(prefers-reduced-motion:reduce){.q-pick,.q-del{transition:none}}
+.q-bar{position:sticky;bottom:16px;z-index:5;display:flex;width:fit-content;max-width:100%;box-sizing:border-box;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0 0;padding:10px 12px 10px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);box-shadow:0 8px 24px rgba(15,23,42,.14)}
+.q-bar-n{font-weight:600}
 @media(prefers-reduced-motion:reduce){.sec>summary::after{transition:none}}
 
 /* Sblocco progressivo: la riga che annuncia la prossima sezione */

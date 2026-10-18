@@ -72,6 +72,76 @@ test("Domande di apertura: una risposta chiude la domanda e finisce da sola nel 
   await expect(page.locator("#main table")).toContainText("Sì, anche in inglese dalla Release 1.0");
 });
 
+test("Domande di apertura: si eliminano dalla riga chiusa, una o in gruppo, senza aprirle", async ({ page }) => {
+  await openStudio(page);
+  await goToStep(page, "Domande di apertura");
+  const open = await page.locator("[data-act=secAll]").textContent();
+  if (open === "Apri tutto") await page.locator("[data-act=secAll]").click();
+  const rows = page.locator("#main .q-row");
+  const n = await rows.count();
+  expect(n).toBeGreaterThan(3);
+  // a riposo casella e cestino non si vedono e non spostano nulla
+  const first = rows.nth(0);
+  await page.mouse.move(0, 0);
+  await expect(first.locator(".q-del")).toHaveCSS("opacity", "0");
+  const box = await first.locator("summary .ttl").boundingBox();
+  await first.hover();
+  await expect(first.locator(".q-del")).toHaveCSS("opacity", "1");
+  expect(await first.locator("summary .ttl").boundingBox()).toEqual(box);
+  // casella e titolo sulla stessa riga
+  const cb = await first.locator(".q-pick").boundingBox();
+  expect(Math.abs(cb.y + cb.height / 2 - (box.y + box.height / 2))).toBeLessThan(3);
+
+  // una sola: due clic sul cestino, la riga resta chiusa
+  const id = await first.locator(".q-pick").getAttribute("value");
+  await first.locator(".q-del").click();
+  await expect(first.locator(".q-del")).toHaveText("Elimina?");
+  await expect(page.locator(`#main details.item[data-k="q-${id}"]`)).not.toHaveAttribute("open", "");
+  await first.locator(".q-del").click();
+  await expect(page.locator("#toast")).toHaveText("Domanda eliminata.");
+  await expect(rows).toHaveCount(n - 1);
+  await expect(page.locator(`#main details.item[data-k="q-${id}"]`)).toHaveCount(0);
+
+  // in gruppo: due caselle, poi la barra della selezione
+  await rows.nth(0).locator(".q-pick").check();
+  await expect(page.locator("#main .q-bar")).toContainText("1 domanda selezionata");
+  await rows.nth(1).locator(".q-pick").check();
+  const bar = page.locator("#main .q-bar");
+  await expect(bar).toContainText("2 domande selezionate");
+  await expect(rows.nth(2).locator(".q-pick")).toHaveCSS("opacity", "1"); // con una selezione attiva le caselle restano visibili
+  await bar.getByRole("button", { name: "Annulla" }).click();
+  await expect(bar).toHaveCount(0);
+  await rows.nth(0).locator(".q-pick").check();
+  await page.locator("#main .q-bar [data-act=qSelAll]").click();
+  await expect(page.locator("#main .q-bar")).toContainText(`${n - 1} domande selezionate`);
+  await page.locator("#main .q-bar [data-act=qSelNone]").click();
+  await rows.nth(0).locator(".q-pick").check();
+  await rows.nth(1).locator(".q-pick").check();
+  const del = page.locator("#main .q-bar [data-act=qDelSel]");
+  await del.click();
+  await expect(del).toHaveText("Conferma: elimina 2 domande");
+  await del.click();
+  await expect(page.locator("#toast")).toHaveText("2 domande eliminate.");
+  await expect(rows).toHaveCount(n - 3);
+  await expect(page.locator("#main .q-bar")).toHaveCount(0);
+  expect(await page.evaluate(() => arr("questions").length)).toBe(n - 3);
+});
+
+test("Domande di apertura: la casella si usa da tastiera e il focus resta sulla riga", async ({ page }) => {
+  await openStudio(page);
+  await goToStep(page, "Domande di apertura");
+  const open = await page.locator("[data-act=secAll]").textContent();
+  if (open === "Apri tutto") await page.locator("[data-act=secAll]").click();
+  const pick = page.locator("#main .q-row .q-pick").first();
+  const id = await pick.getAttribute("value");
+  await pick.focus();
+  await expect(pick).toHaveCSS("opacity", "1");
+  await page.keyboard.press("Space");
+  await expect(page.locator("#main .q-bar")).toContainText("1 domanda selezionata");
+  await expect(page.locator(`#main .q-pick[value="${id}"]`)).toBeFocused();
+  await expect(page.locator(`#main .q-pick[value="${id}"]`)).toBeChecked();
+});
+
 test("Kit: rinominare una release la rinomina anche in epiche, requisiti e ticket", async ({ page }) => {
   await openStudio(page);
   await goToStep(page, "Kit di progetto");

@@ -2,6 +2,7 @@
 import { test, expect } from "@playwright/test";
 import { openStudio, goToStep, PROJECT, emptyReqs } from "./aiuti.mjs";
 import { datiDiProva, isData } from "../../scripts/i18n/filtro.mjs";
+import { homeMissing } from "../../scripts/i18n/home.mjs";
 
 test.beforeEach(async ({ request }) => {
   await request.get("/__sim/reset");
@@ -66,4 +67,36 @@ test("inglese: nessun testo dell'interfaccia resta in italiano, in tutti i passi
   const data = datiDiProva();
   const missing = (await page.evaluate(() => [...window.I18N.missing])).filter((s) => !isData(s, data));
   expect(missing, `testi senza traduzione (aggiungili in public/i18n-en.js, elenco completo: npm run i18n:mancanti)`).toEqual([]);
+});
+
+test("homepage: switch della lingua nell'header, la scelta vale anche dentro Trama", async ({ page }) => {
+  await page.goto("/");
+  const btn = page.locator("nav.top #langBtn");
+  await expect(btn).toContainText("ITA");
+  await btn.click();
+  await expect(page.locator("#langMenu")).toBeVisible();
+  await expect(page.locator('#langMenu [data-lang="it"]')).toHaveAttribute("aria-checked", "true");
+  await expect(page.locator('#langMenu [data-lang="it"]')).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#langMenu")).toBeHidden();
+  await expect(btn).toBeFocused();
+  await btn.click();
+  await page.locator('#langMenu [data-lang="en"]').click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("h1")).toContainText("From document to backlog");
+  await expect(page.locator("nav.top")).toContainText("Open Trama");
+  await expect(btn).toContainText("ENG");
+  // stessa scelta dentro Trama
+  await page.goto(PROJECT);
+  await expect(page.locator(".progress b")).toHaveText(/steps completed/);
+  await page.goto("/");
+  await page.locator("nav.top #langBtn").click();
+  await page.locator('#langMenu [data-lang="it"]').click();
+  await expect(page.locator("h1")).toContainText("Dal documento al backlog");
+});
+
+test("homepage in inglese: nessun testo resta in italiano, demo ed esempi compresi", async ({ page, context }) => {
+  await context.addInitScript(() => { try { localStorage.setItem("trama:lang", "en"); } catch {} });
+  const missing = await homeMissing(page);
+  expect(missing, "testi senza traduzione (aggiungili in public/i18n-home-en.js, elenco: npm run i18n:mancanti-home)").toEqual([]);
 });
