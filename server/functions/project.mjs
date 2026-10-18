@@ -8,7 +8,8 @@
 import { json, fail, getUser, sql, siteIds, sameOrigin } from "../lib/core.mjs";
 import { lighten, isPlaceholder, fingerprint } from "../lib/lazy.mjs";
 
-const COLS = new Set(["meta", "docs", "reqs", "questions", "tickets", "decisions"]);
+// presence: chi ha il progetto aperto (nome, passo, pannello); righe più vecchie di un giorno cancellate a ogni battito
+const COLS = new Set(["meta", "docs", "reqs", "questions", "tickets", "decisions", "presence"]);
 const META = new Set(["project", "kit", "jira", "chat", "runlog", "quality", "sprints"]);
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
 const MAX_BYTES = 1_000_000;
@@ -39,13 +40,14 @@ export default async (req, context) => {
       const sinceDate = since && !Number.isNaN(Date.parse(since)) ? new Date(Date.parse(since) - 3000).toISOString() : null;
       const [{ now }] = await sql`select clock_timestamp() as now`;
       const items = sinceDate
-        ? await sql`select col, id, data, deleted from items where project_id = ${id} and updated_at > ${sinceDate}`
-        : await sql`select col, id, data, deleted from items where project_id = ${id} and not deleted`;
+        ? await sql`select col, id, data, deleted, updated_by from items where project_id = ${id} and updated_at > ${sinceDate}`
+        : await sql`select col, id, data, deleted, updated_by from items where project_id = ${id} and not deleted`;
       return json({
         ok: true,
         now,
         project: { id: project.id, name: project.name, cloudId: project.cloud_id, siteUrl: project.site_url, createdBy: project.created_by },
-        items: items.map(lighten),
+        // by: chi ha fatto l'ultima modifica (ID Atlassian), per avvisare chi ha aperto lo stesso elemento
+        items: items.map(({ updated_by, ...it }) => ({ ...lighten(it), by: updated_by || "" })),
       });
     }
     if (req.method === "DELETE") {
@@ -75,7 +77,10 @@ export default async (req, context) => {
               values (${id}, ${col}, ${item}, ${JSON.stringify(data)}::jsonb, false, ${user.account_id}, clock_timestamp())
               on conflict (project_id, col, id) do update
                 set data = excluded.data, deleted = false, updated_by = excluded.updated_by, updated_at = clock_timestamp()`;
-    if (col === "meta" && item === "project" && data.name) {
+    if (col === "presence") {
+      // la presenza non cambia la data del progetto; i battiti vecchi (nome compreso) non restano
+      await sql`delete from items where project_id = ${id} and col = 'presence' and updated_at < now() - interval '1 day'`;
+    } else if (col === "meta" && item === "project" && data.name) {
       await sql`update projects set updated_at = now(), name = ${String(data.name).slice(0, 120)} where id = ${id}`;
     } else {
       await sql`update projects set updated_at = now() where id = ${id}`;

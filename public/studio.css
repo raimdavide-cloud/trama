@@ -533,3 +533,10 @@ html[lang="it"] .lang-btn [data-flag="en"],html[lang="en"] .lang-btn [data-flag=
 .dd-f{display:block;margin-top:3px;color:var(--muted)}
 .dd-f del{color:var(--err);text-decoration:line-through}
 .dd-f ins{color:var(--ok);text-decoration:none;font-weight:600}
+/* presenza dei colleghi */
+.presence{display:flex;align-items:center;margin-left:6px}
+.pres-av{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent-text);font:700 11.5px var(--f-body);border:2px solid var(--surface);margin-left:-6px}
+.pres-av:first-of-type{margin-left:0}
+.pres-av.more{background:var(--sunk);color:var(--muted)}
+.pres-av.sm{width:22px;height:22px;font-size:10px;margin-left:0;margin-right:4px;vertical-align:middle}
+.peers{margin:0 0 10px}

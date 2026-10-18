@@ -124,7 +124,7 @@ REGOLE:
 
 /* ================= stato ================= */
 const COLS=["docs","reqs","questions","tickets","decisions"];
-const S={project:{},kit:defaultKit(),jira:{},chat:{turns:[]},quality:{},docs:{},reqs:{},questions:{},tickets:{},decisions:{}};
+const S={presence:{},project:{},kit:defaultKit(),jira:{},chat:{turns:[]},quality:{},docs:{},reqs:{},questions:{},tickets:{},decisions:{}};
 const T={qsel:new Set(),tsel:new Set(),tq:"",prevGen:{},touched:new Set(),sites:null,projects:null,uploads:[],pre:null,ack:false,log:[],report:null,hyg:null,rel:"",onlyIssues:false,arm:{},running:false,stop:false};
 const busy={}, msgs={}, openSet=new Set(ls.get("open",[]));
 // passi già visitati da questo utente (su questo browser): la loro intestazione si mostra compatta
@@ -273,7 +273,7 @@ function renderStepper(){
     return g+`<button class="st ${i===cur&&!T.rulesOpen?"cur":""} ${st[i]?"done":""}" data-act="go" data-i="${i}" ${i===cur&&!T.rulesOpen?'aria-current="step"':""}><span class="n" title="${s.aux?s.short:"Passo "+(i+1)}">${ICO(st[i]?"i-check":STEP_ICONS[s.id]||"i-list")}</span><span>${s.short}<small>${s.sub}</small></span></button>`}).join("")}</div>`;
   $("#chatCtx").textContent=STEPS[cur].aux?"Registro":"Passo "+(cur+1);
 }
-function render(){renderChrome();const s=STEPS[cur];const main=$("#main");const top=main.scrollTop,spk=main.querySelector(".sp")?.dataset.panel,spt=main.querySelector(".sp-b")?.scrollTop||0;main.__secOpen=new Set([...main.querySelectorAll("details.sec[open]")].map(d=>d.dataset.sec));RMEMO={};try{main.innerHTML=T.rulesOpen?rulesPage():shell(cur,s.view());if(!T.rulesOpen)sectionize(main,s);renderRecap()}finally{RMEMO=null}main.scrollTop=top;{const sp=main.querySelector(".sp");document.body.classList.toggle("panel-open",!!sp);if(sp){document.documentElement.style.setProperty("--top-h",($(".app > header")?.offsetHeight||64)+"px");if(sp.dataset.panel===spk)sp.querySelector(".sp-b").scrollTop=spt}}if(T.panel?.kind==="relq"&&T.relqFocus&&(document.activeElement===document.body||!document.activeElement)){const fr=main.querySelector(`.rq-qr[data-id="${T.relqFocus}"]`);fr?.focus({preventScroll:true});fr?.scrollIntoView({block:"nearest"})}labelTableFields(main);if(T.fresh?.size)T.fresh.forEach(id=>main.querySelector(`[data-k="req-${id}"],[data-k="t-${id}"]`)?.classList.add("fresh"));
+function render(){renderChrome();if(DB)queueMicrotask(()=>presenceBeat());const s=STEPS[cur];const main=$("#main");const top=main.scrollTop,spk=main.querySelector(".sp")?.dataset.panel,spt=main.querySelector(".sp-b")?.scrollTop||0;main.__secOpen=new Set([...main.querySelectorAll("details.sec[open]")].map(d=>d.dataset.sec));RMEMO={};try{main.innerHTML=T.rulesOpen?rulesPage():shell(cur,s.view());if(!T.rulesOpen)sectionize(main,s);renderRecap()}finally{RMEMO=null}main.scrollTop=top;{const sp=main.querySelector(".sp");document.body.classList.toggle("panel-open",!!sp);if(sp){document.documentElement.style.setProperty("--top-h",($(".app > header")?.offsetHeight||64)+"px");if(sp.dataset.panel===spk)sp.querySelector(".sp-b").scrollTop=spt}}if(T.panel?.kind==="relq"&&T.relqFocus&&(document.activeElement===document.body||!document.activeElement)){const fr=main.querySelector(`.rq-qr[data-id="${T.relqFocus}"]`);fr?.focus({preventScroll:true});fr?.scrollIntoView({block:"nearest"})}labelTableFields(main);if(T.fresh?.size)T.fresh.forEach(id=>main.querySelector(`[data-k="req-${id}"],[data-k="t-${id}"]`)?.classList.add("fresh"));
   $$("details[data-k]",main).forEach(d=>{if(openSet.has(d.dataset.k))d.open=true});if(document.querySelector("#chatLog .act:not(.done)"))renderChat();else renderSugg();if(T.focusTab){T.focusTab=false;$('.tab[aria-selected="true"]')?.focus()}}
 function msgHtml(id){const m=msgs[id];return m?`<div class="msg ${m.t}" role="status">${m.html??esc(m.text)}</div>`:""}
 function setMsg(id,t,text,html){msgs[id]={t,text,html};scheduleRender()}
@@ -781,7 +781,7 @@ function refreshQuestion(id){const x=S.questions[id],p=$(`#main details.item[dat
   const [c,l]=x.answer?.trim()?["ok","Risposta"]:x.hypothesis?.trim()?["warn","Ipotesi"]:["err","Aperta"];p.className="pill "+c;p.textContent=l}
 function ticketForm(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked=t.state==="created";
  const dirty=dirtyOf(t);
- return`${t.review?`<div class="msg warn">Da rivedere: ${esc(t.review.why)} <span class="row" style="display:inline-flex;margin-left:6px">${B("reviewDone","Segna come rivisto",{data:{id:t.id}})}</span></div>`:""}${locked?(dirty.length?`<div class="msg warn">Creato in Jira come ${browse(t.key)}. Modificato qui dopo la creazione: ${dirty.map(f=>PUSH_NAMES[f]).join(", ")}. <span class="row" style="display:inline-flex;margin-left:6px">${JB("pushCheck","Aggiorna in Jira",{data:{id:t.id},dis:T.running})}</span></div>${pushPreview(t.id)}`
+ return`${ticketPeers(t)}${t.review?`<div class="msg warn">Da rivedere: ${esc(t.review.why)} <span class="row" style="display:inline-flex;margin-left:6px">${B("reviewDone","Segna come rivisto",{data:{id:t.id}})}</span></div>`:""}${locked?(dirty.length?`<div class="msg warn">Creato in Jira come ${browse(t.key)}. Modificato qui dopo la creazione: ${dirty.map(f=>PUSH_NAMES[f]).join(", ")}. <span class="row" style="display:inline-flex;margin-left:6px">${JB("pushCheck","Aggiorna in Jira",{data:{id:t.id},dis:T.running})}</span></div>${pushPreview(t.id)}`
    :`<div class="msg info">Creato in Jira come ${browse(t.key)}. Se lo modifichi qui, Trama ti propone di aggiornarlo anche in Jira.${vOf(t)&&vOf(t)!=="ok"?" "+esc(vOf(t)):""}</div>`):""}
  ${t.err?`<div class="msg err">${esc(t.err)}</div>`:""}
  ${(e.length||w.length)&&!locked?`<div class="issues">${e.map(x=>`<span class="pill err">${esc(x)}</span>`).join("")}${w.map(x=>`<span class="pill warn">${esc(x)}</span>`).join("")}</div>`:""}
@@ -1167,9 +1167,9 @@ function docDiffPanel(){const dd=T.dd;if(!dd)return"";const {added,changed,remov
   const sec=(t,list,row)=>list.length?`<div class="sp-sec"><h3>${t} (${list.length})</h3><ul class="dd-list">${list.map(x=>`<li><label class="dd-row">${ck(x)}<span>${row(x)}</span></label></li>`).join("")}</ul></div>`:"";
   return sidePanel("docdiff","docdiff",`<span>Nuova versione: ${esc(dd.doc)}</span>`,`<p class="small muted" style="margin:0 0 10px">Confronto tra «${esc(dd.doc)}» e i requisiti attuali. Scegli cosa applicare: i ticket dei requisiti cambiati o rimossi diventano «da rivedere».</p>
    ${dd.sources.length>1?`<label class="f">Versione precedente (per i requisiti rimossi)<select id="ddPrev">${dd.sources.map(x=>`<option ${x===dd.prev?"selected":""}>${esc(x)}</option>`).join("")}</select></label>`:""}
-   ${sec("Nuovi",added,x=>`<b>${esc(x.sourceId||"nuovo")}</b> · ${esc(x.title)}`)}
-   ${sec("Cambiati",changed,x=>`<b>${esc(x.code)}</b> · ${x.fields.map(f=>`<span class="dd-f">${DIFF_FIELDS[f]}: <del>${esc(String(Array.isArray(x.from[f])?x.from[f].join(", "):x.from[f]||"—").slice(0,140))}</del> → <ins>${esc(String(Array.isArray(x.to[f])?x.to[f].join(", "):x.to[f]).slice(0,140))}</ins></span>`).join("")}`)}
-   ${sec("Non più nel documento",removed,x=>`<b>${esc(x.code)}</b> · ${esc(x.title)}`)}
+   ${sec("Nuovi",added,x=>`<b>${esc(x.sourceId||"nuovo")}</b> · <span data-no-i18n>${esc(x.title)}</span>`)}
+   ${sec("Cambiati",changed,x=>`<b>${esc(x.code)}</b> · ${x.fields.map(f=>`<span class="dd-f"><span>${DIFF_FIELDS[f]}</span>: <del data-no-i18n>${esc(String(Array.isArray(x.from[f])?x.from[f].join(", "):x.from[f]||"—").slice(0,140))}</del> → <ins data-no-i18n>${esc(String(Array.isArray(x.to[f])?x.to[f].join(", "):x.to[f]).slice(0,140))}</ins></span>`).join("")}`)}
+   ${sec("Non più nel documento",removed,x=>`<b>${esc(x.code)}</b> · <span data-no-i18n>${esc(x.title)}</span>`)}
    ${!added.length&&!changed.length&&!removed.length?'<p class="empty">Nessuna differenza: i requisiti sono già allineati a questo documento.</p>':""}
    <div class="toolbar" style="margin-top:12px">${B("docDiffApply",T.arm.ddApply?`Conferma: applica ${n===1?"1 modifica":n+" modifiche"}`:`Applica ${n===1?"1 modifica":n+" modifiche"}`,{cls:T.arm.ddApply?"armed":"primary",dis:!n})}${B("spClose","Chiudi",{ro:1})}</div>`)}
 A.docDiffApply=el=>arm("ddApply",el,()=>{const dd=T.dd,on=x=>!dd.off.has(x.key),snapR={},snapT={},mark=(code,why)=>ticketList().filter(t=>t.req===code).forEach(t=>{snapT[t.id]??=S.tickets[t.id];put("tickets",t.id,{...S.tickets[t.id],review:{why,at:Date.now()}})});
@@ -1284,7 +1284,7 @@ const qaTicket=el=>ticketList().find(x=>x.id===el.dataset.id);
 A.kitImport=()=>{T.ki=null;T.panel={kind:"kitimp",id:"kitimp"};render()};
 A.kitImportRun=el=>arm("kimp",el,async()=>{const ki=T.ki,src=await kitSource(ki.src);if(!src)return;const before=clone(K());let n={rel:0,ep:0};
   editKit(k=>{n=kitMerge(k,src,ki.parts,ki.over)});T.panel=null;
-  toast(`Kit aggiornato${n.rel||n.ep?`: ${[n.rel?(n.rel===1?"1 release":n.rel+" release"):"",n.ep?(n.ep===1?"1 epica":n.ep+" epiche"):""].filter(Boolean).join(" e ")} in più`:""}.`,()=>{saveMeta("kit",before);toast("Kit come prima.")})});
+  toast(n.rel||n.ep?`Kit aggiornato: +${n.rel} release, +${n.ep} epiche.`:"Kit aggiornato.",()=>{saveMeta("kit",before);toast("Kit come prima.")})});
 A.tSelNone=()=>{T.tsel.clear();delete T.arm.tbulk;render();refocus("#tSearch")};
 A.tBulkApply=()=>{const ep=$("#tbEpic")?.value,rel=$("#tbRel")?.value,wk=$("#tbWork")?.value,lb=String($("#tbLabel")?.value||"").split(",").map(x=>canonLabel(x.trim())).filter(Boolean);
   if(!ep&&!rel&&!wk&&!lb.length){toast("Scegli cosa cambiare: epica, release, tipo di lavoro o label.");return}
@@ -1468,6 +1468,26 @@ async function exportCsv(name,head,rows){const q=v=>`"${String(v??"").replace(/"
   copyText(csv,null);toast("Download non disponibile qui: CSV copiato negli appunti.")}
 function copyText(t,el){const done=()=>{if(el){const o=el.textContent;el.textContent="Copiato";setTimeout(()=>el.textContent=o,1500)}};const fb=()=>{const x=document.createElement("textarea");x.value=t;document.body.appendChild(x);x.select();try{document.execCommand("copy");done()}catch(e){}x.remove()};
   try{navigator.clipboard.writeText(t).then(done,fb)}catch(e){fb()}}
+
+/* Presenza: chi altro ha il progetto aperto, a che passo e su quale ticket. Un battito ogni 30 secondi (e al cambio di passo o
+   di pannello); chi non batte da 75 secondi non si mostra. Scritto direttamente, senza la coda dei salvataggi: chiudere la
+   scheda non chiede conferma per un battito. */
+const presenceId=a=>String(a||"").replace(/[^A-Za-z0-9_-]/g,"_").slice(0,64);
+let BEAT=null,lastBeat="";
+function presenceBeat(force){clearTimeout(BEAT);BEAT=setTimeout(()=>presenceBeat(true),30000);if(!DB||!ME?.accountId||READONLY||document.hidden)return;
+  const t=T.panel?.kind==="ticket"&&S.tickets[T.panel.id];const data={name:ME.name||ME.email||"Un collega",step:STEPS[cur]?.id||"",stepName:STEPS[cur]?.short||"",panel:t?"ticket:"+T.panel.id:"",panelRef:t?t.ref:""};
+  const sig=JSON.stringify(data);if(!force&&sig===lastBeat)return;lastBeat=sig;
+  BS.api(`/api/projects/${encodeURIComponent(PID)}/items/presence/${presenceId(ME.accountId)}`,{method:"PUT",body:{...data,at:Date.now()}}).catch(()=>{})}
+const others=()=>Object.entries(S.presence||{}).filter(([id,p])=>id!==presenceId(ME?.accountId)&&p&&Date.now()-(p.at||0)<75000).map(([id,p])=>({id,...p}));
+const initials=n=>String(n||"?").split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join("");
+function renderPresence(){const el=$("#presence");if(!el)return;const o=others();el.hidden=!o.length;
+  el.innerHTML=o.length?`<span class="sr-only">${o.length===1?"Anche nel progetto:":"Anche nel progetto ("+o.length+"):"}</span>${o.slice(0,4).map(p=>`<span class="pres-av" data-no-i18n title="${esc(p.name)} · ${esc(p.stepName||"")}${p.panelRef?" · "+esc(p.panelRef):""}">${esc(initials(p.name))}</span>`).join("")}${o.length>4?`<span class="pres-av more">+${o.length-4}</span>`:""}`:""}
+setInterval(renderPresence,20000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)presenceBeat(true)});
+const nameOf=by=>Object.entries(S.presence||{}).find(([id])=>id===presenceId(by))?.[1]?.name||"";
+// nel pannello di un ticket: chi lo sta guardando e chi lo ha appena modificato
+function ticketPeers(t){const here=others().filter(p=>p.panel==="ticket:"+t.id),r=T.remote?.[t.id],recent=r&&Date.now()-r.at<120000;
+  return`${recent?`<div class="msg warn">${esc(nameOf(r.by)||"Un collega")} ha appena modificato questo ticket. Controlla i campi prima di continuare: i valori che vedi sono già i suoi.</div>`:""}${here.length?`<p class="small muted peers">${here.map(p=>`<span class="pres-av sm" data-no-i18n>${esc(initials(p.name))}</span>`).join("")} ${here.length===1?`${esc(here[0].name)} sta guardando questo ticket.`:`${here.map(p=>esc(p.name)).join(", ")} stanno guardando questo ticket.`}</p>`:""}`}
 
 /* ================= eventi ================= */
 document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.disabled)return;if(b.tagName==="TR"&&e.target.closest("input,label"))return;const ln=e.target.closest("a[href]");if(ln&&ln!==b&&b.contains(ln))return;e.preventDefault();const f=A[b.dataset.act];if(f)f(b)});
@@ -1821,6 +1841,8 @@ $("#main").innerHTML='<p class="empty" style="padding-top:10vh">Caricamento…</
   const LOADED=new Set();
   DB.collection("meta").onSnapshot(s=>{if(!LOADED.has("meta")){LOADED.add("meta");DATA_READY=["meta",...COLS].every(x=>LOADED.has(x));queueMicrotask(()=>migrateSpike(LOADED))}s.docs.forEach(d=>{if(d.exists)S[d.id]=d.data()});S.kit={...defaultKit(),...(S.kit||{}),team:{...defaultKit().team,...(S.kit?.team||{})}};renderChat();scheduleRender()});
   // alla prima lettura di domande e registro si riallineano le decisioni nate dalle domande (anche quelle scritte da versioni precedenti)
+  DB.collection("presence").onSnapshot(s=>{const o={};s.docs.forEach(d=>{if(d.exists)o[d.id]=d.data()});S.presence=o;renderPresence()});presenceBeat();
+  BS.onRemote=(c,id,by)=>{if(c!=="tickets"||!by||by===ME?.accountId)return;(T.remote||(T.remote={}))[id]={by,at:Date.now()};if(T.panel?.kind==="ticket"&&T.panel.id===id)scheduleRender()};
   COLS.forEach(c=>DB.collection(c).onSnapshot(s=>{const o={};s.docs.forEach(d=>{if(d.exists)o[d.id]=d.data()});S[c]=o;if(!LOADED.has(c)){LOADED.add(c);DATA_READY=["meta",...COLS].every(x=>LOADED.has(x));if(c==="tickets")queueMicrotask(()=>migrateSpike(LOADED));if(LOADED.has("questions")&&LOADED.has("decisions")&&!LOADED.has("qsync")){LOADED.add("qsync");queueMicrotask(syncQDecisions)}}scheduleRender()}));
   setTimeout(()=>{const p=P();if(p.cloudId!==SERVER_PROJECT.cloudId||p.siteUrl!==SERVER_PROJECT.siteUrl)editProject(q=>{q.cloudId=SERVER_PROJECT.cloudId;q.siteUrl=SERVER_PROJECT.siteUrl;if(!q.name)q.name=SERVER_PROJECT.name})},60);
   render();renderChat();if(STEPS[cur].id==="create")A.go({dataset:{i:cur}})})();

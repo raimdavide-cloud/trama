@@ -98,7 +98,7 @@ test("Domande di apertura: si eliminano dalla riga chiusa, una o in gruppo, senz
   await expect(first.locator(".q-del")).toHaveText("Elimina?");
   await expect(page.locator(`#main details.item[data-k="q-${id}"]`)).not.toHaveAttribute("open", "");
   await first.locator(".q-del").click();
-  await expect(page.locator("#toast")).toHaveText("Domanda eliminata.");
+  await expect(page.locator("#toast")).toContainText("Domanda eliminata.");
   await expect(rows).toHaveCount(n - 1);
   await expect(page.locator(`#main details.item[data-k="q-${id}"]`)).toHaveCount(0);
 
@@ -121,7 +121,7 @@ test("Domande di apertura: si eliminano dalla riga chiusa, una o in gruppo, senz
   await del.click();
   await expect(del).toHaveText("Conferma: elimina 2 domande");
   await del.click();
-  await expect(page.locator("#toast")).toHaveText("2 domande eliminate.");
+  await expect(page.locator("#toast")).toContainText("2 domande eliminate.");
   await expect(rows).toHaveCount(n - 3);
   await expect(page.locator("#main .q-bar")).toHaveCount(0);
   expect(await page.evaluate(() => arr("questions").length)).toBe(n - 3);

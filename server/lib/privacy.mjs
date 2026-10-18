@@ -29,6 +29,7 @@ async function reporter() {
 // Cancella i dati personali di un account chiuso. I progetti restano: perdono solo il riferimento all'autore.
 export async function erasePerson(accountId) {
   await sql`update items set updated_by = null where updated_by = ${accountId}`;
+  await sql`delete from items where col = 'presence' and id = ${presenceId(accountId)}`; // il nome mostrato ai colleghi
   await sql`update projects set created_by = null where created_by = ${accountId}`;
   await sql`delete from users where account_id = ${accountId}`; // le sessioni si cancellano a cascata
 }
@@ -94,3 +95,6 @@ export async function runPrivacyReport({ force = false } = {}) {
   }
   return result;
 }
+
+// identificativo della riga di presenza di un account (gli ID Atlassian possono contenere «:»); uguale nella pagina
+export const presenceId = (accountId) => String(accountId || "").replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 64);
