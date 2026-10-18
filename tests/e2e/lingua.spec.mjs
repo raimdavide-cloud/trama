@@ -105,7 +105,7 @@ test("homepage: sezioni e lingua in un solo menu nell'header, «Apri Trama» res
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.locator("h1")).toContainText("From document to backlog");
   await expect(nav).toContainText("Open Trama");
-  await expect(page.locator("#vantaggi h2")).toHaveText("The PO prepares, the whole team gains.");
+  await expect(page.locator("#vantaggi h2")).toHaveText("Trama prepares, the whole team gains.");
   // stessa scelta dentro Trama
   await page.goto(PROJECT);
   await expect(page.locator(".progress b")).toHaveText(/steps completed/);

@@ -269,7 +269,7 @@ exact: {
 "Sezioni": "Sections",
 "Vantaggi": "Benefits",
 // ---- vantaggi
-"Il PO prepara, tutto il team ci guadagna.": "The PO prepares, the whole team gains.",
+"Trama prepara, tutto il team ci guadagna.": "Trama prepares, the whole team gains.",
 "Un backlog scritto con le stesse regole arriva chiaro a chi sviluppa, a chi rivede e a chi coordina. Meno rincorse, più tempo per il lavoro vero.": "A backlog written by the same rules reaches developers, reviewers and coordinators clearly. Less chasing, more time for the real work.",
 "Chi sviluppa": "Developers",
 "Ticket chiari al primo colpo": "Clear tickets the first time",
