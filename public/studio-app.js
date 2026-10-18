@@ -709,7 +709,7 @@ function ticketsPanel(k,rs,ts,rels){const inRel=rs.filter(r=>T.rel==="*"||r.rele
    ${T.prog.genTickets?progBlock("genTickets"):T.genLog?`<div class="log" style="margin-top:10px">${esc(T.genLog)}</div>`:""}</div>`;
   const groups0=[...inRel.map(r=>({r,ts:ts.filter(t=>t.req===r.code)})),{r:null,ts:ts.filter(t=>!rs.some(r=>r.code===t.req)&&(T.rel==="*"||t.release===T.rel))}].filter(g=>g.ts.length);
   const groups=T.bReq?groups0.filter(g=>g.r?.code===T.bReq):groups0;
-  h+=`<div class="card"><h2>Ticket per requisito</h2><div class="toolbar list-bar">${T.bReq?`<span class="pill primary">Solo ${esc(T.bReq)}</span><button type="button" class="link" data-act="bReqClear">Mostra tutti</button>`:""}<span style="flex:1"></span><label class="row small"><input type="checkbox" id="onlyIssues" ${T.onlyIssues?"checked":""}> Solo con problemi</label>${B("addTicket","Aggiungi a mano")}${B("exportTickets","Esporta CSV",{ro:1,dis:!ts.length})}</div>`;
+  h+=`<div class="card"><h2>Ticket per requisito</h2><div class="toolbar list-bar">${T.bReq?`<span class="pill primary">Solo ${esc(T.bReq)}</span><button type="button" class="link" data-act="bReqClear">Mostra tutti</button>`:""}<span style="flex:1"></span><label class="row small"><input type="checkbox" id="onlyIssues" ${T.onlyIssues?"checked":""}> Solo con problemi</label>${B("addTicket","Aggiungi a mano")}${B("qaZip","Schede QA (.zip)",{ro:1,dis:!ts.length})}${B("exportTickets","Esporta CSV",{ro:1,dis:!ts.length})}</div>`;
   const ids=[];
   const bodies=groups.map(({r,ts:gts})=>{const shown=T.onlyIssues?gts.filter(t=>{const i=issuesOf(t);return i.e.length||i.w.length}):gts;if(!shown.length)return"";const bad=gts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;shown.forEach(t=>ids.push(t.id));
    return`<tbody><tr class="dt-g"><th colspan="6" scope="rowgroup"><div class="dt-gh">${r?`<span class="key">${esc(r.code)}</span><span class="dt-t">${esc(r.title)}</span>`:`<span>Ticket senza requisito</span>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")}):""}</div></th></tr>${shown.map(ticketRow).join("")}</tbody>`}).join("");
@@ -740,8 +740,18 @@ function ticketForm(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked
   ${F("Collegamenti (es. blocks: T-004, relates: T-002)",`<input data-links="${t.id}" value="${esc(linksText(t))}" ${READONLY?"disabled":""}>`,"wide")}</div>
  <p class="small muted" style="margin:8px 0 0">Requisito: ${esc(t.req||"—")} · Label: ${labelsOf(t).map(esc).join(", ")||"—"}</p>
  ${(t.assumptions||[]).length?`<div class="card note small" style="margin:10px 0 0"><b>Ipotesi dichiarate da Claude</b><ul style="margin:4px 0 0">${t.assumptions.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></div>`:""}
+ ${qaBox(t)}
  <div class="toolbar" style="margin-top:10px">${B("applyTemplate",T.arm["tpl"+t.id]?"Conferma: sostituisci la descrizione":"Usa il modello vuoto",{cls:T.arm["tpl"+t.id]?"armed":"",data:{id:t.id},dis:locked})}${B("delTicket",T.arm["t"+t.id]?"Conferma eliminazione":"Elimina ticket",{cls:T.arm["t"+t.id]?"armed":"danger",data:{id:t.id},dis:locked})}</div>`}
 
+/* Scheda QA: il Markdown per chi collauda (generatore in qa-scheda.js) */
+const qaCtx=()=>({tickets:ticketList(),reqs:reqList(),decisions:arr("decisions"),siteUrl:P().siteUrl||"",project:P().name||"",fullTitle,labels:labelsOf,typeName:t=>K().types?.[t.type]||t.type,tr:s=>window.I18N?.t?.(s)??s,today:today()});
+function qaBox(t){if(!window.QA)return"";const q=QA.sheet(t,qaCtx());
+  return`<details class="item qa-box" data-k="qa-${esc(t.id)}"><summary><span class="ttl">Scheda QA</span>${q.ready?'<span class="pill ok">pronta per il collaudo</span>':`<span class="pill warn">${q.gaps.length===1?"1 punto da completare":q.gaps.length+" punti da completare"}</span>`}</summary><div class="in">
+   <p class="small muted" style="margin:0 0 8px">Un file Markdown per chi collauda: criteri da verificare, requisito d'origine, dipendenze, ipotesi e decisioni che toccano il ticket.</p>
+   ${q.gaps.length?`<ul class="qa-gaps small">${q.gaps.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>`:""}
+   <div class="toolbar" style="margin:0 0 10px">${B("qaCopy","Copia la scheda",{ro:1,data:{id:t.id}})}${B("qaDownload","Scarica .md",{ro:1,data:{id:t.id}})}</div>
+   <pre class="qa-pre" tabindex="0" role="region" aria-label="Anteprima della scheda QA">${esc(q.md)}</pre></div></details>`}
+async function saveFile(name,blob){if(DL){try{await DL.save({filename:name,data:blob});return true}catch(e){if(e?.code==="cancelled")return false}}toast("Download non disponibile in questa vista.");return false}
 /* ---------- 7. Creazione su Jira ---------- */
 /* Anteprima della struttura per livelli: Project › Fasi › Epiche › Ticket. Si sceglie una Fase e un'epica per vedere cosa contengono. */
 function structCols(pl){const k=K(),H=k.hier,hon=!!H?.enabled,rd=pl.ready.filter(t=>T.createDup||!pl.dup.includes(t));
@@ -1141,6 +1151,14 @@ A.addTicket=()=>{const id=uid(),k=K();put("tickets",id,{ref:fmtRef(nextRef()),re
 A.delTicket=el=>arm("t"+el.dataset.id,el,()=>del("tickets",el.dataset.id));
 A.applyTemplate=el=>arm("tpl"+el.dataset.id,el,()=>{const t=S.tickets[el.dataset.id];put("tickets",el.dataset.id,{...t,desc:TEMPLATES[t.type]})});
 A.exportTickets=()=>{const k=K();exportCsv("backlog.csv",["Ref","Requisito","Tipo","Titolo","Epica","Label","Collegamenti","Chiave Jira","Descrizione"],ticketList().map(t=>[t.ref,t.req,k.types[t.type]||t.type,fullTitle(t),t.epic,labelsOf(t).join(" "),linksText(t),t.key||"",t.desc]))};
+const qaTicket=el=>ticketList().find(x=>x.id===el.dataset.id);
+A.qaCopy=el=>{const t=qaTicket(el);if(t)copyText(QA.sheet(t,qaCtx()).md,el)};
+A.qaDownload=async el=>{const t=qaTicket(el);if(!t)return;const q=QA.sheet(t,qaCtx());if(await saveFile(q.name,new Blob([q.md],{type:"text/markdown;charset=utf-8"})))toast("Scheda QA scaricata.")};
+A.qaZip=async()=>{const k=K(),rels=T.rel==="*"?[...k.releases.map(r=>r.name),...(ticketList().some(t=>!t.release||!k.releases.some(r=>r.name===t.release))?[null]:[])]:[T.rel];
+  const ctx=qaCtx();if(T.rel==="*")ctx.tickets=ctx.tickets.map(t=>t.release&&!k.releases.some(r=>r.name===t.release)?{...t,release:""}:t);
+  const b=QA.bundle(rels,ctx);if(!b.files.length){toast("Nessun ticket da collaudare in questa release.");return}
+  const name="schede-qa-"+QA.slug(T.rel==="*"?(P().name||"progetto"):T.rel)+".zip";
+  if(await saveFile(name,new Blob([QA.zip(b.files)],{type:"application/zip"})))toast(b.sheets===1?"Scaricato il piano di test con 1 scheda QA.":`Scaricato il piano di test con ${b.sheets} schede QA.`)};
 
 /* passo 7 */
 let logTimer=null;
