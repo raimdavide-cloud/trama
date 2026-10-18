@@ -2,12 +2,18 @@
    I testi restano scritti in italiano nel codice; in inglese un osservatore del DOM li sostituisce con il dizionario
    di i18n-en.js, cercando prima il testo esatto e poi il modello con numeri ({n}), nomi tra «» ({q}) e chiavi ({k}).
    I dati del progetto (requisiti, ticket, decisioni, documenti, messaggi della chat) non si traducono: si salta tutto
-   ciò che sta dentro [data-no-i18n], campi di testo e codice. Per controllare la copertura: window.I18N.missing. */
+   ciò che sta dentro [data-no-i18n], campi di testo e codice. Per controllare la copertura: window.I18N.missing.
+   La lingua si sceglie con lo switch (ricordata nel browser) o con ?lang=en nell'indirizzo, che rende indicizzabile la versione inglese.
+   Il dizionario può arrivare dopo: <script src="/i18n.js" data-dict="/dizionario.js"> lo carica solo se serve l'inglese.
+   In inglese la pagina resta invisibile finché non è tradotta, così non si vede l'italiano per un istante. */
 (() => {
   const KEY = "trama:lang";
   const read = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
-  const lang = read() === "en" ? "en" : "it";
-  const dict = (lang === "en" && window.TRAMA_EN) || { exact: {}, templates: {}, wild: {} };
+  const fromUrl = new URLSearchParams(location.search).get("lang");
+  if (fromUrl === "en" || fromUrl === "it") try { localStorage.setItem(KEY, fromUrl); } catch {}
+  const lang = (fromUrl || read()) === "en" ? "en" : "it";
+  const lazyDict = document.currentScript?.dataset.dict;
+  let dict = { exact: {}, templates: {}, wild: {} }, patterns = [];
   const ATTRS = ["placeholder", "aria-label", "title", "alt", "data-tip"];
   const SKIP = "script,style,textarea,input,code,pre,[contenteditable],[data-no-i18n]";
   const missing = new Set();
@@ -33,7 +39,7 @@
   // diventano espressioni regolari; il testo libero catturato si traduce a sua volta se possibile
   const GROUP = { n: "(\\d+(?:[.,:/]\\d+)*)", q: "«([^«»]*)»", k: "(\\b[A-Z][A-Z0-9]*-\\d+\\b)", "*": "(.+?)" };
   const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const patterns = [...Object.entries(dict.templates || {}), ...Object.entries(dict.wild || {})]
+  const compile = (d) => [...Object.entries(d.templates || {}), ...Object.entries(d.wild || {})]
     .filter(([k]) => k.includes("{*}"))
     .map(([k, v]) => {
       const types = [];
@@ -45,6 +51,8 @@
       }).join("");
       return { re: new RegExp("^" + src + "$"), types, v, strict: /^[{}*\s;,·:]+$/.test(k) }; // solo separatori: vale se ogni pezzo è tradotto
     });
+  const useDict = (d) => { dict = { exact: {}, templates: {}, wild: {}, ...d }; patterns = compile(dict); };
+  if (lang === "en" && window.TRAMA_EN) useDict(window.TRAMA_EN);
   function one(core) {
     const ex = dict.exact[core];
     if (ex !== undefined) return ex;
@@ -103,14 +111,31 @@
     missing,
     translate: translateTree,
     set(l) { try { localStorage.setItem(KEY, l); } catch {} },
+    // cambia lingua: ricorda la scelta e ricarica, togliendo ?lang dall'indirizzo perché non la sovrascriva
+    apply(l) { this.set(l); const u = new URL(location.href); if (u.searchParams.has("lang")) { u.searchParams.delete("lang"); location.replace(u); } else location.reload(); },
   };
   document.documentElement.lang = lang;
   const mark = () => document.querySelectorAll("[data-lang][role=menuitemradio]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.lang === lang)));
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", mark) : mark();
   if (lang !== "en") return;
+  // niente lampo d'italiano: la pagina compare quando è tradotta (al più tardi dopo 3 secondi)
+  const root = document.documentElement;
+  root.classList.add("i18n-wait");
+  const veil = document.createElement("style");
+  veil.textContent = "html.i18n-wait body{visibility:hidden}";
+  document.head.appendChild(veil);
+  const reveal = () => root.classList.remove("i18n-wait");
+  setTimeout(reveal, 3000);
   const start = () => {
     translateTree(document.body);
     document.title = t(document.title);
+    // descrizione e anteprime social nella lingua della pagina; l'indirizzo canonico della versione inglese è con ?lang=en
+    document.querySelectorAll('meta[name="description"],meta[property="og:title"],meta[property="og:description"],meta[property="og:image:alt"],meta[name="twitter:title"],meta[name="twitter:description"],meta[name="twitter:image:alt"]').forEach((m) => { const v = t(m.content); if (v !== m.content) m.content = v; });
+    const loc = document.querySelector('meta[property="og:locale"]');
+    if (loc) loc.content = "en_GB";
+    const can = document.querySelector('link[rel="canonical"]');
+    if (can && document.querySelector('link[hreflang="en"]')) can.href = document.querySelector('link[hreflang="en"]').href;
+    reveal();
     new MutationObserver((list) => {
       for (const m of list) {
         if (m.type === "childList") m.addedNodes.forEach(translateTree);
@@ -120,5 +145,13 @@
     }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
     new MutationObserver(() => { const v = t(document.title); if (v !== document.title) document.title = v; }).observe(document.querySelector("title"), { childList: true });
   };
-  document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", start) : start();
+  const whenReady = () => (document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", start) : start());
+  if (window.TRAMA_EN || !lazyDict) whenReady();
+  else {
+    const sc = document.createElement("script");
+    sc.src = lazyDict;
+    sc.onload = () => { if (window.TRAMA_EN) useDict(window.TRAMA_EN); whenReady(); };
+    sc.onerror = reveal; // senza dizionario la pagina resta in italiano, ma si vede
+    document.head.appendChild(sc);
+  }
 })();

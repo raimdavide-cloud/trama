@@ -20,7 +20,7 @@ if (arg) {
 const BASE = cfg.base, HOST = new URL(BASE).host;
 
 const PAGES = [
-  { file: "index.html", path: "/", og: "home", img: "trama-og.png", alt: "Trama: dal documento al backlog, con le regole.", ld: true, priority: "1.0" },
+  { file: "index.html", path: "/", og: "home", img: "trama-og.png", alt: "Trama: dal documento al backlog, con le regole.", ld: true, priority: "1.0", en: true }, // en: versione inglese con ?lang=en
   { file: "brand.html", path: "/brand", og: "brand", img: "trama-og-brand.png", alt: "Il marchio Trama: nome, logo, colori e tipografia.", priority: "0.4" },
   { file: "privacy.html", path: "/privacy", og: "privacy", img: "trama-og-privacy.png", alt: "Come Trama tratta i dati personali.", priority: "0.3" },
   { file: "installazione.html", path: "/installazione", og: "install", img: "trama-og-install.png", alt: "Collega Claude a Trama sul tuo computer: la guida per i colleghi.", priority: "0.6" },
@@ -64,7 +64,7 @@ console.log("icone e manifest");
 // 3. robots.txt e sitemap.xml
 writeFileSync(join(PUB, "robots.txt"), `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${BASE}/sitemap.xml\n`);
 writeFileSync(join(PUB, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-  PAGES.filter((p) => !p.noindex).map((p) => `  <url>\n    <loc>${BASE}${p.path === "/" ? "/" : p.path}</loc>\n    <lastmod>${cfg.lastmod}</lastmod>\n    <priority>${p.priority}</priority>\n  </url>\n`).join("") + `</urlset>\n`);
+  PAGES.filter((p) => !p.noindex).flatMap((p) => [p.path, ...(p.en ? [p.path + "?lang=en"] : [])].map((path) => `  <url>\n    <loc>${BASE}${path}</loc>\n    <lastmod>${cfg.lastmod}</lastmod>\n    <priority>${p.priority}</priority>\n  </url>\n`)).join("") + `</urlset>\n`);
 console.log("robots.txt, sitemap.xml");
 
 // 4. Blocco SEO nell'<head> di ogni pagina (tra i marcatori; titolo e descrizione si leggono dalla pagina stessa)
@@ -89,8 +89,11 @@ for (const p of PAGES) {
   if (p.noindex) lines.push(`<meta name="robots" content="noindex,nofollow">`);
   else {
     const img = `${BASE}/og/${p.img}?v=${cfg.ogVersion}`;
-    lines.push(`<link rel="canonical" href="${url}">`, `<meta name="robots" content="index,follow,max-image-preview:large">`,
-      `<meta property="og:type" content="website">`, `<meta property="og:site_name" content="${cfg.name}">`, `<meta property="og:locale" content="${cfg.locale}">`,
+    lines.push(`<link rel="canonical" href="${url}">`);
+    // versione inglese: stessa pagina con ?lang=en (i18n.js la traduce e sposta lì il canonico)
+    if (p.en) lines.push(`<link rel="alternate" hreflang="it" href="${url}">`, `<link rel="alternate" hreflang="en" href="${url}?lang=en">`, `<link rel="alternate" hreflang="x-default" href="${url}">`);
+    lines.push(`<meta name="robots" content="index,follow,max-image-preview:large">`,
+      `<meta property="og:type" content="website">`, `<meta property="og:site_name" content="${cfg.name}">`, `<meta property="og:locale" content="${cfg.locale}">`, ...(p.en ? [`<meta property="og:locale:alternate" content="en_GB">`] : []),
       `<meta property="og:title" content="${title}">`, `<meta property="og:description" content="${desc}">`, `<meta property="og:url" content="${url}">`,
       `<meta property="og:image" content="${img}">`, `<meta property="og:image:type" content="image/png">`, `<meta property="og:image:width" content="1200">`, `<meta property="og:image:height" content="630">`, `<meta property="og:image:alt" content="${esc(p.alt)}">`,
       `<meta name="twitter:card" content="summary_large_image">`, `<meta name="twitter:title" content="${title}">`, `<meta name="twitter:description" content="${desc}">`, `<meta name="twitter:image" content="${img}">`, `<meta name="twitter:image:alt" content="${esc(p.alt)}">`);

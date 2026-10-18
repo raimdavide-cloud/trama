@@ -63,6 +63,14 @@ test("una sessione inesistente o malformata non entra", async () => {
   assert.equal((await r.json()).user.accountId, "u1");
 });
 
+test("homepage: /api/me?quiet=1 senza sessione risponde 200 con user null, senza svelare nulla", async () => {
+  const q = await call("/api/me?quiet=1", { sid: "c".repeat(64) });
+  assert.equal(q.status, 200);
+  assert.deepEqual(await q.json(), { ok: true, user: null });
+  assert.equal((await call("/api/me?quiet=1", { sid: "c".repeat(64), method: "DELETE", origin: "https://trama.example" })).status, 401, "solo in lettura");
+  assert.equal((await (await call("/api/me?quiet=1")).json()).user.accountId, "u1", "con la sessione risponde come sempre");
+});
+
 test("si vedono solo i progetti dei propri siti Atlassian", async () => {
   const mine = await (await call("/api/projects")).json();
   assert.deepEqual(mine.projects.map((p) => p.id), ["p1"]);

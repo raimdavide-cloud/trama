@@ -3,7 +3,8 @@ import { erasePerson } from "../lib/privacy.mjs";
 
 export default async (req) => {
   const user = await getUser(req);
-  if (!user) return fail("unauthenticated", "Accedi con Atlassian.", 401);
+  // ?quiet=1 (homepage): chi non ha fatto l'accesso riceve 200 con user null, senza un errore in console per ogni visitatore
+  if (!user) return req.method === "GET" && new URL(req.url).searchParams.get("quiet") === "1" ? json({ ok: true, user: null }) : fail("unauthenticated", "Accedi con Atlassian.", 401);
   // Cancellazione dei propri dati personali (account, token, sessioni). I progetti restano, senza riferimento all'autore.
   if (req.method === "DELETE") {
     if (!sameOrigin(req)) return fail("forbidden", "Richiesta non consentita: ricarica la pagina e riprova.", 403);
