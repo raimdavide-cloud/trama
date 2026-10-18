@@ -61,6 +61,35 @@ test("inglese: nessun testo dell'interfaccia resta in italiano, in tutti i passi
   await page.locator("#rulesBtn").click();
   await page.locator("[data-act=closeRules]").click();
   await page.locator("#chatFab").click();
+  // selezione dei ticket, menu «Esporta», scheda Qualità e kit da un modello
+  await page.evaluate(() => A.go({ dataset: { i: STEPS.findIndex((x) => x.id === "backlog") } }));
+  await page.locator(".t-pick").first().check();
+  await page.locator(".exp-btn").click();
+  await page.keyboard.press("Escape");
+  await page.locator("[data-act=bTab][data-tab=quality]").click();
+  await page.evaluate(() => A.go({ dataset: { i: STEPS.findIndex((x) => x.id === "kit") } }));
+  await page.locator("[data-act=kitImport]").click();
+  await page.locator("#kiSrc").selectOption("tpl:iot");
+  await page.keyboard.press("Escape");
+  // ticket «da aggiornare» e «da rivedere», con una collega che lo guarda e lo ha appena cambiato
+  await page.evaluate(() => {
+    const t = ticketList()[0];
+    put("tickets", t.id, { ...S.tickets[t.id], state: "created", key: "COM-1", pushed: { summary: "old", desc: "", labels: [], epic: "" }, review: { why: `il requisito ${t.req} è cambiato in «v2.md» (release).`, at: Date.now() } });
+    S.presence = { ...S.presence, laura: { name: "Laura Bianchi", at: Date.now(), step: "backlog", stepName: "Backlog", panel: "ticket:" + t.id, panelRef: t.ref } };
+    (T.remote ||= {})[t.id] = { by: "laura", at: Date.now() };
+    A.go({ dataset: { i: STEPS.findIndex((x) => x.id === "backlog") } });
+    T.panel = { kind: "ticket", id: t.id }; render(); renderPresence();
+  });
+  await page.keyboard.press("Escape");
+  // confronto con una nuova versione del documento (risposta di Tessa simulata)
+  await page.evaluate(async () => {
+    const r = reqList(); window.ask = async () => ({ requirements: [{ sameAs: r[0].code, title: r[0].title, release: "Release 9" }, { sourceId: "RF-999", title: "New one" }] });
+    SAMPLE = SAMPLE || { ok: true };
+    A.go({ dataset: { i: STEPS.findIndex((x) => x.id === "reqs") } });
+    await A.compareDoc({ dataset: { id: arr("docs")[0].id } });
+  });
+  await expect(page.locator(".sp")).toBeVisible();
+  await page.keyboard.press("Escape");
   await emptyReqs(page);
   await page.evaluate(() => A.go({ dataset: { i: STEPS.findIndex((x) => x.id === "reqs") } }));
   await page.waitForTimeout(300);

@@ -98,7 +98,7 @@ test("Domande di apertura: si eliminano dalla riga chiusa, una o in gruppo, senz
   await expect(first.locator(".q-del")).toHaveText("Elimina?");
   await expect(page.locator(`#main details.item[data-k="q-${id}"]`)).not.toHaveAttribute("open", "");
   await first.locator(".q-del").click();
-  await expect(page.locator("#toast")).toHaveText("Domanda eliminata.");
+  await expect(page.locator("#toast")).toContainText("Domanda eliminata.");
   await expect(rows).toHaveCount(n - 1);
   await expect(page.locator(`#main details.item[data-k="q-${id}"]`)).toHaveCount(0);
 
@@ -121,7 +121,7 @@ test("Domande di apertura: si eliminano dalla riga chiusa, una o in gruppo, senz
   await del.click();
   await expect(del).toHaveText("Conferma: elimina 2 domande");
   await del.click();
-  await expect(page.locator("#toast")).toHaveText("2 domande eliminate.");
+  await expect(page.locator("#toast")).toContainText("2 domande eliminate.");
   await expect(rows).toHaveCount(n - 3);
   await expect(page.locator("#main .q-bar")).toHaveCount(0);
   expect(await page.evaluate(() => arr("questions").length)).toBe(n - 3);
@@ -189,7 +189,9 @@ test("Esportazioni CSV: requisiti, ticket e decisioni con intestazione e una rig
   const csv = async (step, file, sec) => {
     await goToStep(page, step);
     if (sec) await openSec(page, sec);
-    const [dl] = await Promise.all([page.waitForEvent("download"), page.locator(`[data-act=${file}]`).first().click()]);
+    const item = page.locator(`[data-act=${file}]`).first();
+    if (!(await item.isVisible())) await page.locator(".exp-btn").click(); // nel Backlog le esportazioni stanno nel menu «Esporta»
+    const [dl] = await Promise.all([page.waitForEvent("download"), item.click()]);
     const text = await (await dl.createReadStream()).toArray().then((c) => Buffer.concat(c).toString("utf8"));
     return { name: dl.suggestedFilename(), lines: text.replace(/^﻿/, "").split("\r\n") };
   };
@@ -357,6 +359,7 @@ test("Scheda QA: dal pannello del ticket si vede, si copia e si scarica; dalla l
   expect(md.suggestedFilename()).toMatch(/^(COM-\d+|T-\d+)-[a-z0-9-]+\.md$/);
   await expect(page.locator("#toast")).toHaveText("Scheda QA scaricata.");
   await page.keyboard.press("Escape");
+  await page.locator(".exp-btn").click();
   const [zip] = await Promise.all([page.waitForEvent("download"), page.locator("[data-act=qaZip]").click()]);
   expect(zip.suggestedFilename()).toBe("schede-qa-mvp-pilota.zip");
   await expect(page.locator("#toast")).toHaveText(/Scaricato il piano di test con \d+ schede QA\./);

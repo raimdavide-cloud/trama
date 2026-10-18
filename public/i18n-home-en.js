@@ -247,7 +247,7 @@ exact: {
 "Chi vede i miei progetti?": "Who can see my projects?",
 "Chi ha accesso allo stesso sito Atlassian. Ogni progetto è legato al sito su cui lavora.": "Anyone with access to the same Atlassian site. Each project is tied to the site it works on.",
 "Come elimino un backlog di prova?": "How do I delete a test backlog?",
-"Trama non cancella nulla in Jira. Ti prepara la query esatta con i soli ticket creati, da eliminare in blocco in Jira, poi si riallinea con «Sincronizza con Jira».": "Trama deletes nothing in Jira. It prepares the exact query with only the tickets it created, to bulk delete in Jira, then realigns with “Sync with Jira”.",
+"Trama non cancella nulla in Jira. Ti prepara la query esatta con i soli ticket creati, da eliminare in blocco in Jira, poi si riallinea con «Sincronizza e verifica».": "Trama deletes nothing in Jira. It prepares the exact query with only the tickets it created, to bulk delete in Jira, then realigns with “Sync and verify”.",
 "Quali documenti posso caricare?": "Which documents can I upload?",
 "Word, PDF, Excel, CSV, testo, Markdown e immagini. Le immagini (frame di design, screenshot, foto di lavagne) vengono trascritte da Claude.": "Word, PDF, Excel, CSV, text, Markdown and images. Images (design frames, screenshots, whiteboard photos) are transcribed by Claude.",
 "Posso usarlo da telefono o tablet?": "Can I use it on a phone or tablet?",

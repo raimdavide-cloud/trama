@@ -19,7 +19,8 @@ function fakeSql() {
     if (/from sessions s join users u/.test(q)) return db.sessions[v[0]] ? [db.users[db.sessions[v[0]]]] : [];
     if (/^select \* from projects where id = \? and cloud_id = any/.test(q)) { const p = db.projects[v[0]]; return p && v[1].includes(p.cloud_id) ? [p] : []; }
     if (/^select clock_timestamp/.test(q)) return [{ now: "2026-10-16T08:00:00.000Z" }];
-    if (/^select col, id, data, deleted from items/.test(q)) return db.items.filter((i) => i.project_id === v[0]);
+    if (/^select col, id, data, deleted, updated_by from items/.test(q)) return db.items.filter((i) => i.project_id === v[0]).map((i) => ({ ...i, updated_by: i.by }));
+    if (/^delete from items where project_id = \? and col = 'presence' and updated_at < now\(\) - interval '1 day'$/.test(q)) { db.presenceCleanups = (db.presenceCleanups || 0) + 1; return []; }
     if (/^select data, deleted from items where project_id = \? and col = \? and id = \?$/.test(q)) return db.items.filter((i) => i.project_id === v[0] && i.col === v[1] && i.id === v[2]).slice(-1);
     if (/^insert into items .* jsonb_to_recordset/.test(q)) { for (const r of JSON.parse(v[2])) db.items.push({ project_id: v[0], col: r.col, id: r.id, data: r.data, deleted: r.data === null, by: v[1] }); return []; }
     if (/^insert into items .* 'meta', 'project'/.test(q)) { db.items.push({ project_id: v[0], col: "meta", id: "project", data: JSON.parse(v[1]), by: v[2] }); return []; }
@@ -225,4 +226,16 @@ test("l'impronta non dipende dall'ordine delle chiavi (Postgres le riordina) ma 
   assert.equal(fingerprint({ a: 1, b: { c: [1, "x"], d: null } }), fingerprint({ b: { d: null, c: [1, "x"] }, a: 1 }));
   assert.notEqual(fingerprint({ text: "abc" }), fingerprint({ text: "abd" }));
   assert.equal(fingerprint({ a: 1, u: undefined }), fingerprint({ a: 1 }));
+});
+
+test("presenza: si salva come gli altri elementi, non cambia la data del progetto e pulisce i battiti vecchi; ogni elemento dice chi l'ha cambiato", async () => {
+  const r = await put("/api/projects/p1/items/presence/u1", { name: "Uno", at: 1, step: "backlog" }, { origin: "https://trama.example" });
+  assert.equal(r.status, 200);
+  assert.equal(db.presenceCleanups, 1);
+  assert.ok(!db.log.some((q) => /^update projects set updated_at/.test(q)), "la data del progetto non cambia");
+  await put("/api/projects/p1/items/tickets/t1", { ref: "T-001" }, { origin: "https://trama.example", sid: SID2 });
+  const items = (await (await call("/api/projects/p1")).json()).items;
+  assert.equal(items.find((i) => i.col === "presence").by, "u1");
+  assert.equal(items.find((i) => i.col === "tickets").by, "u2");
+  assert.equal((await put("/api/projects/p1/items/presenza/u1", {}, { origin: "https://trama.example" })).status, 400, "raccolta sconosciuta");
 });

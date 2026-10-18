@@ -121,10 +121,11 @@
             if (BS.isLazy(it.data) && cur !== undefined && !BS.isLazy(cur) && BS.fingerprint(cur) === it.data._lazy.v) continue;
             apply(it.col, it.id, it.data);
             changed.add(it.col);
+            BS.onRemote?.(it.col, it.id, it.by || "");
           }
         }
         changed.forEach(notify);
-        if (changed.size) lastActive = Date.now(); // qualcuno sta lavorando: si resta rapidi
+        if ([...changed].some((c) => c !== "presence")) lastActive = Date.now(); // qualcuno sta lavorando: si resta rapidi (i battiti di presenza non contano)
         BS.onSync?.(true);
       } catch (e) {
         BS.onSync?.(false, e);

@@ -74,7 +74,7 @@ createServer(async (req, res) => {
     let m;
     if ((m = p.match(/^\/api\/projects\/([^/]+)$/)) && req.method === "GET") {
       const since = Number(url.searchParams.get("since") ? Date.parse(url.searchParams.get("since")) : 0) - 3000;
-      const items = [...store.values()].filter((v) => (since > 0 ? v.at > since : !v.deleted)).map((v) => lighten({ col: v.col, id: v.id, data: v.deleted ? {} : v.data, deleted: v.deleted }));
+      const items = [...store.values()].filter((v) => (since > 0 ? v.at > since : !v.deleted)).map((v) => ({ ...lighten({ col: v.col, id: v.id, data: v.deleted ? {} : v.data, deleted: v.deleted }), by: v.by || "" }));
       return send(res, 200, { ok: true, now: new Date().toISOString(), project: { id: fixture.project.id, name: fixture.project.name, cloudId: fixture.project.cloud_id, siteUrl: fixture.project.site_url, createdBy: user.account_id }, items });
     }
     if ((m = p.match(/^\/api\/projects\/([^/]+)\/items\/([^/]+)\/([^/]+)$/))) {
@@ -85,7 +85,7 @@ createServer(async (req, res) => {
         return send(res, 200, { ok: true, item: { col: v.col, id: v.id, data: v.data, v: fingerprint(v.data) } });
       }
       if (req.method === "PUT" && isPlaceholder(JSON.parse(raw))) return send(res, 409, { ok: false, code: "placeholder", message: "Contenuto non caricato: il documento completo non è stato sovrascritto." });
-      if (req.method === "PUT") store.set(key, { col: m[2], id: decodeURIComponent(m[3]), data: JSON.parse(raw), deleted: false, at: Date.now() });
+      if (req.method === "PUT") store.set(key, { col: m[2], id: decodeURIComponent(m[3]), data: JSON.parse(raw), deleted: false, at: Date.now(), by: req.headers["x-sim-by"] || user.account_id });
       else if (store.has(key)) Object.assign(store.get(key), { deleted: true, data: {}, at: Date.now() });
       return send(res, 200, { ok: true });
     }

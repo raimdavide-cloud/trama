@@ -507,3 +507,36 @@ html[lang="it"] .lang-btn [data-flag="en"],html[lang="en"] .lang-btn [data-flag=
 .qa-gaps{margin:0 0 10px;padding-left:18px}
 .qa-pre{margin:0;max-height:320px;overflow:auto;padding:12px 14px;background:var(--sunk);border-radius:var(--r-m);font:12.5px/1.55 var(--f-mono);white-space:pre-wrap;word-break:break-word}
 .qa-pre:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+
+/* «Annulla» nel toast */
+#toast:not([hidden]){display:flex;align-items:center;gap:14px}
+.toast-undo{background:none;border:0;padding:0;color:inherit;font:700 14px var(--f-body);text-decoration:underline;cursor:pointer}
+.toast-undo:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+/* ticket: ricerca, caselle di selezione e barra delle modifiche in blocco */
+.t-search{min-width:240px;max-width:320px}
+.dt .dt-ck{width:44px;text-align:center;padding-left:8px;padding-right:8px}
+.t-bar select,.t-bar input{width:auto;min-width:0;max-width:200px}
+.ki-parts{border:0;padding:0;margin:12px 0 0;display:grid;gap:6px}
+.ki-parts legend{font-weight:600;margin-bottom:4px;padding:0}
+
+.ki-parts label{flex-wrap:nowrap;align-items:flex-start}
+.ki-parts label input{margin-top:2px}
+.exp-btn{border:1px solid var(--line);background:var(--surface);font-weight:600;padding:7px 12px}
+.exp-btn .chev{width:12px;height:12px}
+.exp-dd .dd-menu{min-width:260px}
+.push-box{margin:0 0 16px;padding:0 0 14px;border-bottom:1px solid var(--line)}
+.push-box .h-sub{margin:0 0 6px;font:700 15px var(--f-display)}
+/* confronto con una nuova versione del documento */
+.dd-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.dd-row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.45}
+.dd-row input{margin-top:3px}
+.dd-f{display:block;margin-top:3px;color:var(--muted)}
+.dd-f del{color:var(--err);text-decoration:line-through}
+.dd-f ins{color:var(--ok);text-decoration:none;font-weight:600}
+/* presenza dei colleghi */
+.presence{display:flex;align-items:center;margin-left:6px}
+.pres-av{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent-text);font:700 11.5px var(--f-body);border:2px solid var(--surface);margin-left:-6px}
+.pres-av:first-of-type{margin-left:0}
+.pres-av.more{background:var(--sunk);color:var(--muted)}
+.pres-av.sm{width:22px;height:22px;font-size:10px;margin-left:0;margin-right:4px;vertical-align:middle}
+.peers{margin:0 0 10px}
