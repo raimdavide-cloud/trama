@@ -151,18 +151,31 @@ document.querySelector(".tabs").addEventListener("click",e=>{const t=e.target.cl
 fetch("/api/me?quiet=1",{credentials:"same-origin"}).then(r=>r.ok?r.json():null).then(me=>{if(!me?.user)return;
  for(const id of ["ctaMain","ctaBand"]){const a=document.getElementById(id);if(!a)continue;a.href="/studio";const s=a.querySelector("span")||a;s.textContent="Apri i tuoi progetti"}}).catch(()=>{});
 
-/* Aggancio morbido: quando lo scorrimento si ferma a meno di 140 px dall'inizio di una sezione, la pagina la allinea sotto l'header.
-   Solo verso l'inizio delle sezioni (mai verso la fine: nelle sezioni lunghe si scorre liberamente), solo dopo rotella, trackpad o
-   tasti di scorrimento (non dopo i link del menu), mai in fondo alla pagina e mai per chi ha chiesto meno animazioni. */
-{const PAD=62,NEAR=140,reduce=matchMedia("(prefers-reduced-motion: reduce)"),KEYS=new Set(["PageDown","PageUp","ArrowDown","ArrowUp"," ","Home","End"]);
- let user=false,timer=null;
- const mark=()=>{user=true}; // ogni gesto conta, anche durante un aggancio
- addEventListener("wheel",mark,{passive:true});addEventListener("touchmove",mark,{passive:true});
- addEventListener("keydown",e=>{if(KEYS.has(e.key)&&!e.target.closest?.("input,textarea,select,[contenteditable]"))mark()});
- const settle=()=>{if(!user||reduce.matches)return;user=false;
-  const y=scrollY,max=document.documentElement.scrollHeight-innerHeight;if(y>=max-2)return;
-  const pts=[0,...[...document.querySelectorAll("section[id],section.band")].map(s=>Math.round(s.getBoundingClientRect().top+y-PAD))]; // le sezioni del menu e la banda finale
-  const best=pts.reduce((b,p)=>Math.abs(p-y)<Math.abs(b-y)?p:b,Infinity);
-  if(Math.abs(best-y)>1&&Math.abs(best-y)<=NEAR)scrollTo({top:best,behavior:"smooth"})};
- // fine dello scorrimento: 160 ms senza movimento (anche con l'inerzia del trackpad; «scrollend» non arriva sempre)
- addEventListener("scroll",()=>{clearTimeout(timer);timer=setTimeout(settle,160)},{passive:true});}
+/* Aggancio morbido. Quando lo scorrimento (rotella, trackpad, tasti) finisce vicino all'inizio di una sezione, la pagina la porta
+   appena sotto l'header. Regole, per non dare mai la sensazione di essere trattenuti:
+   - segue la direzione: aggancia la sezione verso cui si stava andando (fino a 160 px); all'indietro solo se ci si è fermati a meno di 40 px;
+   - aspetta la fine dell'inerzia del trackpad: parte solo dopo 150 ms senza colpi di rotella e senza movimento;
+   - animazione propria, 200–380 ms con frenata morbida, che si interrompe al primo gesto nuovo;
+   - mai dopo i link del menu, mai in fondo alla pagina, mai per chi ha chiesto meno animazioni.
+   Le posizioni delle sezioni si calcolano una volta e si aggiornano solo quando la pagina cambia dimensione. */
+{const PAD=62,AHEAD=160,BACK=40,IDLE=150,reduce=matchMedia("(prefers-reduced-motion: reduce)"),NAV=new Set(["PageDown","PageUp","ArrowDown","ArrowUp"," ","Home","End"]);
+ let pts=[0],user=false,lastInput=0,lastY=scrollY,dir=0,timer=null,anim=0;
+ const measure=()=>{const y=scrollY;pts=[0,...[...document.querySelectorAll("section[id],section.band")].map(s=>Math.round(s.getBoundingClientRect().top+y-PAD))]};
+ new ResizeObserver(measure).observe(document.body);measure();
+ const stop=()=>{if(anim){cancelAnimationFrame(anim);anim=0}};
+ const input=()=>{stop();user=true;lastInput=performance.now()};
+ addEventListener("wheel",input,{passive:true});addEventListener("touchstart",input,{passive:true});addEventListener("touchmove",input,{passive:true});
+ addEventListener("keydown",e=>{if(NAV.has(e.key)&&!e.target.closest?.("input,textarea,select,button,[contenteditable]"))input()});
+ const ease=t=>1-Math.pow(1-t,3);
+ // se la pagina si sposta per altro (un link del menu, la barra di scorrimento) l'animazione si ferma: non la riporta mai indietro
+ function glide(to){const from=scrollY,dist=to-from,dur=Math.min(380,Math.max(200,Math.abs(dist)*1.6)),t0=performance.now();let at=from;
+  const step=now=>{if(Math.abs(scrollY-at)>2){anim=0;return}const t=Math.min(1,(now-t0)/dur);at=Math.round(from+dist*ease(t));scrollTo({top:at,behavior:"instant"});anim=t<1?requestAnimationFrame(step):0};anim=requestAnimationFrame(step)}
+ function settle(){timer=null;if(anim||!user||reduce.matches)return;
+  const wait=IDLE-(performance.now()-lastInput);if(wait>0){timer=setTimeout(settle,wait);return} // l'inerzia sta ancora arrivando
+  user=false;const y=Math.round(scrollY),max=document.documentElement.scrollHeight-innerHeight;if(y>=max-2||y<=0)return;
+  let best=null;
+  for(const p of pts){const d=p-y;if(Math.abs(d)<=1)return; // già allineata
+   const ok=dir>0?d>0&&d<=AHEAD:dir<0?d<0&&-d<=AHEAD:false;
+   if((ok||Math.abs(d)<=BACK)&&(best==null||Math.abs(d)<Math.abs(best-y)))best=p}
+  if(best!=null)glide(best)}
+ addEventListener("scroll",()=>{const y=scrollY;if(!anim&&y!==lastY)dir=Math.sign(y-lastY);lastY=y;clearTimeout(timer);timer=setTimeout(settle,IDLE)},{passive:true});}
