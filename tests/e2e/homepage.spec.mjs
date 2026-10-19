@@ -65,3 +65,43 @@ test("demo: nell'hero il percorso breve dal documento a Jira, tra i capitoli la 
   const text = await page.locator("body").innerText();
   expect(text).not.toMatch(/Claude (legge|estrae|lo legge|scompone)|Chiedi a Claude|proposte di Claude|trascritte da Claude/);
 });
+
+test("aggancio morbido: fermandosi vicino all'inizio di una sezione la pagina la allinea; dentro le sezioni lunghe e senza rotella niente scatti", async ({ page }) => {
+  await page.goto("/");
+  await page.mouse.move(700, 450);
+  const startOf = (id) => page.evaluate((id) => Math.round(document.getElementById(id).getBoundingClientRect().top + scrollY) - 62, id);
+  const settle = () => page.waitForTimeout(900);
+  const y = () => page.evaluate(() => Math.round(scrollY));
+  // 100 px prima di «Vantaggi», poi un colpo di rotella: si aggancia all'inizio della sezione
+  const v = await startOf("vantaggi");
+  await page.evaluate((t) => scrollTo({ top: t, behavior: "instant" }), v - 150);
+  await page.mouse.wheel(0, 50);
+  await expect.poll(y, { timeout: 4000 }).toBe(v);
+  // appena oltre l'inizio di «Regole» (scorrendo verso l'alto): torna all'inizio
+  const r = await startOf("regole");
+  await page.evaluate((t) => scrollTo({ top: t, behavior: "instant" }), r + 140);
+  await page.mouse.wheel(0, -50);
+  await expect.poll(y, { timeout: 4000 }).toBe(r);
+  // a metà di una sezione lunga si resta dove si è
+  await page.evaluate((t) => scrollTo({ top: t, behavior: "instant" }), r + 250);
+  await page.mouse.wheel(0, 50);
+  await settle();
+  expect(await y()).toBe(r + 300);
+  // senza rotella (per esempio un link) niente aggancio
+  await page.evaluate((t) => scrollTo({ top: t, behavior: "instant" }), v - 100);
+  await settle();
+  expect(await y()).toBe(v - 100);
+});
+
+test("aggancio morbido: spento per chi chiede meno animazioni", async ({ browser }) => {
+  const ctx = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 1440, height: 900 } });
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await page.mouse.move(700, 450);
+  const v = await page.evaluate(() => Math.round(document.getElementById("vantaggi").getBoundingClientRect().top + scrollY) - 62);
+  await page.evaluate((t) => scrollTo({ top: t, behavior: "instant" }), v - 150);
+  await page.mouse.wheel(0, 50);
+  await page.waitForTimeout(900);
+  expect(await page.evaluate(() => Math.round(scrollY))).toBe(v - 100);
+  await ctx.close();
+});

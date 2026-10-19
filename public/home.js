@@ -150,3 +150,19 @@ document.querySelector(".tabs").addEventListener("click",e=>{const t=e.target.cl
 /* Chi ha già fatto l'accesso va dritto ai suoi progetti */
 fetch("/api/me?quiet=1",{credentials:"same-origin"}).then(r=>r.ok?r.json():null).then(me=>{if(!me?.user)return;
  for(const id of ["ctaMain","ctaBand"]){const a=document.getElementById(id);if(!a)continue;a.href="/studio";const s=a.querySelector("span")||a;s.textContent="Apri i tuoi progetti"}}).catch(()=>{});
+
+/* Aggancio morbido: quando lo scorrimento si ferma a meno di 140 px dall'inizio di una sezione, la pagina la allinea sotto l'header.
+   Solo verso l'inizio delle sezioni (mai verso la fine: nelle sezioni lunghe si scorre liberamente), solo dopo rotella, trackpad o
+   tasti di scorrimento (non dopo i link del menu), mai in fondo alla pagina e mai per chi ha chiesto meno animazioni. */
+{const PAD=62,NEAR=140,reduce=matchMedia("(prefers-reduced-motion: reduce)"),KEYS=new Set(["PageDown","PageUp","ArrowDown","ArrowUp"," ","Home","End"]);
+ let user=false,timer=null;
+ const mark=()=>{user=true}; // ogni gesto conta, anche durante un aggancio
+ addEventListener("wheel",mark,{passive:true});addEventListener("touchmove",mark,{passive:true});
+ addEventListener("keydown",e=>{if(KEYS.has(e.key)&&!e.target.closest?.("input,textarea,select,[contenteditable]"))mark()});
+ const settle=()=>{if(!user||reduce.matches)return;user=false;
+  const y=scrollY,max=document.documentElement.scrollHeight-innerHeight;if(y>=max-2)return;
+  const pts=[0,...[...document.querySelectorAll("section[id],section.band")].map(s=>Math.round(s.getBoundingClientRect().top+y-PAD))]; // le sezioni del menu e la banda finale
+  const best=pts.reduce((b,p)=>Math.abs(p-y)<Math.abs(b-y)?p:b,Infinity);
+  if(Math.abs(best-y)>1&&Math.abs(best-y)<=NEAR)scrollTo({top:best,behavior:"smooth"})};
+ // fine dello scorrimento: 160 ms senza movimento (anche con l'inerzia del trackpad; «scrollend» non arriva sempre)
+ addEventListener("scroll",()=>{clearTimeout(timer);timer=setTimeout(settle,160)},{passive:true});}

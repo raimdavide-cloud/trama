@@ -17,11 +17,14 @@
 <style>
 /* Layout: hero con demo animata, poi una sezione per domanda: perché (vantaggi per ruolo), come (passi, demo, esempi, regole), fiducia (sicurezza, FAQ). Una sola banda scura in chiusura. */
 /* header fisso: si compatta dopo i primi pixel di scorrimento */
-.site-top{position:sticky;top:0;z-index:50;background:var(--bg);transition:box-shadow .2s}
+/* header sopra la pagina (fixed) con uno spazio fisso sotto: compattarlo non sposta il contenuto */
+.site-top{position:fixed;top:0;left:0;right:0;z-index:50;background:var(--bg);transition:box-shadow .2s}
+.top-space{height:78px}
 .site-top.scrolled{box-shadow:0 1px 0 var(--line),0 8px 24px rgba(20,27,71,.06)}
 nav.top{display:flex;align-items:center;gap:28px;padding-block:18px;transition:padding .2s}
 .site-top.scrolled nav.top{padding-block:10px}
-section[id]{scroll-margin-top:72px}
+/* i link del menu portano la sezione appena sotto l'header fisso (compatto: 62 px); l'aggancio morbido allo scorrimento sta in home.js */
+html{scroll-padding-top:62px}
 @media(prefers-reduced-motion:reduce){.site-top,nav.top{transition:none}}
 nav.top .btn{min-height:42px;padding:0 16px;font-size:15px}
 nav.top{gap:12px}
@@ -269,6 +272,7 @@ footer a{color:var(--muted)}
     <a class="btn primary" href="/studio">Apri Trama</a>
   </nav>
 </div></div>
+<div class="top-space" aria-hidden="true"></div>
 <div class="wrap">
 
   <header class="hero">
