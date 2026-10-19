@@ -24,6 +24,10 @@ function fakeSql() {
     }
     if (/^update users set reported_at/.test(q)) return [];
     if (/^update items set updated_by = null/.test(q) || /^delete from items where col = 'presence'/.test(q) || /^update projects set created_by = null/.test(q)) return [];
+    if (/^update items set data = '\{\}'::jsonb, updated_by = null, updated_at = clock_timestamp\(\) where col = 'meta' and id = 'lock' and data->>'account' = \?$/.test(q)) {
+      for (const it of db.items) if (it.col === "meta" && it.id === "lock" && it.data.account === v[0]) it.data = {};
+      return [];
+    }
     if (/^delete from users where account_id/.test(q)) { delete db.users[v[0]]; db.erased.push(v[0]); return []; }
     throw new Error(`query non prevista dal test: ${q}`);
   };
@@ -34,6 +38,7 @@ const json = (status, data) => new Response(JSON.stringify(data), { status, head
 beforeEach(async () => {
   db = {
     erased: [],
+    items: [],
     rep: { account_id: "rep", access_token: await core.seal("token-rep"), expires_at: new Date(Date.now() + 3600e3).toISOString(), refresh_token: "x", sites: SITI },
     users: { u1: { account_id: "u1", name: "Anna", email: "anna@esempio.it", picture: "https://foto/anna" } },
   };
@@ -101,4 +106,14 @@ test("solo «closed» nel report cancella l'account", async () => {
   assert.deepEqual(db.erased, ["u1"]);
   assert.equal(r.closed, 1);
   assert.equal(profileCalls().length, 0);
+});
+
+test("la cancellazione svuota il lock di Jira rimasto con il nome dell'account, non quello di un altro", async () => {
+  db.items = [
+    { col: "meta", id: "lock", project: "p1", data: { by: "scheda-1", account: "u1", name: "Anna", kind: "create", until: 1 } },
+    { col: "meta", id: "lock", project: "p2", data: { by: "scheda-2", account: "u2", name: "Bruno", kind: "push", until: 1 } },
+  ];
+  report = [{ accountId: "u1", status: "closed" }];
+  await runPrivacyReport({ force: true });
+  assert.deepEqual(db.items.map((i) => i.data), [{}, { by: "scheda-2", account: "u2", name: "Bruno", kind: "push", until: 1 }]);
 });

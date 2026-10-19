@@ -30,6 +30,8 @@ async function reporter() {
 export async function erasePerson(accountId) {
   await sql`update items set updated_by = null where updated_by = ${accountId}`;
   await sql`delete from items where col = 'presence' and id = ${presenceId(accountId)}`; // il nome mostrato ai colleghi
+  // il lock di Jira lasciato da una scheda chiusa male porta nome e account di chi lavorava: si svuota come al rilascio
+  await sql`update items set data = '{}'::jsonb, updated_by = null, updated_at = clock_timestamp() where col = 'meta' and id = 'lock' and data->>'account' = ${accountId}`;
   await sql`update projects set created_by = null where created_by = ${accountId}`;
   await sql`delete from users where account_id = ${accountId}`; // le sessioni si cancellano a cascata
 }
