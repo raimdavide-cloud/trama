@@ -24,7 +24,7 @@
   const yamlStr = (s) => (/^[\w .\-/()àèéìòù]*$/i.test(String(s ?? "")) ? String(s ?? "") : JSON.stringify(String(s ?? "")));
   const yamlList = (a) => "[" + (a || []).map(yamlStr).join(", ") + "]";
   const slug = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "senza-nome";
-  const mentions = (hay, codes) => codes.filter(Boolean).some((c) => new RegExp("(^|[^A-Za-z0-9-])" + c.replace(/[-]/g, "\\-") + "(?![A-Za-z0-9-]|-\\d)").test(hay));
+  const mentions = (hay, codes) => codes.filter(Boolean).some((c) => new RegExp("(^|[^A-Za-z0-9-])" + c.replace(/[.*+?^${}()|[\]\\\/-]/g, "\\$&") + "(?![A-Za-z0-9-]|-\\d)").test(hay));
   const plural = (n, one, many) => (n === 1 ? "1 " + one : n + " " + many);
 
   // decisioni ancora valide (non sostituite da una successiva)

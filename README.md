@@ -21,7 +21,9 @@ Dal documento di requisiti al backlog Jira, passo dopo passo, con Claude e le re
 | Sicurezza | `vercel.json`, `server/functions/csp-report.mjs` | Intestazioni e Content-Security-Policy (per ora in sola segnalazione, violazioni nei log) |
 | Test | `tests/` | Simulatore di Jira, dati di prova anonimizzati, test unitari ed end-to-end |
 
-Claude non gira sul server: Trama lo chiama tramite un **ponte locale** (`npm run claude`) che usa Claude Code sul tuo Mac, autenticato con il tuo abbonamento. Il ponte ascolta solo su `127.0.0.1:8790`, accetta richieste solo dal sito in `APP_URL` (e da `http://localhost:8888`) e lancia `claude -p` senza strumenti in una cartella temporanea vuota. Senza ponte acceso, Trama funziona tutto tranne le funzioni di Claude.
+Claude non gira sul server: Trama lo chiama tramite un **ponte locale** (`npm run claude`) che usa Claude Code sul tuo Mac, autenticato con il tuo abbonamento. Il ponte ascolta solo su `127.0.0.1:8790`, accetta richieste solo dal sito in `APP_URL` (e da `http://localhost:8888`) e lancia `claude -p` senza strumenti in una cartella temporanea vuota. Il ponte non passa a `claude` le variabili `ANTHROPIC_API_KEY` e `ANTHROPIC_AUTH_TOKEN`: usa sempre l'abbonamento Claude Code, e se le trova impostate lo segnala con un avviso all'avvio. Senza ponte acceso, Trama funziona tutto tranne le funzioni di Claude.
+
+**Lavoro in più persone:** kit, progetto, chat e ticket si salvano con la versione letta; se un collega ha salvato prima, la modifica si riapplica sulla sua versione. Su Jira lavora una scheda alla volta: chi crea, crea la struttura o aggiorna Jira prende un lock condiviso (scade da solo dopo 2 minuti se la scheda si chiude), e nelle altre schede i pulsanti mostrano chi sta lavorando. Se il server dei dati non risponde, i salvataggi restano in coda e si ritentano da soli, con l'indicatore «N salvataggi in attesa».
 
 **Chi vede cosa:** ogni progetto appartiene a un sito Atlassian. Chiunque acceda a quel sito con il proprio account vede e modifica il progetto. Su Jira ognuno agisce con i propri permessi.
 
@@ -94,8 +96,15 @@ npm test
 
 Test end-to-end di Trama con Playwright contro un **simulatore** (`tests/sim/server.mjs`): API in memoria e Jira finto che rispetta i livelli Project › Fase › Epica › ticket. Non serve né il database né un account Atlassian. In locale i test usano Chrome già installato.
 
-- **Unitari** (`tests/unit`): router; sessioni, cookie, stessa origine e cifratura dei token; API dei dati con un database finto (chi vede, scrive ed elimina cosa, limiti e validazioni); operazioni Jira contro il Jira finto (campi ammessi, chiavi e label non valide, errori temporanei, nuovo accesso).
-- **End-to-end** (`tests/e2e`): percorso principale (`studio.spec.mjs`), flussi a mano, Domande, Kit, Backlog, esportazioni, resilienza della creazione su Jira con errori simulati, chat e collegamenti delle pagine (`flussi.spec.mjs`), più schede sullo stesso progetto (conflitti e riapplicazione delle modifiche) e salvataggi ritentati quando il server dei dati non risponde (`robustezza.spec.mjs`), accessibilità WCAG 2.2 AA con axe anche in modalità scura (`accessibilita.spec.mjs`). Gli aiuti comuni stanno in `aiuti.mjs`.
+- **Unitari** (`tests/unit`): router (`router`); sessioni, cookie, stessa origine e cifratura dei token (`core`); API dei dati con un database finto, compresa la scrittura condizionale (`api`); operazioni Jira contro il Jira finto: campi ammessi, chiavi e label non valide, errori temporanei, nuovo accesso (`jira-ops`); report privacy di Atlassian (`privacy`); scheda QA e piano di test (`qa-scheda`); segnalazioni CSP (`csp-report`); versioni dei file statici (`versioni`).
+- **End-to-end** (`tests/e2e`):
+  - percorso principale (`studio.spec.mjs`);
+  - flussi a mano, Domande, Kit, Backlog, esportazioni (anche celle che sembrano formule), resilienza della creazione su Jira con errori simulati, chat, presenza e collegamenti delle pagine (`flussi.spec.mjs`);
+  - più schede sullo stesso progetto (conflitti e riapplicazione delle modifiche), lock di Jira tra schede, creazione interrotta, «Non trovati in Jira», label con spazi, «Rigenera» senza ponte e salvataggi ritentati quando il server dei dati non risponde (`robustezza.spec.mjs`);
+  - modifiche portate in Jira dopo la creazione (`aggiorna-jira.spec.mjs`), nuova versione del documento (`versione-documento.spec.mjs`), apertura leggera (`apertura.spec.mjs`), presenza dei colleghi (`presenza.spec.mjs`), ricerca e modifica in blocco (`produttivita.spec.mjs`), lingua inglese (`lingua.spec.mjs`);
+  - accessibilità WCAG 2.2 AA con axe anche in modalità scura (`accessibilita.spec.mjs`), Content-Security-Policy (`sicurezza.spec.mjs`), icone allineate (`allineamento.spec.mjs`), homepage (`homepage.spec.mjs`).
+
+  Gli aiuti comuni stanno in `aiuti.mjs`.
 - **Visivi**, solo in locale (`npm run test:visual`): pagine, passi di Trama e stati come pannelli, progetto nuovo, esito della creazione, finestra media, modalità scura, menu e chat. Le immagini di riferimento stanno in `tests/visual/riferimenti`; dopo un cambiamento voluto: `npm run test:visual -- --update-snapshots`, poi guardale prima del commit.
 
 Il simulatore accetta guasti su richiesta (`POST /__sim/fault`), per provare cosa succede quando Jira risponde con un errore o perde la risposta.
@@ -162,7 +171,9 @@ Trama è pensato per il computer: richiede una finestra larga almeno 900 pixel e
 
 - Lo strumento non crea progetti, componenti o versioni in Jira: se un ticket li richiede vanno creati a mano.
 - Kit, progetto, chat e ticket sono sotto controllo: se un collega ha salvato prima, la modifica si riapplica sulla sua versione; se non si può (l'elemento non c'è più, o cambia di continuo) Trama lo dice e mostra la sua versione. Requisiti, documenti, domande e decisioni no: due persone che modificano **lo stesso** requisito nello stesso momento, vince l'ultima modifica salvata. Una scheda aperta prima dell'aggiornamento di Trama scrive senza controllo finché non si ricarica.
-- Se il server dei dati non risponde, i salvataggi restano in coda e si ritentano da soli (in alto, «N salvataggi in attesa»): chiudendo la scheda in quel momento si perdono, e il browser lo avvisa.
+- Se il server dei dati non risponde, i salvataggi restano in coda e si ritentano da soli (in alto, «N salvataggi in attesa») per 10 minuti al massimo: chiudendo la scheda in quel momento si perdono, e il browser lo avvisa.
+- «Sincronizza e verifica» elenca ciò che Jira non restituisce più («Non trovati in Jira»): Jira risponde allo stesso modo per un ticket eliminato e per uno che i tuoi permessi non mostrano, quindi Trama non lo riporta in bozza da sola. Lo fa «Riporta in bozza», dopo la conferma.
+- Se una creazione su Jira si interrompe (esito incerto, «Ferma», lock perso), Trama si ferma lì e non crea collegamenti né riepilogo: ricontrolla in Jira prima di riprendere.
 - I documenti caricati vengono salvati come testo, fino a 110.000 caratteri ciascuno. Le immagini vengono trascritte da Claude.
 - Claude funziona solo dal Mac su cui gira il ponte e consuma i limiti del tuo piano Claude Code. In modalità ponte la chat risponde e propone, ma non modifica direttamente requisiti e ticket.
 - Safari su Mac può bloccare le richieste dal sito al ponte locale su `127.0.0.1`: usa Chrome o Firefox.

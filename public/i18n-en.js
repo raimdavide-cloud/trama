@@ -795,6 +795,7 @@ exact: {
 "Non trovato in Jira: riportato in bozza": "Not found in Jira: moved back to draft",
 "Riportato in bozza.": "Moved back to draft.",
 "Crea su Jira e gli aggiornamenti si riattivano quando ha finito.": "Create in Jira and updates come back when they are done.",
+"Documenti non caricati: la risposta non li considera.": "Documents not loaded: the answer does not take them into account.",
 "Contenuto non caricato dal server: controlla la connessione e riprova.": "Content not loaded from the server: check your connection and try again.",
 "Il collegamento a Jira non è ancora pronto. Ricarica la pagina.": "The Jira link is not ready yet. Reload the page.",
 "La connessione ad Atlassian è scaduta: accedi di nuovo con Atlassian, poi riprova.": "The Atlassian connection expired: sign in with Atlassian again, then try again.",
@@ -1192,6 +1193,7 @@ templates: {
 "Da rivedere: eliminato in Trama mentre veniva creato in Jira come {k}.": "To review: deleted in Trama while it was being created in Jira as {k}.",
 "«{q}»: esito incerto e non ritrovato in Jira. Non viene ricreato: verifica in Jira se esiste prima di riprendere.": "«{q}»: uncertain outcome and not found in Jira. It is not created again: check in Jira whether it exists before resuming.",
 "Riportati in bozza {n} elementi.": "{n} items moved back to draft.",
+"{k} aggiornato.": "{k} updated.",
 "{k} creato in Jira, ma il ticket era già {k}: doppione da eliminare a mano in Jira.": "{k} created in Jira, but the ticket already was {k}: duplicate to delete by hand in Jira.",
 "{k} creato in Jira, ma «{q}» era già {k}: doppione da eliminare a mano in Jira.": "{k} created in Jira, but «{q}» already was {k}: duplicate to delete by hand in Jira.",
 "Aggiornamento di Jira interrotto: lock perso. Aggiornati prima dell'interruzione: {n} ticket.": "Jira update interrupted: lock lost. Updated before the interruption: {n} tickets.",
@@ -1259,6 +1261,7 @@ templates: {
 "Requisito: {k} · Label: {*}": "Requirement: {k} · Labels: {*}",
 },
 wild: {
+"{k} aggiornato. Valori non validi scartati: {*}.": "{k} updated. Invalid values discarded: {*}.",
 "{*} sta già lavorando su Jira.": "{*} is already working on Jira.",
 "La label \"{*}\" contiene spazi: Jira non la accetta": "The label \"{*}\" contains spaces: Jira does not accept it",
 "«{q}»: risposta incerta di Jira ({*}). Non lo trovo ancora: lo cerco di nuovo tra {n} secondi.": "«{q}»: uncertain answer from Jira ({*}). Not found yet: searching again in {n} seconds.",

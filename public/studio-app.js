@@ -231,7 +231,9 @@ function jiraMsg(e){const c=e?.code;return({
 const LIFECYCLE=["no_mcp","needs_reauth","unauthenticated","forbidden_site","bad_request"];
 function findKey(p){if(p&&typeof p.key==="string")return p.key;const m=JSON.stringify(p??"").match(/"key"\s*:\s*"([A-Z][A-Z0-9_]+-\d+)"/);return m?m[1]:""}
 function findIssues(p){if(!p||typeof p!=="object")return[];if(Array.isArray(p.issues))return p.issues;for(const v of Object.values(p)){if(Array.isArray(v)&&v.length&&v[0]&&typeof v[0]==="object"&&"key" in v[0])return v;if(v&&typeof v==="object"){const r=findIssues(v);if(r.length)return r}}return[]}
-const browse=k=>P().siteUrl?`<a href="${esc(P().siteUrl)}/browse/${esc(k)}" target="_blank" rel="noopener" class="key">${esc(k)}</a>`:`<span class="key">${esc(k)}</span>`;
+// l'indirizzo del sito diventa un collegamento solo se è https (un valore salvato nei dati non può aprire javascript: o altro)
+const siteOf=()=>{const u=String(P().siteUrl||"");return/^https:\/\/[^\s"'<>]+$/i.test(u)?u.replace(/\/+$/,""):""};
+const browse=k=>siteOf()?`<a href="${esc(siteOf())}/browse/${esc(k)}" target="_blank" rel="noopener" class="key">${esc(k)}</a>`:`<span class="key">${esc(k)}</span>`;
 
 /* ================= Claude ================= */
 function aiMsg(e){const c=e?.code;return({
@@ -281,7 +283,7 @@ function scheduleRender(){if(rq)return;rq=true;requestAnimationFrame(()=>{rq=fal
 document.addEventListener("focusout",()=>{if(pendingRender)setTimeout(()=>{const a=document.activeElement;if(!(a&&a.closest("#main")&&a.matches("input,textarea,select"))){pendingRender=false;render()}},0)});
 function renderChrome(){
   {$("#healthItem").hidden=false;const rb=$("#rulesBtn");rb.hidden=false;rb.setAttribute("aria-pressed",String(!!T.rulesOpen))}
-  const pp=P(),jl=pp.key&&pp.siteUrl?`${pp.siteUrl.replace(/\/$/,"")}/browse/${encodeURIComponent(pp.key)}`:"";
+  const pp=P(),jl=pp.key&&siteOf()?`${siteOf()}/browse/${encodeURIComponent(pp.key)}`:"";
   $("#projMenu").innerHTML=`<div class="dd-head"><b>${esc(pp.name||pp.jiraName||"Progetto")}</b><span>${pp.key?"Progetto Jira "+esc(pp.key):"Progetto Jira non ancora collegato"}</span></div>${jl?`<a role="menuitem" href="${esc(jl)}" target="_blank" rel="noopener">Apri in Jira <span aria-hidden="true">↗</span></a>`:""}${(PROJECTS||[]).filter(x=>x.id!==PID).slice(0,6).map(x=>`<a role="menuitem" href="/studio?p=${encodeURIComponent(x.id)}">${esc(x.name||"Senza nome")}</a>`).join("")?`<div class="dd-sep"></div><div class="dd-lbl">Altri progetti</div>${(PROJECTS||[]).filter(x=>x.id!==PID).slice(0,6).map(x=>`<a role="menuitem" href="/studio?p=${encodeURIComponent(x.id)}">${esc(x.name||"Senza nome")}</a>`).join("")}`:""}<div class="dd-sep"></div><a role="menuitem" href="/studio">Tutti i progetti</a>`;
   const p=P();$("#pmenu").hidden=false;$("#projName").textContent=p.name||p.jiraName||"Progetto";$("#projKey").textContent=p.key||"";
   const ch=(s,l)=>`<span class="chip ${s}">${l}</span>`;
@@ -367,7 +369,7 @@ STEPS.push({id:"jira",phase:"Avvio",short:"Progetto Jira",sub:"Collega e leggi J
  checks:()=>[{t:"Sito Atlassian collegato",ok:!!P().cloudId},{t:"Progetto Jira selezionato",ok:!!P().key},{t:"Configurazione letta: tipi di ticket, campi, collegamenti",ok:!!S.jira.readAt&&S.jira.key===P().key}],
  view(){const p=P(),j=S.jira;
   let h=`<div class="card"><div class="grid">${F("Nome del progetto (cliente o prodotto)",bind("meta:project:name",p.name,{ph:"Es. Smart Lighting Release 1"}))}</div></div>`;
-  h+=`<div class="card"><h2>1. Sito Atlassian</h2>${p.cloudId?`<p>Il progetto lavora sul sito <a href="${esc(p.siteUrl||"#")}" target="_blank" rel="noopener"><b>${esc((p.siteUrl||p.cloudId).replace(/^https:\/\//,""))}</b></a>, scelto alla creazione. Le operazioni su Jira usano il tuo account Atlassian (${esc(ME?.name||"")}).</p>`:`<p class="muted">Caricamento del sito del progetto…</p>`}</div>`;
+  h+=`<div class="card"><h2>1. Sito Atlassian</h2>${p.cloudId?`<p>Il progetto lavora sul sito ${siteOf()?`<a href="${esc(siteOf())}" target="_blank" rel="noopener"><b>${esc(siteOf().replace(/^https:\/\//,""))}</b></a>`:`<b>${esc((p.siteUrl||p.cloudId).replace(/^https:\/\//,""))}</b>`}, scelto alla creazione. Le operazioni su Jira usano il tuo account Atlassian (${esc(ME?.name||"")}).</p>`:`<p class="muted">Caricamento del sito del progetto…</p>`}</div>`;
   if(p.cloudId){h+=`<div class="card"><h2>2. Progetto</h2>
    <div class="card note small">Il progetto è da creare? Crealo in Jira (Progetti › Crea progetto › modello Scrum; per usare componenti e versioni scegli un progetto gestito dall'azienda), poi torna qui e cercalo. Trama non crea progetti Jira.</div>
    ${p.key?`<p>Progetto selezionato: <span class="key">${esc(p.key)}</span> ${esc(p.jiraName||"")}</p>`:""}
@@ -835,7 +837,7 @@ function ticketForm(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked
  <div class="toolbar" style="margin-top:10px">${B("applyTemplate",T.arm["tpl"+t.id]?"Conferma: sostituisci la descrizione":"Usa il modello vuoto",{cls:T.arm["tpl"+t.id]?"armed":"",data:{id:t.id},dis:locked})}${B("delTicket",T.arm["t"+t.id]?"Conferma eliminazione":"Elimina ticket",{cls:T.arm["t"+t.id]?"armed":"danger",data:{id:t.id},dis:locked})}</div>`}
 
 /* Scheda QA: il Markdown per chi collauda (generatore in qa-scheda.js) */
-const qaCtx=()=>({tickets:ticketList(),reqs:reqList(),decisions:arr("decisions"),siteUrl:P().siteUrl||"",project:P().name||"",fullTitle,labels:labelsOf,typeName:t=>K().types?.[t.type]||t.type,tr:s=>window.I18N?.t?.(s)??s,today:today()});
+const qaCtx=()=>({tickets:ticketList(),reqs:reqList(),decisions:arr("decisions"),siteUrl:siteOf(),project:P().name||"",fullTitle,labels:labelsOf,typeName:t=>K().types?.[t.type]||t.type,tr:s=>window.I18N?.t?.(s)??s,today:today()});
 function qaBox(t){if(!window.QA)return"";const q=QA.sheet(t,qaCtx());
   return`<details class="item qa-box" data-k="qa-${esc(t.id)}"><summary><span class="ttl">Scheda QA</span>${q.ready?'<span class="pill ok">pronta per il collaudo</span>':`<span class="pill warn">${q.gaps.length===1?"1 punto da completare":q.gaps.length+" punti da completare"}</span>`}</summary><div class="in">
    <p class="small muted" style="margin:0 0 8px">Un file Markdown per chi collauda: criteri da verificare, requisito d'origine, dipendenze, ipotesi e decisioni che toccano il ticket.</p>
@@ -1580,7 +1582,9 @@ A.delDecision=el=>arm("d"+el.dataset.id,el,()=>trash("decisions",[el.dataset.id]
 A.exportDecisions=()=>{const d=arr("decisions").sort((a,b)=>String(a.date).localeCompare(String(b.date)));exportCsv("registro-decisioni.csv",["#","Data","Decisione","Chi","Tipo","Fonte","Impatto","Regola del kit","Sostituisce"],d.map((x,i)=>[i+1,x.date,x.text,x.who,x.type,x.source,x.impact,x.kit,x.replaces?"#"+(d.findIndex(y=>y.id===x.replaces)+1):""]))};
 
 /* export e copia */
-async function exportCsv(name,head,rows){const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;const csv="\ufeff"+[head,...rows].map(r=>r.map(q).join(",")).join("\r\n");
+// una cella che inizia con = + - @ (o tab, a capo) per Excel è una formula: l'apostrofo la lascia testo
+const csvCell=v=>{let s=String(v??"");if(/^[=+\-@\t\r]/.test(s))s="'"+s;return`"${s.replace(/"/g,'""')}"`};
+async function exportCsv(name,head,rows){const q=csvCell;const csv="\ufeff"+[head,...rows].map(r=>r.map(q).join(",")).join("\r\n");
   if(DL){try{await DL.save({filename:name,data:new Blob([csv],{type:"text/csv"})});return}catch(e){if(e?.code==="cancelled")return}}
   copyText(csv,null);toast("Download non disponibile qui: CSV copiato negli appunti.")}
 function copyText(t,el){const done=()=>{if(el){const o=el.textContent;el.textContent="Copiato";setTimeout(()=>el.textContent=o,1500)}};const fb=()=>{const x=document.createElement("textarea");x.value=t;document.body.appendChild(x);x.select();try{document.execCommand("copy");done()}catch(e){}x.remove()};
@@ -1591,7 +1595,8 @@ function copyText(t,el){const done=()=>{if(el){const o=el.textContent;el.textCon
    scheda non chiede conferma per un battito. */
 const presenceId=a=>String(a||"").replace(/[^A-Za-z0-9_-]/g,"_").slice(0,64);
 let BEAT=null,lastBeat="";
-function presenceBeat(force){clearTimeout(BEAT);BEAT=setTimeout(()=>presenceBeat(true),30000);if(!DB||!ME?.accountId||READONLY||document.hidden)return;
+// il battito periodico parte dal timer: un ridisegno (senza force) non lo rimanda
+function presenceBeat(force){if(force||!BEAT){clearTimeout(BEAT);BEAT=setTimeout(()=>{BEAT=null;presenceBeat(true)},30000)}if(!DB||!ME?.accountId||READONLY||document.hidden)return;
   const t=T.panel?.kind==="ticket"&&S.tickets[T.panel.id];const data={name:ME.name||ME.email||"Un collega",step:STEPS[cur]?.id||"",stepName:STEPS[cur]?.short||"",panel:t?"ticket:"+T.panel.id:"",panelRef:t?t.ref:""};
   const sig=JSON.stringify(data);if(!force&&sig===lastBeat)return;lastBeat=sig;
   BS.api(`/api/projects/${encodeURIComponent(PID)}/items/presence/${presenceId(ME.accountId)}`,{method:"PUT",body:{...data,at:Date.now()}}).catch(()=>{})}
@@ -1718,7 +1723,17 @@ function applyAction(a){
   if(a.type==="update_requirement"){const r=reqList().find(x=>x.code===a.code),d=clone(S.reqs[r.id]);
     for(const[k,x]of Object.entries(a.fields))d[k]=k==="components"?(Array.isArray(x)?x:[]).filter(c=>REQ_COMPS.includes(c)):k==="designReady"?!!x:String(x);
     put("reqs",r.id,d);return`${r.code} aggiornato.`}
-  const t=ticketList().find(x=>x.ref===a.ref);put("tickets",t.id,d=>{if(!d||d.state==="created")return null;for(const[k,x]of Object.entries(a.fields))d[k]=x;return d});const e=issuesOf({...S.tickets[t.id]}).e;return`${t.ref} aggiornato.${e.length?" Restano errori: "+e.join("; "):""}`}
+  const t=ticketList().find(x=>x.ref===a.ref),ok={},bad=[];for(const[k,x]of Object.entries(a.fields)){const v=ticketField(k,x);if(v===undefined)bad.push(k);else ok[k]=v}
+  put("tickets",t.id,d=>!d||d.state==="created"?null:{...d,...ok});const e=issuesOf({...S.tickets[t.id]}).e;return`${t.ref} aggiornato.${bad.length?` Valori non validi scartati: ${bad.join(", ")}.`:""}${e.length?" Restano errori: "+e.join("; "):""}`}
+// un campo del ticket proposto dalla chat, nel tipo atteso; undefined se il valore non è valido
+function ticketField(k,x){const str=v=>typeof v==="string"||typeof v==="number"?String(v).trim():null;
+  if(k==="labels"){const l=Array.isArray(x)?x:typeof x==="string"?x.split(","):null;return l?[...new Set(l.map(str).filter(Boolean).map(canonLabel))]:undefined}
+  if(k==="links"){if(!Array.isArray(x))return undefined;return x.map(l=>{if(typeof l==="string"){const m=l.trim().match(/^(blocks|relates)\s*:?\s*(T-\d+)$/i);return m?{type:m[1].toLowerCase(),to:m[2].toUpperCase()}:null}
+    const type=l?.type==="blocks"||l?.type==="relates"?l.type:null,to=str(l?.to)?.toUpperCase();return type&&/^T-\d+$/.test(to||"")?{type,to}:null}).filter(Boolean)}
+  const s=str(x);if(s===null)return undefined;
+  if(k==="area")return AREAS[s]?s:undefined;
+  if(k==="type")return TYPES.includes(s)?s:undefined;
+  return s}
 function newReqCode(){const cs=reqList().map(r=>String(r.code)),m=cs.map(c=>c.match(/^([A-Za-z]+)-(\d+)$/)).filter(Boolean),pre={};m.forEach(x=>pre[x[1]]=(pre[x[1]]||0)+1);
   const best=Object.entries(pre).sort((a,b)=>b[1]-a[1])[0];if(!best)return nextReqCode();const mine=m.filter(x=>x[1]===best[0]),width=Math.max(...mine.map(x=>x[2].length)),used=new Set(cs);
   let n=Math.max(...mine.map(x=>+x[2]))+1,code;do{code=best[0]+"-"+String(n++).padStart(width,"0")}while(used.has(code));return code}
@@ -1870,7 +1885,7 @@ async function sendChat(q){if(!SAMPLE||chatPending)return;
   const img=chatImg;chatImg=null;$("#chatImgName").textContent="";
   const hist=(S.chat?.turns||[]).filter(t=>t.role!=="note").slice(-CHAT_KEEP).map(t=>({role:t.role,content:String(t.content).slice(0,6000)}));
   const content=q+(img?`\n(allegata immagine: ${img.name})`:"");chatPending={q:content,a:""};renderChat();chatCtl=new AbortController();
-  await loadDocs().catch(()=>{});const input=[{role:"user",content:chatContext()},...hist,{role:"user",content}];
+  await loadDocs().catch(()=>toast("Documenti non caricati: la risposta non li considera."));const input=[{role:"user",content:chatContext()},...hist,{role:"user",content}];
   const opts={signal:chatCtl.signal,cache:false,onText:({text})=>{chatPending.a=splitProto(text).text;const b=$("#liveBub");if(b){b.innerHTML=md(chatPending.a);$("#chatLog").scrollTop=$("#chatLog").scrollHeight}}};
   if(img)opts.images=[img];
   let answer="",meta=null;
@@ -1921,7 +1936,7 @@ function renderPicker(note){const ps=PROJECTS||[];const siteName=id=>(SITES.find
   const showForm=T.npOpen||(PROJECTS&&!ps.length);
   const form=`<div class="card np-card"><h2>${ps.length?"Nuovo progetto":"Crea il tuo primo progetto"}</h2><div class="grid">${F("Nome del progetto",`<input id="npName" placeholder="Lumio · Release 1">`)}${F("Sito Atlassian",`<select id="npSite">${SITES.map(s=>`<option value="${esc(s.id)}">${esc(s.name)} · ${esc(s.url.replace(/^https:\/\//,""))}</option>`).join("")}</select>`)}</div>
    <div class="toolbar" style="margin-top:12px"><button class="primary" data-act="createProject" ${busy.createProject?"disabled":""}>${busy.createProject?"Creazione…":"Crea progetto"}</button>${ps.length?`<button type="button" data-act="npToggle">Annulla</button>`:""}</div></div>`;
-  const card=p=>{const mine=ME&&p.created_by===ME.accountId,armed=T.arm["dp"+p.id];
+  const card=p=>{const mine=ME&&(!p.created_by||p.created_by===ME.accountId),armed=T.arm["dp"+p.id];
    return`<div class="proj-card"><a class="pc-link" href="/studio?p=${encodeURIComponent(p.id)}" aria-label="Apri ${esc(p.name)}"></a>
     <div class="pc-top"><h2>${esc(p.name)}</h2>${mine?`<div class="dd pc-dd"><button type="button" class="dd-btn icon-btn" aria-haspopup="menu" aria-expanded="${!!armed}" aria-label="Altre azioni per ${esc(p.name)}"><span aria-hidden="true">⋯</span></button><div class="dd-menu right" role="menu" ${armed?"":"hidden"}><button type="button" role="menuitem" class="danger-item" data-act="deleteProject" data-id="${esc(p.id)}">${armed?"Conferma: elimina il progetto":"Elimina progetto"}</button></div></div>`:""}</div>
     <div class="pc-meta">${p.jira_key?`<span class="key">${esc(p.jira_key)}</span>`:""}<span>${esc(siteName(p.cloud_id)||(p.site_url||"").replace(/^https:\/\//,""))}</span></div>

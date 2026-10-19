@@ -377,3 +377,58 @@ test("Scheda QA: dal pannello del ticket si vede, si copia e si scarica; dalla l
   expect(buf.subarray(0, 4).toString("hex")).toBe("504b0304");
   expect(buf.includes(Buffer.from("piano-di-test.md"))).toBe(true);
 });
+
+test("CSV: una cella che inizia con = + - @ resta testo (apostrofo davanti), anche per Excel", async ({ page }) => {
+  await openStudio(page);
+  await page.evaluate(() => {
+    put("decisions", "d-formula", { date: "2026-10-18", text: '=HYPERLINK("http://esempio.invalid","clic")', who: "@PO", type: "Altro", source: "+39 333", impact: "-1", kit: "", replaces: "", at: Date.now() });
+    DL = { save: async ({ data }) => { window.csvOut = await data.text(); } };
+    A.exportDecisions();
+  });
+  await expect.poll(() => page.evaluate(() => !!window.csvOut)).toBe(true);
+  const csv = await page.evaluate(() => window.csvOut);
+  const row = csv.split("\r\n").find((l) => l.includes("HYPERLINK"));
+  expect(row).toContain(`"'=HYPERLINK(""http://esempio.invalid"",""clic"")"`);
+  expect(row).toContain(`"'@PO"`);
+  expect(row).toContain(`"'+39 333"`);
+  expect(row).toContain(`"'-1"`);
+});
+
+test("indirizzo del sito: solo https diventa un collegamento; javascript: resta testo", async ({ page }) => {
+  await openStudio(page);
+  await page.evaluate(() => new Promise((r) => setTimeout(r, 200))); // all'apertura il progetto si riallinea al sito del server (dopo 60 ms)
+  await page.evaluate(() => editProject((p) => { p.siteUrl = "javascript:alert(1)"; }));
+  await goToStep(page, "Progetto Jira");
+  await openSec(page, "Sito Atlassian");
+  await expect(page.locator("#main")).toContainText("javascript:alert(1)");
+  await goToStep(page, "Crea su Jira");
+  expect(await page.locator('a[href^="javascript"]').count()).toBe(0);
+  expect(await page.evaluate(() => [browse("ORTO-1"), document.querySelector("#projMenu").innerHTML.includes("Apri in Jira")])).toEqual(['<span class="key">ORTO-1</span>', false]);
+  await page.evaluate(() => editProject((p) => { p.siteUrl = "https://esempio.atlassian.net"; }));
+  expect(await page.evaluate(() => browse("ORTO-1"))).toContain('href="https://esempio.atlassian.net/browse/ORTO-1"');
+});
+
+test("chat, «update_ticket»: i valori arrivano nel tipo giusto, quelli non validi si scartano senza fermare il resto", async ({ page }) => {
+  await openStudio(page);
+  const r = await page.evaluate(() => {
+    const t = ticketList().find((x) => x.state !== "created");
+    const msg = applyAction({ type: "update_ticket", ref: t.ref, fields: { labels: " Android, iOS ,", area: "nessuna", type: "Spike", title: "  New title  ", links: ["blocks: t-002", { type: "relates", to: "T-003" }, { type: "boh", to: "T-004" }, 7] } });
+    const d = S.tickets[t.id];
+    return { msg, labels: d.labels, area: d.area === t.area, type: d.type === t.type, title: d.title, links: d.links };
+  });
+  expect(r.labels).toEqual(["Android", "iOS"]);
+  expect([r.area, r.type, r.title]).toEqual([true, true, "New title"]);
+  expect(r.links).toEqual([{ type: "blocks", to: "T-002" }, { type: "relates", to: "T-003" }]);
+  expect(r.msg).toContain("Valori non validi scartati: area, type.");
+});
+
+test("presenza: con la pagina che si ridisegna di continuo il battito parte comunque ogni 30 secondi", async ({ page }) => {
+  await page.clock.install();
+  const beats = [];
+  page.on("request", (r) => { if (r.method() === "PUT" && r.url().includes("/items/presence/")) beats.push(r.url()); });
+  await page.goto("/studio?p=progetto-prova");
+  await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
+  const n = beats.length;
+  for (let t = 0; t < 95_000; t += 2000) { await page.evaluate(() => render()); await page.clock.runFor(2000); await page.waitForTimeout(20); }
+  expect(beats.length - n).toBeGreaterThanOrEqual(3);
+});

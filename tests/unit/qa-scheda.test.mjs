@@ -117,3 +117,14 @@ test("più release: una cartella per release e i ticket senza release a parte", 
   const b = QA.bundle(["R1", null], { ...ctx, tickets: ts, reqs: [] });
   assert.deepEqual(b.files.map((f) => f.name), ["r1/piano-di-test.md", "r1/schede/T-1-senza-nome.md", "senza-release/piano-di-test.md", "senza-release/schede/T-2-senza-nome.md"]);
 });
+
+test("scheda: un codice requisito con metacaratteri delle espressioni regolari non rompe la ricerca delle decisioni", () => {
+  const t = { ref: "T-950", type: "Story", req: "RF+(1[", desc: "## Acceptance criteria\n* Works.", links: [] };
+  const decisions = [
+    { id: "d1", date: "2026-10-18", text: "RF+(1[ resta in MVP", who: "PO" },
+    { id: "d2", date: "2026-10-18", text: "RFF(1[ è un altro requisito", who: "PO" },
+  ];
+  const s = QA.sheet(t, { ...ctx, decisions });
+  assert.match(s.md, /RF\+\(1\[ resta in MVP/);
+  assert.ok(!s.md.includes("RFF(1[ è un altro requisito"));
+});
