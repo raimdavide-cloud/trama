@@ -3,13 +3,13 @@
 (() => {
   const BS = (window.BS = {});
 
-  async function api(path, { method = "GET", body, signal } = {}) {
+  async function api(path, { method = "GET", body, signal, headers } = {}) {
     let r;
     try {
       r = await fetch(path, {
         method,
         credentials: "same-origin",
-        headers: body !== undefined ? { "content-type": "application/json" } : {},
+        headers: { ...(body !== undefined ? { "content-type": "application/json" } : {}), ...headers },
         body: body !== undefined ? JSON.stringify(body) : undefined,
         signal,
       });
@@ -23,7 +23,7 @@
       throw { code: data.code === "needs_reauth" ? "needs_reauth" : "unauthenticated", message: data.message || "Sessione scaduta: accedi di nuovo con Atlassian." };
     }
     if (!r.ok || data.ok === false) {
-      throw { code: data.code || "upstream_error", message: data.message || `HTTP ${r.status}`, retryable: !!data.retryable, status: r.status };
+      throw { code: data.code || "upstream_error", message: data.message || `HTTP ${r.status}`, retryable: !!data.retryable, status: r.status, ...("at" in data ? { at: data.at } : {}) };
     }
     return data;
   }
@@ -44,75 +44,247 @@
   };
 
   /* ---------- dati condivisi: stessa forma del db degli artifact ---------- */
+  // Una scrittura può essere un contenuto (null = elimina) o una funzione di modifica fresh => nuovo, che si riapplica
+  // sui dati freschi se un collega ha salvato prima. Esiti della funzione: null = annullata (l'elemento non c'è più
+  // com'era), BS.DEL = elimina, undefined o lo stesso contenuto = niente da salvare.
+  BS.DEL = Symbol("elimina");
+  BS.GONE = Symbol("annullata");
+  BS.SAME = Symbol("invariata");
+  BS.change = (fn, base) => {
+    const r = fn(base === undefined ? undefined : structuredClone(base));
+    if (r === null) return BS.GONE;
+    if (r === undefined) return BS.SAME;
+    const v = r === BS.DEL ? undefined : r;
+    return JSON.stringify(v) === JSON.stringify(base) ? BS.SAME : v;
+  };
   BS.createDB = (pid, initial) => {
     const store = {};
     const subs = {};
-    const pending = new Map();
+    const pending = new Map(); // elemento → scritture chieste e non ancora concluse
+    // versione di ogni elemento come la conosce il server (at della riga, viva o eliminata): è la base (x-base) delle scritture condizionali
+    const ver = new Map();
+    const mark = (k, at, live) => ver.set(k, { at: at == null ? (ver.get(k)?.at ?? 0) : Number(at), live });
+    const baseOf = (k) => (ver.get(k)?.live ? String(ver.get(k).at) : "none");
     let since = initial.now;
-    for (const it of initial.items) (store[it.col] ||= {})[it.id] = it.data;
+    for (const it of initial.items) { (store[it.col] ||= {})[it.id] = it.data; if (it.at != null) mark(`${it.col}/${it.id}`, it.at, true); }
     const snap = (c) => ({ docs: Object.entries(store[c] || {}).map(([id, d]) => ({ id, exists: true, data: () => d })) });
-    const notify = (c) => (subs[c] || []).forEach((f) => f(snap(c)));
+    const notify = (c) => (subs[c] || []).forEach((f) => { try { f(snap(c)); } catch (e) { console.error(e); } });
+    const get = (c, id) => store[c]?.[id];
     const apply = (c, id, data) => {
-      if (data === null) delete (store[c] || {})[id];
+      if (data == null) delete (store[c] || {})[id];
       else (store[c] ||= {})[id] = data;
     };
     const url = (c, id) => `/api/projects/${encodeURIComponent(pid)}/items/${c}/${encodeURIComponent(id)}`;
-    // Salvataggi: quelli chiesti nello stesso momento (per esempio la rinomina di una release che tocca cento elementi)
-    // partono insieme in una sola richiesta. Un gruppo alla volta, nell'ordine in cui sono stati chiesti.
-    const MAX_OPS = 500, MAX_BYTES = 3_500_000;
+    // Salvataggi, nell'ordine in cui sono stati chiesti. Quelli senza controllo chiesti nello stesso momento (per esempio i
+    // requisiti di una release rinominata) partono insieme in una sola richiesta. Quelli condizionali partono uno per uno con la
+    // base letta all'invio, fino a 4 insieme su elementi diversi; due scritture sullo stesso elemento non si sovrappongono mai.
+    // Il contenuto in store è già quello delle scritture in attesa; known tiene l'ultimo confermato dal server.
+    const MAX_OPS = 500, MAX_BYTES = 3_500_000, PAR = 4, WAITS = [2000, 5000, 10000, 20000, 30000];
     const outbox = [];
-    let flushTimer = null, chain = Promise.resolve();
+    const known = new Map();
+    let flight = [], flushTimer = null, pumping = false, retrying = false, fails = 0;
     const writeErr = (e) => ({
-      code: e.code === "too_large" ? "quota_exceeded" : e.code === "unauthenticated" || e.code === "not_found" ? "revoked" : "unavailable",
+      code: e.code === "conflict" || e.code === "gone" ? e.code : e.code === "too_large" ? "quota_exceeded" : e.code === "unauthenticated" || e.code === "needs_reauth" || e.code === "not_found" ? "revoked" : "unavailable",
       message: e.message,
     });
-    function write(c, id, data) {
+    const retryable = (e) => !!e && e.code !== "cancelled" && (!!e.retryable || e.status >= 500 || e.status === 429 || ["server_unavailable", "unavailable", "resource_exhausted", "rate_limited"].includes(e.code));
+    const GIVE_UP = 10 * 60_000; // dopo 10 minuti di ritentativi una scrittura si dà per non riuscita
+    const report = () => BS.onPending?.(retrying ? outbox.length + flight.length : 0);
+    function write(c, id, v, o = {}) {
+      const k = `${c}/${id}`, fn = typeof v === "function" ? v : null, cur = get(c, id);
+      let data = v;
+      if (fn) {
+        data = BS.change(fn, cur);
+        if (data === BS.GONE) return settled(cur, { code: "gone" });
+        if (data === BS.SAME) return settled(cur);
+      }
+      data ??= null;
       // un segnaposto non parte mai: sovrascriverebbe il contenuto completo (anche il server lo rifiuta)
-      if (BS.isLazy(data)) return Promise.reject({ code: "placeholder", message: "Contenuto non ancora caricato: nulla è stato salvato." });
-      const k = `${c}/${id}`;
+      if (BS.isLazy(data)) return { ...settled(cur, { code: "placeholder", message: "Contenuto non ancora caricato: nulla è stato salvato." }), value: data };
+      if (!pending.has(k)) known.set(k, cur);
       pending.set(k, (pending.get(k) || 0) + 1);
+      apply(c, id, data);
       touch();
-      return new Promise((resolve, reject) => {
-        outbox.push({ c, id, data, k, size: data === null ? 0 : JSON.stringify(data).length, resolve, reject });
-        flushTimer ??= setTimeout(flush, 0);
-      });
+      const op = { c, id, k, fn, data, from: cur, cond: !!o.cond, tries: 0, size: data === null ? 0 : JSON.stringify(data).length };
+      const accepted = new Promise((res, rej) => { op.ok = res; op.no = rej; });
+      const done = new Promise((res, rej) => { op.res = res; op.rej = rej; });
+      accepted.catch(() => {}); done.catch(() => {});
+      outbox.push(op);
+      if (retrying) { op.ok(); report(); } // c'è già un ritentativo in corso: la scrittura è in coda e partirà dopo
+      flushTimer ??= setTimeout(flush, 0);
+      return { value: data ?? undefined, accepted, done };
+    }
+    function settled(value, err) {
+      const p = err ? Promise.reject(err) : Promise.resolve();
+      p.catch(() => {});
+      return { value, same: !err, gone: err?.code === "gone", accepted: p, done: p };
+    }
+    // la funzione di modifica sui dati di partenza: annullata, invariata o con il nuovo contenuto
+    function recompute(op, base) {
+      let d;
+      try { d = BS.change(op.fn, base); } catch (e) { console.warn(e); d = BS.GONE; } // non si applica ai dati freschi
+      op.from = base;
+      op.gone = d === BS.GONE;
+      op.same = d === BS.SAME;
+      op.data = op.gone || op.same ? base ?? null : d ?? null;
+      op.redo = true;
+    }
+    // ricalcola il contenuto locale: l'ultimo confermato più le scritture ancora in attesa, nell'ordine
+    function refold(c, id) {
+      const k = `${c}/${id}`;
+      let acc = known.get(k);
+      for (const op of [...flight, ...outbox]) {
+        if (op.k !== k || op.dead) continue;
+        if (op.cond && op.fn && op.from !== acc) recompute(op, acc);
+        if (op.cond && (op.gone || op.same)) continue;
+        acc = op.data ?? undefined;
+      }
+      const before = get(c, id);
+      apply(c, id, acc);
+      if (JSON.stringify(before) !== JSON.stringify(acc)) notify(c);
+    }
+    function finish(op) {
+      op.finished = true;
+      const n = pending.get(op.k) - 1;
+      if (n) pending.set(op.k, n);
+      else { pending.delete(op.k); known.delete(op.k); }
+    }
+    function done(op) {
+      known.set(op.k, op.data ?? undefined);
+      op.dead = true; // conclusa: il suo contenuto è ora in known e non va riapplicato
+      if (op.redo) refold(op.c, op.id);
+      finish(op);
+      op.ok(); op.res();
+    }
+    function fail(op, e) {
+      const err = writeErr(e);
+      op.dead = true;
+      refold(op.c, op.id);
+      finish(op);
+      op.no(err); op.rej(err);
+    }
+    function take() {
+      let n = 0;
+      if (!outbox[0].cond) {
+        let bytes = 0;
+        while (n < outbox.length && !outbox[n].cond && n < MAX_OPS && (n === 0 || bytes + outbox[n].size <= MAX_BYTES)) bytes += outbox[n++].size;
+      } else {
+        const keys = new Set();
+        while (n < outbox.length && n < PAR && outbox[n].cond && !keys.has(outbox[n].k)) keys.add(outbox[n++].k);
+      }
+      return outbox.splice(0, n);
     }
     function flush() {
       flushTimer = null;
-      let bytes = 0, n = 0;
-      while (n < outbox.length && n < MAX_OPS && (n === 0 || bytes + outbox[n].size <= MAX_BYTES)) bytes += outbox[n++].size;
-      const group = outbox.splice(0, n);
-      if (outbox.length) flushTimer = setTimeout(flush, 0);
-      chain = chain.then(() => send(group));
+      if (!pumping) pump();
     }
-    async function send(group) {
+    // Un gruppo alla volta. Se la rete o il server non rispondono, il gruppo resta in testa e si ritenta dopo 2, 5, 10, 20 secondi,
+    // poi ogni 30: le scritture successive aspettano, così l'ordine resta quello in cui sono state chieste.
+    async function pump() {
+      pumping = true;
+      try {
+        while (outbox.length) {
+          flight = take();
+          let again;
+          try {
+            if (flight[0].cond) { const ok = await Promise.all(flight.map(sendOne)); again = flight.filter((_, i) => !ok[i]); }
+            else again = await sendGroup(flight);
+          } catch (e) {
+            console.error(e);
+            flight.forEach((op) => { if (!op.finished) fail(op, { code: "unavailable", message: String(e?.message || e) }); });
+            again = [];
+          }
+          flight = [];
+          if (!again.length) { fails = 0; if (retrying) report(); continue; }
+          outbox.unshift(...again);
+          const now = Date.now(), old = again.filter((op) => now - (op.firstFail ??= now) >= GIVE_UP);
+          old.forEach((op) => fail(op, { code: "unavailable", message: "Il server dei dati non risponde da 10 minuti." }));
+          if (old.length) { outbox.splice(0, outbox.length, ...outbox.filter((op) => !op.dead)); if (old.length === again.length) continue; }
+          if (!retrying) { retrying = true; outbox.forEach((op) => op.ok()); }
+          report();
+          await new Promise((r) => setTimeout(r, WAITS[Math.min(fails++, WAITS.length - 1)]));
+        }
+      } finally {
+        flight = [];
+        pumping = false;
+        if (retrying) { retrying = false; report(); }
+      }
+    }
+    async function sendGroup(group) {
       try {
         if (group.length === 1) {
           const g = group[0];
-          await api(url(g.c, g.id), g.data === null ? { method: "DELETE" } : { method: "PUT", body: g.data });
+          const r = await api(url(g.c, g.id), g.data === null ? { method: "DELETE" } : { method: "PUT", body: g.data });
+          mark(g.k, r.at, g.data !== null);
         } else {
-          await api(`/api/projects/${encodeURIComponent(pid)}/batch`, { method: "POST", body: { ops: group.map((g) => ({ col: g.c, id: g.id, data: g.data })) } });
+          const r = await api(`/api/projects/${encodeURIComponent(pid)}/batch`, { method: "POST", body: { ops: group.map((g) => ({ col: g.c, id: g.id, data: g.data })) } });
+          const at = new Map((r.items || []).map((x) => [`${x.col}/${x.id}`, x.at]));
+          for (const g of group) mark(g.k, at.get(g.k), g.data !== null);
         }
-        for (const g of group) { apply(g.c, g.id, g.data); g.resolve(); }
+        group.forEach(done);
+        return [];
       } catch (e) {
-        const err = writeErr(e);
-        for (const g of group) g.reject(err);
-      } finally {
-        for (const g of group) { const n = pending.get(g.k) - 1; n ? pending.set(g.k, n) : pending.delete(g.k); }
+        if (retryable(e)) return group;
+        for (const g of group) fail(g, e);
+        return [];
       }
     }
-    // chi chiude o ricarica la scheda mentre un salvataggio è in corso riceve l'avviso del browser invece di perderlo
-    window.addEventListener("beforeunload", (e) => { if (pending.size) { e.preventDefault(); e.returnValue = ""; } });
-    // per i test e le misure: finisce quando non resta nulla da inviare né in viaggio
-    BS.writesDone = async () => { while (outbox.length || flushTimer) await new Promise((r) => setTimeout(r, 0)); await chain; };
-    const ref = (c, id) => ({ set: (d) => write(c, id, d), delete: () => write(c, id, null) });
+    // Scrittura condizionale: parte con la versione conosciuta. Se un collega ha salvato prima (409) si rilegge l'elemento e
+    // la funzione di modifica si riapplica sui suoi dati, al massimo 3 volte; un contenuto fisso non si riapplica.
+    async function sendOne(op) {
+      for (;;) {
+        const base = known.get(op.k);
+        if (op.fn && op.from !== base) recompute(op, base);
+        if (op.gone) { fail(op, { code: "gone" }); return true; }
+        if (op.same) { done(op); return true; }
+        try {
+          const headers = { "x-base": baseOf(op.k) };
+          const r = await api(url(op.c, op.id), op.data === null ? { method: "DELETE", headers } : { method: "PUT", body: op.data, headers });
+          mark(op.k, r.at, op.data !== null);
+          done(op);
+          return true;
+        } catch (e) {
+          if (e.code !== "conflict") { if (retryable(e)) return false; fail(op, e); return true; }
+          let fresh = null;
+          try { if (e.at !== null) fresh = await fetchItem(op.c, op.id); } catch (e2) { if (retryable(e2)) return false; fail(op, e2); return true; }
+          known.set(op.k, fresh ? fresh.data : undefined);
+          mark(op.k, fresh?.at, !!fresh);
+          if (!op.fn || ++op.tries > 3) { fail(op, e); return true; }
+          refold(op.c, op.id);
+        }
+      }
+    }
+    async function fetchItem(c, id) {
+      try { const r = await api(url(c, id)); return { data: r.item.data, at: r.item.at, now: r.now }; }
+      catch (e) { if (e.code === "not_found") return null; throw e; }
+    }
+    // Lettura di un elemento dal server (dati freschi, versione e ora del server); senza scritture in attesa aggiorna anche la pagina.
+    async function fetchOne(c, id) {
+      const r = await fetchItem(c, id), k = `${c}/${id}`;
+      if (!pending.has(k)) {
+        mark(k, r?.at, !!r);
+        const before = get(c, id);
+        apply(c, id, r?.data);
+        if (JSON.stringify(before) !== JSON.stringify(r?.data)) notify(c);
+      }
+      return r;
+    }
+    // chi chiude o ricarica la scheda mentre un salvataggio è in corso (o in attesa di ritentativo) riceve l'avviso del browser invece di perderlo
+    window.addEventListener("beforeunload", (e) => { if (pending.size || outbox.length || retrying) { e.preventDefault(); e.returnValue = ""; } });
+    // per i test e le misure: finisce quando non resta nulla da inviare né in viaggio (ritentativi compresi)
+    BS.writesDone = async () => { while (outbox.length || flushTimer || pumping) await new Promise((r) => setTimeout(r, 10)); };
+    const ref = (c, id) => ({ set: (d) => write(c, id, d).done, delete: () => write(c, id, null).done });
     async function poll() {
       try {
         const r = await api(`/api/projects/${encodeURIComponent(pid)}?since=${encodeURIComponent(since)}`);
         since = r.now;
         const changed = new Set();
         for (const it of r.items) {
-          if (pending.has(`${it.col}/${it.id}`)) continue;
+          const k = `${it.col}/${it.id}`;
+          // con scritture in attesa la pagina non cambia, ma si ricorda la versione nuova: se la scrittura fallisce si torna a questa
+          if (pending.has(k)) { const v = ver.get(k); if (it.at != null && !(v && Number(it.at) <= v.at)) { mark(k, it.at, !it.deleted); known.set(k, it.deleted ? undefined : it.data); } continue; }
+          // l'eco delle proprie scritture (o una versione già vista) non cambia nulla
+          if (it.at != null) { const v = ver.get(k); if (v && Number(it.at) <= v.at) continue; mark(k, it.at, !it.deleted); }
           const cur = store[it.col]?.[it.id];
           if (it.deleted) {
             if (cur !== undefined) { apply(it.col, it.id, null); changed.add(it.col); }
@@ -145,7 +317,7 @@
             const now = store[c]?.[id];
             if (!BS.isLazy(now)) return now; // eliminato o già intero (salvato da qui)
             // il server dà la versione più recente; si scarta solo se durante la richiesta è arrivato un segnaposto diverso
-            if (now === before || r.item.v === now._lazy.v) { apply(c, id, r.item.data); notify(c); return r.item.data; }
+            if (now === before || r.item.v === now._lazy.v) { apply(c, id, r.item.data); if (!pending.has(k)) mark(k, r.item.at, true); notify(c); return r.item.data; }
           }
           throw { code: "unavailable", message: "Il contenuto cambia di continuo: riprova tra poco." };
         })().finally(() => loading.delete(k)));
@@ -180,6 +352,8 @@
           return () => { subs[c] = subs[c].filter((f) => f !== cb); };
         },
       }),
+      write,
+      fetch: fetchOne,
       poll,
       load,
     };

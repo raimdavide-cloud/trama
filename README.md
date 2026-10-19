@@ -95,7 +95,7 @@ npm test
 Test end-to-end di Trama con Playwright contro un **simulatore** (`tests/sim/server.mjs`): API in memoria e Jira finto che rispetta i livelli Project › Fase › Epica › ticket. Non serve né il database né un account Atlassian. In locale i test usano Chrome già installato.
 
 - **Unitari** (`tests/unit`): router; sessioni, cookie, stessa origine e cifratura dei token; API dei dati con un database finto (chi vede, scrive ed elimina cosa, limiti e validazioni); operazioni Jira contro il Jira finto (campi ammessi, chiavi e label non valide, errori temporanei, nuovo accesso).
-- **End-to-end** (`tests/e2e`): percorso principale (`studio.spec.mjs`), flussi a mano, Domande, Kit, Backlog, esportazioni, resilienza della creazione su Jira con errori simulati, chat e collegamenti delle pagine (`flussi.spec.mjs`), accessibilità WCAG 2.2 AA con axe anche in modalità scura (`accessibilita.spec.mjs`). Gli aiuti comuni stanno in `aiuti.mjs`.
+- **End-to-end** (`tests/e2e`): percorso principale (`studio.spec.mjs`), flussi a mano, Domande, Kit, Backlog, esportazioni, resilienza della creazione su Jira con errori simulati, chat e collegamenti delle pagine (`flussi.spec.mjs`), più schede sullo stesso progetto (conflitti e riapplicazione delle modifiche) e salvataggi ritentati quando il server dei dati non risponde (`robustezza.spec.mjs`), accessibilità WCAG 2.2 AA con axe anche in modalità scura (`accessibilita.spec.mjs`). Gli aiuti comuni stanno in `aiuti.mjs`.
 - **Visivi**, solo in locale (`npm run test:visual`): pagine, passi di Trama e stati come pannelli, progetto nuovo, esito della creazione, finestra media, modalità scura, menu e chat. Le immagini di riferimento stanno in `tests/visual/riferimenti`; dopo un cambiamento voluto: `npm run test:visual -- --update-snapshots`, poi guardale prima del commit.
 
 Il simulatore accetta guasti su richiesta (`POST /__sim/fault`), per provare cosa succede quando Jira risponde con un errore o perde la risposta.
@@ -161,7 +161,8 @@ Trama è pensato per il computer: richiede una finestra larga almeno 900 pixel e
 ## Limiti noti
 
 - Lo strumento non crea progetti, componenti o versioni in Jira: se un ticket li richiede vanno creati a mano.
-- Due persone che modificano **lo stesso** requisito o ticket nello stesso momento: vince l'ultima modifica salvata.
+- Kit, progetto, chat e ticket sono sotto controllo: se un collega ha salvato prima, la modifica si riapplica sulla sua versione; se non si può (l'elemento non c'è più, o cambia di continuo) Trama lo dice e mostra la sua versione. Requisiti, documenti, domande e decisioni no: due persone che modificano **lo stesso** requisito nello stesso momento, vince l'ultima modifica salvata. Una scheda aperta prima dell'aggiornamento di Trama scrive senza controllo finché non si ricarica.
+- Se il server dei dati non risponde, i salvataggi restano in coda e si ritentano da soli (in alto, «N salvataggi in attesa»): chiudendo la scheda in quel momento si perdono, e il browser lo avvisa.
 - I documenti caricati vengono salvati come testo, fino a 110.000 caratteri ciascuno. Le immagini vengono trascritte da Claude.
 - Claude funziona solo dal Mac su cui gira il ponte e consuma i limiti del tuo piano Claude Code. In modalità ponte la chat risponde e propone, ma non modifica direttamente requisiti e ticket.
 - Safari su Mac può bloccare le richieste dal sito al ponte locale su `127.0.0.1`: usa Chrome o Firefox.

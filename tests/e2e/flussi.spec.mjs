@@ -275,21 +275,31 @@ test("pagine pubbliche: ogni collegamento interno porta a una pagina che esiste"
   expect(seen.size).toBeGreaterThan(4);
 });
 
-test("salvataggio in blocco: rinominare una release aggiorna decine di elementi con una sola richiesta, salvata sul server", async ({ page, request }) => {
+test("salvataggio in blocco: rinominare una release aggiorna decine di elementi, i requisiti in una sola richiesta e i ticket con il controllo, 4 alla volta", async ({ page, request }) => {
   await openStudio(page);
+  await page.evaluate(() => BS.writesDone()); // i salvataggi dell'apertura (registro delle decisioni) non contano
   const writes = [];
-  page.on("request", (r) => { if (["PUT", "POST", "DELETE"].includes(r.method()) && r.url().includes("/api/projects/")) writes.push(`${r.method()} ${new URL(r.url()).pathname.split("/").slice(3).join("/")}`); });
+  let open = 0, most = 0; // richieste condizionali sui ticket in viaggio insieme
+  page.on("request", (r) => { if (!["PUT", "POST", "DELETE"].includes(r.method()) || !r.url().includes("/api/projects/")) return; writes.push(`${r.method()} ${new URL(r.url()).pathname.split("/").slice(3).join("/")} ${r.headers()["x-base"] ? "base" : ""}`); if (r.url().includes("/items/tickets/")) most = Math.max(most, ++open); });
+  page.on("requestfinished", (r) => { if (r.url().includes("/items/tickets/")) open--; });
   await goToStep(page, "Kit di progetto");
   const old = await page.evaluate(() => K().releases[0].name);
-  const touched = await page.evaluate((o) => reqList().filter((x) => x.release === o).length + ticketList().filter((x) => x.release === o).length, old);
-  expect(touched).toBeGreaterThan(20);
+  const reqs = await page.evaluate((o) => reqList().filter((x) => x.release === o).length, old);
+  const tickets = await page.evaluate((o) => ticketList().filter((x) => x.release === o).length, old);
+  const touched = reqs + tickets;
+  expect(reqs).toBeGreaterThan(5);
+  expect(tickets).toBeGreaterThan(5);
   await openSec(page, "Release (= Fase)");
   const name = page.locator('[data-bind="meta:kit:releases.0.name"]');
   await name.fill(`${old} bis`);
   await name.press("Tab");
   await page.evaluate(() => BS.writesDone());
-  expect(writes.filter((w) => w.startsWith("POST") && w.endsWith("/batch")).length, writes.join("\n")).toBe(1);
-  expect(writes.length, "nessuna richiesta per singolo elemento").toBeLessThanOrEqual(2);
+  const list = writes.join("\n");
+  expect(writes.filter((w) => w.startsWith("POST") && w.includes("/batch")).length, list).toBe(1); // tutti i requisiti insieme
+  expect(writes.filter((w) => w.startsWith("PUT") && w.includes("/items/reqs/")), list).toHaveLength(0);
+  expect(writes.filter((w) => w === "PUT progetto-prova/items/meta/kit base"), list).toHaveLength(1);
+  expect(writes.filter((w) => w.startsWith("PUT") && w.includes("/items/tickets/") && w.endsWith("base")), list).toHaveLength(tickets); // ognuno con la sua versione
+  expect(most).toBeLessThanOrEqual(4);
   const saved = (await (await request.get("/api/projects/progetto-prova")).json()).items;
   expect(saved.filter((i) => (i.col === "reqs" || i.col === "tickets") && i.data.release === old)).toHaveLength(0);
   expect(saved.filter((i) => (i.col === "reqs" || i.col === "tickets") && i.data.release === `${old} bis`)).toHaveLength(touched);

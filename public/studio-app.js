@@ -12,7 +12,6 @@ function toast(t,undo){const el=$("#toast");clearTimeout(toast.t);el.hidden=fals
   if(undo){el.innerHTML=`<span>${esc(t)}</span><button type="button" class="toast-undo">Annulla</button>`;el.querySelector("button").onclick=()=>{clearTimeout(toast.t);el.hidden=true;undo()}}else el.textContent=t;
   toast.t=setTimeout(()=>el.hidden=true,undo?9000:4200)}
 function setPath(o,path,v){const ks=path.split(".");let x=o;ks.slice(0,-1).forEach((k,i)=>{if(x[k]==null||typeof x[k]!=="object")x[k]=/^\d+$/.test(ks[i+1])?[]:{};x=x[k]});x[ks.at(-1)]=v;return o}
-function getPath(o,path){return path.split(".").reduce((x,k)=>x==null?x:x[k],o)}
 const ls={get(k,d){try{const v=localStorage.getItem("bs:"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("bs:"+k,JSON.stringify(v))}catch(e){}}};
 
 /* ================= vocabolario del playbook ================= */
@@ -135,31 +134,53 @@ const PID=new URLSearchParams(location.search).get("p")||"";
 let cur=Math.max(0,+ls.get("step:"+PID,0)||0);
 let ME=null,SITES=[],SERVER_PROJECT=null,GATE=null,PROJECTS=null;
 
-/* scritture: una alla volta, nell'ordine in cui avvengono */
-let wchain=Promise.resolve();
-// i salvataggi partono subito: il runtime li raggruppa e li invia in ordine, un gruppo alla volta
-function queue(fn){const p=Promise.resolve().then(fn).catch(dbErr);wchain=wchain.then(()=>p);return p}
+/* Scritture: partono subito e il runtime le invia in ordine. Kit, progetto, chat, lock e ticket sono sotto controllo:
+   partono con la versione letta e, se un collega ha salvato prima, la funzione di modifica si riapplica sui suoi dati.
+   put, del e saveMeta accettano un contenuto o una funzione fresh => nuovo (null = annulla) e si risolvono true/false, mai in errore:
+   true appena la scrittura è confermata o in coda di ritentativo; con {wait:ms} solo se confermata entro ms (Infinity: senza limite).
+   {force:true} scrive senza controllo (si può raggruppare con le altre). */
+const COND_META=new Set(["kit","project","sprints","chat","lock"]);
+let wchain=Promise.resolve(); // l'ultima scrittura chiesta (per le misure)
+let PEND=0; // salvataggi in attesa di un nuovo tentativo
+const METAS=new Set(); // documenti meta visti o scritti: se spariscono dal runtime (salvataggio non riuscito) si tolgono anche da S
 function dbErr(e){const c=e?.code;
   if(c==="invalid_argument"){READONLY=true;toast("Non hai i permessi per modificare questo progetto: lo vedi in sola lettura.")}
+  else if(c==="conflict")toast("Un collega ha appena modificato questa parte: ricaricata la sua versione, rifai la modifica.");
+  else if(c==="gone")toast("L'elemento è stato modificato o eliminato da un collega.");
   else if(c==="quota_exceeded")toast("Spazio dati esaurito: elimina documenti o ticket non più necessari.");
   else if(c==="resource_exhausted")toast("Troppe modifiche in poco tempo: attendi qualche secondo.");
   else if(c==="revoked")toast("L'accesso ai dati condivisi è stato revocato.");
   else toast("Salvataggio non riuscito"+(c?" ("+c+")":"")+". Riprova.");
   scheduleRender()}
-function saveMeta(id,data){S[id]=data;id==="chat"?renderChat():scheduleRender();if(DB)queue(()=>DB.doc("meta/"+id).set(data))}
+function persist(c,id,v,o={}){const meta=c==="meta",cur=meta?S[id]:S[c]?.[id];let w;
+  // una funzione di modifica che non si applica (errore) non salva nulla
+  try{w=DB?DB.write(c,id,v,{cond:!o.force&&(c==="tickets"||meta&&COND_META.has(id))}):localWrite(v,cur)}catch(e){console.warn(e);dbErr({code:"gone"});return Promise.resolve(false)}
+  if(meta)METAS.add(id);
+  if(!w.same&&!w.gone){const val=w.value;
+    if(meta){if(val===undefined)delete S[id];else S[id]=val}else{const x={...S[c]};if(val===undefined)delete x[id];else x[id]=val;S[c]=x}
+    meta&&id==="chat"?renderChat():scheduleRender();if(c==="tickets"){T.touched.add(id);qaAutoSoon()}if(c==="questions"&&!QSYNC)queueMicrotask(syncQDecisions)}
+  if(!DB){if(w.gone)dbErr({code:"gone"});return Promise.resolve(!w.gone)}
+  w.done.catch(dbErr);
+  const conf=()=>w.done.then(()=>true),r=(o.wait?isFinite(o.wait)?Promise.race([conf(),sleep(o.wait).then(()=>false)]):conf():w.accepted.then(()=>true)).catch(()=>false);
+  wchain=wchain.then(()=>r);return r}
+function localWrite(v,cur){const d=typeof v==="function"?BS.change(v,cur):v===null?undefined:v;return d===BS.GONE?{gone:true}:d===BS.SAME?{same:true,value:cur}:{value:d}}
+function saveMeta(id,v,o){return persist("meta",id,v,o)}
 let QSYNC=false;
-function put(c,id,data){S[c]={...S[c],[id]:data};scheduleRender();if(c==="tickets"){T.touched.add(id);qaAutoSoon()}const r=DB?queue(()=>DB.collection(c).doc(id).set(data)):undefined;if(c==="questions"&&!QSYNC)queueMicrotask(syncQDecisions);return r}
+function put(c,id,v,o){return persist(c,id,v,o)}
 // Ogni risposta o ipotesi entra da sola nel registro delle decisioni; se la risposta cambia, si aggiorna la stessa riga
 function syncQDecisions(){if(QSYNC||READONLY)return;QSYNC=true;try{let n=0;
   arr("questions").forEach(q=>{const a=q.answer?.trim(),h=q.hypothesis?.trim();if(!(a||h))return;const text=a?`${q.q} → ${a}`:`(Ipotesi) ${q.q} → ${h}`,who=q.who||(a?"Cliente":"PO (ipotesi)"),d=q.decisionId&&S.decisions[q.decisionId];
    if(d){if(d.autoText!==text||d.source==="Domande di apertura (Fase 0)"){put("decisions",q.decisionId,{...d,text,who,autoText:text,source:d.source==="Domande di apertura (Fase 0)"?"Domande di apertura":d.source})}return}
    const id=uid();put("decisions",id,{date:today(),text,autoText:text,who,type:"Perimetro funzionale",source:"Domande di apertura",impact:"",kit:"",replaces:"",at:Date.now()+n++});put("questions",q.id,{...S.questions[q.id],decisionId:id})})}finally{QSYNC=false}}
-function del(c,id){const o={...S[c]};delete o[id];S[c]=o;scheduleRender();if(DB)queue(()=>DB.collection(c).doc(id).delete())}
+// del(c,id[,guard][,opzioni]): guard(fresh) che restituisce null annulla l'eliminazione
+function del(c,id,a,b){return typeof a==="function"?persist(c,id,f=>a(f)===null?null:BS.DEL,b):persist(c,id,null,a)}
+// un ticket già creato in Jira (anche da un collega nel frattempo) non si elimina da qui
+const draftOnly=t=>t?.state==="created"?null:true;
 // eliminazione con «Annulla»: si tiene una copia completa e per qualche secondo si può rimettere tutto com'era
 async function trash(c,ids,msg){ids=ids.filter(id=>S[c]?.[id]);if(!ids.length)return;const snap=[];
   for(const id of ids){let d=S[c][id];if(lazy(d))d=await full(c,id).catch(()=>null);snap.push([id,d])}
-  ids.forEach(id=>del(c,id));
-  toast(msg,()=>{const ok=snap.filter(([,d])=>d&&!lazy(d));ok.forEach(([id,d])=>put(c,id,d));toast(ok.length===1?"Ripristinato.":`Ripristinati ${ok.length} elementi.`)})}
+  ids.forEach(id=>c==="tickets"?del(c,id,draftOnly):del(c,id));
+  toast(msg,()=>{const ok=snap.filter(([,d])=>d&&!lazy(d));ok.forEach(([id,d])=>put(c,id,d,{force:true}));toast(ok.length===1?"Ripristinato.":`Ripristinati ${ok.length} elementi.`)})}
 // Apertura leggera: testo dei documenti, log della creazione e controllo di qualità arrivano come segnaposto e si caricano quando servono
 const lazy=d=>!!BS.isLazy?.(d);
 async function full(c,id){const get=()=>c==="meta"?S[id]:S[c]?.[id];if(!lazy(get())||!DB)return get();
@@ -179,14 +200,19 @@ const ticketList=()=>listOf("tickets",(a,b)=>COLLN.compare(String(a.ref),String(
 const LMEMO=new Map(),COLL=new Intl.Collator(),COLLN=new Intl.Collator(undefined,{numeric:true});
 function listOf(c,cmp){const src=S[c],m=LMEMO.get(c);if(m?.src===src)return m.list.slice();const list=Object.entries(src).map(([id,v])=>({...v,id})).sort(cmp);LMEMO.set(c,{src,list});return list.slice()}
 let REFS={src:null,set:null};const ticketRefs=()=>REFS.src===S.tickets?REFS.set:(REFS={src:S.tickets,set:new Set(ticketList().map(x=>x.ref))}).set;
-const editKit=fn=>{const k=clone(K());fn(k);syncPhases(k);saveMeta("kit",k)};
+// kit con i valori predefiniti per i campi che mancano
+const kitOf=d=>({...defaultKit(),...(d||{}),team:{...defaultKit().team,...(d?.team||{})}});
+/* Le modifiche al kit, al progetto e alla chat sono funzioni pure dei dati freschi: niente await, niente effetti fuori dal documento,
+   gli elementi si ritrovano per identità (release per nome e label, epica per nome, Fase per id), mai per posizione.
+   Se un collega ha salvato prima, si riapplicano sulla sua versione; restituire null annulla la modifica. */
+const editKit=(fn,o)=>saveMeta("kit",fresh=>{const k=kitOf(fresh);if(fn(k)===null)return null;syncPhases(k);return k},o);
 /* Release = Fase: una Fase per ogni release del K2, con lo stesso nome; l'epica sta sotto la Fase della sua release.
    Le Fasi già create in Jira restano anche se la loro release sparisce (in Jira non si cancella nulla da qui). */
 function syncPhases(k){const h=k.hier;if(!h)return;const ph=h.phases||[];
   const list=k.releases.map(r=>r.name).filter(Boolean).map(n=>ph.find(f=>f.name===n)||{id:uid(),name:n,key:""});
   ph.forEach(f=>{if(f.key&&!list.includes(f))list.push(f)});h.phases=list;
   k.epics.forEach(e=>{const f=list.find(x=>x.name===e.release);e.phase=f?f.id:""})}
-const editProject=fn=>{const p=clone(P());fn(p);saveMeta("project",p)};
+const editProject=(fn,o)=>saveMeta("project",fresh=>{const p=fresh||{};return fn(p)===null?null:p},o);
 
 /* ================= Jira ================= */
 const SRV="Atlassian Rovo";
@@ -259,7 +285,7 @@ function renderChrome(){
   const p=P();$("#pmenu").hidden=false;$("#projName").textContent=p.name||p.jiraName||"Progetto";$("#projKey").textContent=p.key||"";
   const ch=(s,l)=>`<span class="chip ${s}">${l}</span>`;
   // Si vedono solo gli stati che chiedono attenzione; Claude resta sempre raggiungibile (apre il pannello del ponte).
-  const db=caps.db==="ok"?(READONLY?ch("warn","Sola lettura"):""):caps.db==="loading"?"":caps.db==="warn"?ch("warn","Sincronizzazione in pausa"):ch("err","Dati non salvati");
+  const db=(PEND?`<span class="chip warn" id="savePend" role="status">${PEND===1?"1 salvataggio in attesa":PEND+" salvataggi in attesa"}</span>`:"")+(caps.db==="ok"?(READONLY?ch("warn","Sola lettura"):""):caps.db==="loading"?"":caps.db==="warn"?ch("warn","Sincronizzazione in pausa"):ch("err","Dati non salvati"));
   const jr=caps.mcp==="ok"?(p.key||!Object.keys(S.project||{}).length?"":ch("warn","Jira da collegare")):caps.mcp==="loading"?"":ch("err","Jira non disponibile");
   const cs=caps.sample,cl=cs==="ok"?"ok":cs==="loading"?"":cs==="login"?"warn":"err",ct=cs==="ok"?"Claude collegato":cs==="loading"?"Claude…":cs==="login"?"Claude: accedi":"Claude non collegato";
   $("#capChips").innerHTML=db+jr+`<button type="button" class="chip ${cl}${cs==="ok"?" dot-only":""}" data-act="bridgePanel" aria-expanded="${!!T.bridgeOpen}" aria-label="${ct}: stato e impostazioni del ponte" title="${ct}">${cs==="ok"?"":ct}</button>`;
@@ -433,9 +459,10 @@ function labelTableFields(root){root.querySelectorAll("table").forEach(tb=>{cons
 /* Cambio di release (= Fase) di un'epica dal Kit.
    In Trama: l'epica passa alla Fase della nuova release e i suoi ticket prendono la nuova release.
    In Jira (solo se l'epica esiste già, e solo dopo «Aggiorna Jira»): Principale dell'epica e label di release di epica e ticket. */
-function epicRelease(i,v){const k0=K(),e0=k0.epics[i];if(!e0||e0.release===v)return;const old=e0.release;
-  editKit(k=>{k.epics[i].release=v});
-  ticketList().filter(t=>t.epic===e0.name&&t.release!==v&&v).forEach(t=>{const{id,...d}=t;put("tickets",id,{...d,release:v})});
+function epicRelease(name,v){const k0=K(),e0=k0.epics.find(x=>x.name===name);if(!e0||e0.release===v)return;const old=e0.release;
+  // i ticket seguono solo se il kit è stato salvato e l'epica c'è ancora (un collega può averla eliminata)
+  editKit(k=>{const e=k.epics.find(x=>x.name===name);if(!e)return null;e.release=v}).then(ok=>{if(!ok||!v||!K().epics.some(e=>e.name===name&&e.release===v))return;
+    ticketList().filter(t=>t.epic===name&&t.release!==v).forEach(t=>put("tickets",t.id,f=>f&&f.epic===name?{...f,release:v}:f))});
   T.epicMove=e0.key&&k0.hier?.enabled&&v?{name:e0.name,from:old,to:v}:null;render()}
 function epicMoveCard(){const mv=T.epicMove;if(!mv)return"";const k=K(),e=k.epics.find(x=>x.name===mv.name);if(!e||!e.key){T.epicMove=null;return""}
   const from=relOf(mv.from),to=relOf(mv.to),ph=(k.hier.phases||[]).find(f=>f.id===e.phase),fromPh=(k.hier.phases||[]).find(f=>f.name===mv.from);
@@ -477,8 +504,8 @@ async function epicMoveRun(){const mv=T.epicMove;if(!mv)return;const p=P(),k=K()
 let SPIKE_DONE=false;
 function migrateSpike(loaded){if(SPIKE_DONE||READONLY||!loaded.has("meta")||!loaded.has("tickets"))return;SPIKE_DONE=true;
   if(S.kit?.types&&"Spike" in S.kit.types)editKit(k=>{const was=k.types.Spike;delete k.types.Spike;if(!k.types["UX Story"])k.types["UX Story"]=!was||was==="Spike"||was==="Task"?"UX Story":was});
-  arr("tickets").filter(t=>t.type==="Spike").forEach(t=>{const{id,...d}=t;put("tickets",id,{...d,type:"UX Story"})});
-  arr("tickets").filter(t=>t.state==="created"&&t.key&&!t.pushed).forEach(t=>{const{id,...d}=t;put("tickets",id,{...d,pushed:pushedOf(t)})})}
+  arr("tickets").filter(t=>t.type==="Spike").forEach(t=>{const{id,...d}=t;put("tickets",id,{...d,type:"UX Story"},{force:true})});
+  arr("tickets").filter(t=>t.state==="created"&&t.key&&!t.pushed).forEach(t=>{const{id,...d}=t;put("tickets",id,{...d,pushed:pushedOf(t)},{force:true})})}
 /* Sezioni apribili dei passi (variante A).
    Le schede con un titolo (e i titoli «1 · Documenti» del passo Requisiti, le categorie delle Domande) diventano sezioni:
    numero, titolo e stato nella riga del titolo. Si aprono da sole quando hanno qualcosa da fare, non si chiudono mai da
@@ -1016,12 +1043,12 @@ async function qualityFind(ts,list,step){const refs=new Set(list.map(t=>t.ref)),
 A.qualityCheck=()=>run("qualityCheck","Claude sta leggendo…",async()=>{const ts=ticketList();if(!ts.length)return;let q=S.quality||{};if(lazy(q))q=await full("meta","quality");
   const findings=await qualityFind(ts,ts,(i,n)=>{busy.qualityCheck=`Analizzo ${Math.min(i+10,n)} di ${n}…`;scheduleRender()});
   saveMeta("quality",{...(q.auto===false?{auto:false}:{}),at:Date.now(),count:ts.length,findings,seen:Object.fromEntries(ts.map(t=>[t.ref,tfp(t)]))});setMsg("backlog","ok",findings.length?`Analisi completata: ${findings.length} segnalazioni.`:"Analisi completata: nessun problema rilevato.")});
+function addClarify(desc,msg){let d=String(desc||"");const H="## Points to clarify",i=d.indexOf(H);const bullet=`* ${msg}`;
+  if(i<0)return d.replace(/\s*$/,"")+`\n\n${H}\n${bullet}\n`;const nx=d.indexOf("\n## ",i+H.length);const end=nx<0?d.length:nx;return d.slice(0,end).replace(/\s*$/,"")+`\n${bullet}\n`+d.slice(end)}
 A.qIgnore=el=>{const q=clone(S.quality);const f=q.findings.find(x=>x.id===el.dataset.id);if(f){f.status="ignored";saveMeta("quality",q)}};
 A.qClarify=el=>{const q=clone(S.quality),f=q.findings.find(x=>x.id===el.dataset.id);if(!f)return;const t=ticketList().find(x=>x.ref===f.ref);
   if(!t){toast("Ticket non trovato.");return}if(t.state==="created"){toast(`${f.ref} è già in Jira: aggiungi il punto direttamente in Jira.`);return}
-  let d=String(t.desc||"");const H="## Points to clarify",i=d.indexOf(H);const bullet=`* ${f.message}`;
-  if(i<0)d=d.replace(/\s*$/,"")+`\n\n${H}\n${bullet}\n`;else{const nx=d.indexOf("\n## ",i+H.length);const end=nx<0?d.length:nx;d=d.slice(0,end).replace(/\s*$/,"")+`\n${bullet}\n`+d.slice(end)}
-  put("tickets",t.id,{...S.tickets[t.id],desc:d});f.status="done";saveMeta("quality",q);toast(`Aggiunto ai «Points to clarify» di ${f.ref}.`)};
+  put("tickets",t.id,x=>x&&x.state!=="created"?{...x,desc:addClarify(x.desc,f.message)}:null);f.status="done";saveMeta("quality",q);toast(`Aggiunto ai «Points to clarify» di ${f.ref}.`)};
 
 
 /* ================= azioni ================= */
@@ -1172,15 +1199,15 @@ function docDiffPanel(){const dd=T.dd;if(!dd)return"";const {added,changed,remov
    ${sec("Non più nel documento",removed,x=>`<b>${esc(x.code)}</b> · <span data-no-i18n>${esc(x.title)}</span>`)}
    ${!added.length&&!changed.length&&!removed.length?'<p class="empty">Nessuna differenza: i requisiti sono già allineati a questo documento.</p>':""}
    <div class="toolbar" style="margin-top:12px">${B("docDiffApply",T.arm.ddApply?`Conferma: applica ${n===1?"1 modifica":n+" modifiche"}`:`Applica ${n===1?"1 modifica":n+" modifiche"}`,{cls:T.arm.ddApply?"armed":"primary",dis:!n})}${B("spClose","Chiudi",{ro:1})}</div>`)}
-A.docDiffApply=el=>arm("ddApply",el,()=>{const dd=T.dd,on=x=>!dd.off.has(x.key),snapR={},snapT={},mark=(code,why)=>ticketList().filter(t=>t.req===code).forEach(t=>{snapT[t.id]??=S.tickets[t.id];put("tickets",t.id,{...S.tickets[t.id],review:{why,at:Date.now()}})});
+A.docDiffApply=el=>arm("ddApply",el,()=>{const dd=T.dd,on=x=>!dd.off.has(x.key),snapR={},snapT={},mark=(code,why)=>ticketList().filter(t=>t.req===code).forEach(t=>{snapT[t.id]??=S.tickets[t.id];const review={why,at:Date.now()};put("tickets",t.id,x=>x?{...x,review}:x)});
   const add=dd.diff.added.filter(on),chg=dd.diff.changed.filter(on),rem=dd.diff.removed.filter(on),newIds=[];T.fresh=new Set();
   add.forEach((a,i)=>{const used=new Set(reqList().map(x=>x.code));const code=a.sourceId&&!used.has(a.sourceId)?a.sourceId:nextReqCode();const id=uid();newIds.push(id);T.fresh.add(id);const{key,sourceId,...f}=a;put("reqs",id,{...f,code,designReady:false,source:dd.doc,order:Date.now()+i})});
   chg.forEach(c=>{snapR[c.id]=S.reqs[c.id];put("reqs",c.id,{...S.reqs[c.id],...c.to,changed:{at:Date.now(),doc:dd.doc,fields:c.fields},source:dd.doc});mark(c.code,`il requisito ${c.code} è cambiato in «${dd.doc}» (${c.fields.map(f=>DIFF_FIELDS[f]).join(", ")}).`)});
   rem.forEach(r=>{snapR[r.id]=S.reqs[r.id];put("reqs",r.id,{...S.reqs[r.id],removed:{at:Date.now(),doc:dd.doc}});mark(r.code,`il requisito ${r.code} non c'è più in «${dd.doc}».`)});
   const pl=(n,a,b)=>n===1?"1 "+a:n+" "+b;addAutoDecision(`Nuova versione del documento «${dd.doc}»: ${pl(add.length,"requisito nuovo","requisiti nuovi")}, ${pl(chg.length,"cambiato","cambiati")}, ${pl(rem.length,"non più presente","non più presenti")}.`,"Documento");
   editProject(p=>{delete p.reqsValidatedAt});T.panel=null;T.dd=null;
-  toast(`Applicate ${add.length+chg.length+rem.length} modifiche: ${Object.keys(snapT).length===1?"1 ticket da rivedere":Object.keys(snapT).length+" ticket da rivedere"}.`,()=>{newIds.forEach(id=>del("reqs",id));Object.entries(snapR).forEach(([id,d])=>put("reqs",id,d));Object.entries(snapT).forEach(([id,d])=>put("tickets",id,d));toast("Versione del documento non applicata.")})});
-A.reviewDone=el=>{const t=S.tickets[el.dataset.id];if(!t)return;const{review,...rest}=t;put("tickets",el.dataset.id,rest);toast("Ticket segnato come rivisto.")};
+  toast(`Applicate ${add.length+chg.length+rem.length} modifiche: ${Object.keys(snapT).length===1?"1 ticket da rivedere":Object.keys(snapT).length+" ticket da rivedere"}.`,()=>{newIds.forEach(id=>del("reqs",id));Object.entries(snapR).forEach(([id,d])=>put("reqs",id,d));Object.entries(snapT).forEach(([id,d])=>put("tickets",id,x=>{if(!x)return x;const{review,...r}=x;return d.review?{...r,review:d.review}:r}));toast("Versione del documento non applicata.")})});
+A.reviewDone=el=>{if(!S.tickets[el.dataset.id])return;put("tickets",el.dataset.id,t=>{if(!t)return null;const{review,...rest}=t;return rest});toast("Ticket segnato come rivisto.")};
 A.exportReqs=()=>exportCsv("requisiti.csv",["ID","Titolo","Descrizione","Componenti","Release","Note UI/UX","Dipendenze esterne","Dipendenze interne","Domande aperte","Design pronto"],reqList().map(r=>[r.code,r.title,r.desc,(r.components||[]).join("; "),r.release,r.ui,r.extDeps,r.intDeps,r.questions,r.designReady?"sì":"no"]));
 
 /* passo 4 */
@@ -1204,23 +1231,23 @@ A.copyQuestions=el=>{const t=arr("questions").filter(x=>!x.answer?.trim()&&!x.hy
 
 /* passo 5 */
 A.addRelease=()=>editKit(k=>{const n=k.releases.length+1;k.releases.push({name:"Release "+n,label:"Release"+n,date:""})});
-A.delRelease=el=>editKit(k=>k.releases.splice(+el.dataset.i,1));
+A.delRelease=el=>{const r=K().releases[+el.dataset.i];if(r)editKit(k=>{const j=k.releases.findIndex(x=>x.name===r.name&&x.label===r.label);if(j<0)return null;k.releases.splice(j,1)})};
 A.addPhase=()=>editKit(k=>{(k.hier.phases||(k.hier.phases=[])).push({id:uid(),name:"Nuova fase",key:""})});
-A.delPhase=el=>editKit(k=>{const f=k.hier.phases[+el.dataset.i];k.hier.phases.splice(+el.dataset.i,1);k.epics.forEach(e=>{if(f&&e.phase===f.id)e.phase=""})});
+A.delPhase=el=>{const id=K().hier?.phases?.[+el.dataset.i]?.id;if(id)editKit(k=>{const j=(k.hier.phases||[]).findIndex(x=>x.id===id);if(j<0)return null;k.hier.phases.splice(j,1);k.epics.forEach(e=>{if(e.phase===id)e.phase=""})})};
 A.phasesFromReleases=()=>editKit(k=>{const have=new Map((k.hier.phases||[]).map(f=>[f.name,f]));const list=k.releases.map(r=>have.get(r.name)||{id:uid(),name:r.name,key:""});k.hier.phases=list;
   k.epics.forEach(e=>{const f=list.find(x=>x.name===e.release)||list[0];if(!e.phase||!list.some(x=>x.id===e.phase))e.phase=f?.id||""})});
-function autoStructure(){editKit(k=>{const h=k.hier;if(!h)return;const ts=S.jira.types||[];const above=ts.filter(t=>(t.level??0)>=2).sort((a,b)=>b.level-a.level);
+function autoStructure(){const ts=S.jira.types||[],pname=P().name||"";editKit(k=>{const h=k.hier;if(!h)return;const above=ts.filter(t=>(t.level??0)>=2).sort((a,b)=>b.level-a.level);
   if(!h.projectType){const m=above.find(t=>/project|progetto/i.test(t.name))||above[0];if(m)h.projectType=m.name}
   if(!h.phaseType){const m=above.find(t=>t.name!==h.projectType&&/fase|phase/i.test(t.name))||above.find(t=>t.name!==h.projectType);if(m)h.phaseType=m.name}
   const l1=ts.filter(t=>t.level===1);const ep=l1.find(t=>/feature/i.test(t.name))||l1[0];
   if(ep&&(!l1.some(t=>t.name===k.types.Epic)||(/feature/i.test(ep.name)&&!/feature/i.test(k.types.Epic||""))))k.types.Epic=ep.name;
-  if(!h.project)h.project={key:"",name:""};if(!h.project.key&&!h.project.name)h.project.name=k.productName||P().name||"";
+  if(!h.project)h.project={key:"",name:""};if(!h.project.key&&!h.project.name)h.project.name=k.productName||pname;
   if(!(h.phases||[]).length)h.phases=k.releases.length?k.releases.map(r=>({id:uid(),name:r.name,key:""})):[{id:uid(),name:"Fase 1",key:""}];
   k.epics.forEach(e=>{if(!e.phase||!h.phases.some(f=>f.id===e.phase)){const f=h.phases.find(x=>x.name===e.release)||h.phases[0];e.phase=f?.id||""}})})}
 A.autoStruct=()=>{autoStructure();toast("Struttura generata: controlla tipi, nome del Project e Fasi.")};
 A.addEpic=()=>editKit(k=>k.epics.push({name:"Nuova epica",release:"",key:""}));
 A.addPolish=()=>editKit(k=>k.epics.push({name:"Cross-cutting polish",release:"",key:""}));
-A.delEpic=el=>editKit(k=>k.epics.splice(+el.dataset.i,1));
+A.delEpic=el=>{const e=K().epics[+el.dataset.i];if(e)editKit(k=>{const j=k.epics.findIndex(x=>x.name===e.name);if(j<0)return null;k.epics.splice(j,1)})};
 A.proposeKit=()=>run("proposeKit","Claude sta pensando…",async()=>{const ans=arr("questions").filter(q=>q.answer||q.hypothesis).map(q=>`- ${q.q} → ${q.answer||q.hypothesis}`).join("\n");
   await loadDocs();let out;try{out=await ask(`${RULES}\n\nCOMPITO: proponi il kit di progetto (K2, K3, K7, K8, K9) a partire da requisiti, risposte e documenti. Epiche: una per area funzionale (es. Autenticazione, Account, Notifiche, Integrazione dispositivi, Configurazione) più "Cross-cutting polish". Release: usa i nomi presenti nei requisiti; label Release1, Release2…; data solo se indicata (YYYY-MM-DD), altrimenti vuota. Elenca in "assumptions" ogni scelta non presente nei documenti.\nKit attuale: ${kitBrief()}\nRisposte e ipotesi:\n${ans||"(nessuna)"}\nRequisiti:\n${reqList().map(reqLine).join("\n").slice(0,50000)}\nDocumenti:${ctxDocs(40000)}\n\nRispondi SOLO con JSON: {"productName":"","releases":[{"name":"","label":"","date":""}],"epics":[{"name":"","release":""}],"glossary":"","constraints":"","envs":"","lang":{"po":"","tickets":"","client":""},"assumptions":[""]}`)}catch(e){throw{ai:1,e}}
   editKit(k=>{if(!k.productName&&out.productName)k.productName=out.productName;
@@ -1265,32 +1292,39 @@ Rispondi SOLO con JSON: {"tickets":[{"tmp":"a1","req":"ID requisito","type":"Sto
   let out;try{out=await ask(prompt,{onText:({text})=>{const b=$('[data-act="genTickets"]');if(b)b.textContent=`Claude scrive… ${text.length.toLocaleString(LOCALE())} caratteri`}})}catch(e){throw{ai:1,e}}
   const list=out?.tickets||[];let n=nextRef();const map={};const made=[];
   list.forEach(x=>{const req=reqs.find(r=>r.code===x.req)||reqs[0];const ref=fmtRef(n++);if(x.tmp)map[x.tmp]=ref;made.push([x,ticketFromAI(x,ref,req)])});
-  for(const[x,t]of made){t.links=(x.links||[]).map(l=>({type:l.type==="blocks"?"blocks":"relates",to:map[l.to]})).filter(l=>l.to&&l.to!==t.ref);await put("tickets",uid(),t)}
+  for(const[x,t]of made){t.links=(x.links||[]).map(l=>({type:l.type==="blocks"?"blocks":"relates",to:map[l.to]})).filter(l=>l.to&&l.to!==t.ref);await put("tickets",uid(),t,{force:true})}
   return made.length}
 A.genTickets=()=>run("genTickets","Claude sta scomponendo…",async()=>{const ts=ticketList();const todo=reqList().filter(r=>!r.removed&&(T.rel==="*"||r.release===T.rel)&&!ts.some(t=>t.req===r.code));let tot=0,stopped=false;T.genLog="";
   progStart("genTickets",{label:"Claude sta scomponendo i requisiti in ticket",unit:"gruppo",total:todo.length,detail:`Requisiti 0 di ${todo.length}`});T.fresh=new Set();const before=new Set(Object.keys(S.tickets));
   try{for(let i=0;i<todo.length;i+=3){if(T.prog.genTickets?.stop)break;const batch=todo.slice(i,i+3);Object.assign(T.prog.genTickets,{done:i,label:`Claude scompone ${batch.map(r=>r.code).join(", ")}`,detail:`Requisiti ${i} di ${todo.length} · ${tot} ticket finora`});progPaint("genTickets");T.genLog+=`Requisiti ${batch.map(r=>r.code).join(", ")}… `;scheduleRender();try{const n=await genFor(batch);tot+=n;T.genLog+=`${n} ticket\n`;Object.keys(S.tickets).forEach(id=>{if(!before.has(id))T.fresh.add(id)});Object.assign(T.prog.genTickets,{done:Math.min(i+3,todo.length),detail:`Requisiti ${Math.min(i+3,todo.length)} di ${todo.length} · ${tot} ticket finora`,items:[...T.fresh].map(id=>S.tickets[id]).filter(Boolean).slice(-4).map(t=>({code:t.ref,title:fullTitle(t)}))});progPaint("genTickets")}catch(e){T.genLog+="non riuscito\n";throw e}}}finally{stopped=progEnd("genTickets")}
   setMsg("backlog","ok",`${stopped?"Scomposizione fermata. ":""}${tot} ticket generati. Apri ognuno per controllare titolo, epica, descrizione e ipotesi; correggi gli errori segnalati in rosso.`)});
-A.regenReq=el=>{const code=el.dataset.code;arm("regen"+code,el,()=>run("regenReq","Rigenero…",async()=>{const old=ticketList().filter(t=>t.req===code&&t.state!=="created").map(t=>[t.id,S.tickets[t.id]]);old.forEach(([id])=>del("tickets",id));const r=reqList().find(x=>x.code===code);const n=await genFor([r]);
+A.regenReq=el=>{const code=el.dataset.code;arm("regen"+code,el,()=>run("regenReq","Rigenero…",async()=>{const old=ticketList().filter(t=>t.req===code&&t.state!=="created").map(t=>[t.id,S.tickets[t.id]]);old.forEach(([id])=>del("tickets",id,draftOnly));const r=reqList().find(x=>x.code===code);const n=await genFor([r]);
   if(old.length)T.prevGen[code]=old;setMsg("backlog","ok",`${code}: ${n} ticket rigenerati.`);if(old.length)toast(`${code}: ${n} ticket rigenerati.`,()=>restoreGen(code))}));if(T.arm["regen"+code])toast("Premi di nuovo «Rigenera» per sostituire i ticket di "+code+".")};
 // torna ai ticket che c'erano prima di «Rigenera» (finché la pagina resta aperta)
-function restoreGen(code){const old=T.prevGen[code];if(!old)return;ticketList().filter(t=>t.req===code&&t.state!=="created").forEach(t=>del("tickets",t.id));old.forEach(([id,d])=>put("tickets",id,d));delete T.prevGen[code];toast(`${code}: tornati i ticket di prima.`)}
+function restoreGen(code){const old=T.prevGen[code];if(!old)return;ticketList().filter(t=>t.req===code&&t.state!=="created").forEach(t=>del("tickets",t.id,{force:true}));old.forEach(([id,d])=>put("tickets",id,d,{force:true}));delete T.prevGen[code];toast(`${code}: tornati i ticket di prima.`)}
 A.restoreGen=el=>arm("rg"+el.dataset.code,el,()=>restoreGen(el.dataset.code));
-A.addTicket=()=>{const id=uid(),k=K();put("tickets",id,{ref:fmtRef(nextRef()),req:"",type:"Story",area:"be",title:"",epic:"",release:k.releases[0]?.name||"",work:"Back-End",labels:[],desc:TEMPLATES.Story,links:[],assumptions:[],state:"draft",order:Date.now()});T.rel="*";T.bTab="tickets";T.panel={kind:"ticket",id};scheduleRender()};
+A.addTicket=()=>{const id=uid(),k=K();put("tickets",id,{ref:fmtRef(nextRef()),req:"",type:"Story",area:"be",title:"",epic:"",release:k.releases[0]?.name||"",work:"Back-End",labels:[],desc:TEMPLATES.Story,links:[],assumptions:[],state:"draft",order:Date.now()},{force:true});T.rel="*";T.bTab="tickets";T.panel={kind:"ticket",id};scheduleRender()};
 A.delTicket=el=>arm("t"+el.dataset.id,el,()=>{T.tsel.delete(el.dataset.id);T.panel=null;trash("tickets",[el.dataset.id],"Ticket eliminato.")});
-A.applyTemplate=el=>arm("tpl"+el.dataset.id,el,()=>{const t=S.tickets[el.dataset.id];put("tickets",el.dataset.id,{...t,desc:TEMPLATES[t.type]})});
+A.applyTemplate=el=>arm("tpl"+el.dataset.id,el,()=>put("tickets",el.dataset.id,t=>t?{...t,desc:TEMPLATES[t.type]}:null));
 A.exportTickets=()=>{const k=K();exportCsv("backlog.csv",["Ref","Requisito","Tipo","Titolo","Epica","Label","Collegamenti","Chiave Jira","Descrizione"],ticketList().map(t=>[t.ref,t.req,k.types[t.type]||t.type,fullTitle(t),t.epic,labelsOf(t).join(" "),linksText(t),t.key||"",t.desc]))};
 const qaTicket=el=>ticketList().find(x=>x.id===el.dataset.id);
 A.kitImport=()=>{T.ki=null;T.panel={kind:"kitimp",id:"kitimp"};render()};
-A.kitImportRun=el=>arm("kimp",el,async()=>{const ki=T.ki,src=await kitSource(ki.src);if(!src)return;const before=clone(K());let n={rel:0,ep:0};
-  editKit(k=>{n=kitMerge(k,src,ki.parts,ki.over)});T.panel=null;
-  toast(n.rel||n.ep?`Kit aggiornato: +${n.rel} release, +${n.ep} epiche.`:"Kit aggiornato.",()=>{saveMeta("kit",before);toast("Kit come prima.")})});
+A.kitImportRun=el=>arm("kimp",el,async()=>{const ki=T.ki,src=await kitSource(ki.src);if(!src)return;const before=clone(K()),n=kitMerge(clone(K()),src,ki.parts,ki.over);
+  editKit(k=>{kitMerge(k,src,ki.parts,ki.over)});T.panel=null;
+  toast(n.rel||n.ep?`Kit aggiornato: +${n.rel} release, +${n.ep} epiche.`:"Kit aggiornato.",()=>{editKit(k=>{const b=kitKeepKeys(clone(before),k);Object.keys(k).forEach(x=>delete k[x]);Object.assign(k,b)});toast("Kit come prima.")})});
+// il kit di prima con le chiavi Jira di adesso: epiche, Fasi e Project creati nel frattempo restano collegati
+function kitKeepKeys(b,k){
+  b.epics.forEach(x=>{const e=k.epics.find(y=>y.name===x.name);if(!e)return;x.key=e.key||"";if(e.linkedTo)x.linkedTo=e.linkedTo;else delete x.linkedTo});
+  k.epics.forEach(e=>{if(e.key&&!b.epics.some(x=>x.name===e.name))b.epics.push(e)});
+  if(k.hier&&b.hier){const ph=b.hier.phases||(b.hier.phases=[]);(k.hier.phases||[]).forEach(f=>{const x=ph.find(y=>y.id===f.id);if(x)x.key=f.key||"";else if(f.key)ph.push(f)});
+    if(k.hier.project)b.hier.project={...(b.hier.project||{name:""}),key:k.hier.project.key||""}}
+  return b}
 A.tSelNone=()=>{T.tsel.clear();delete T.arm.tbulk;render();refocus("#tSearch")};
 A.tBulkApply=()=>{const ep=$("#tbEpic")?.value,rel=$("#tbRel")?.value,wk=$("#tbWork")?.value,lb=String($("#tbLabel")?.value||"").split(",").map(x=>canonLabel(x.trim())).filter(Boolean);
   if(!ep&&!rel&&!wk&&!lb.length){toast("Scegli cosa cambiare: epica, release, tipo di lavoro o label.");return}
   const ids=[...T.tsel].filter(id=>S.tickets[id]),snap=ids.map(id=>[id,S.tickets[id]]);
-  ids.forEach(id=>{const t=S.tickets[id];put("tickets",id,{...t,...(ep?{epic:ep}:{}),...(rel?{release:rel}:{}),...(wk?{work:wk}:{}),...(lb.length?{labels:[...new Set([...(t.labels||[]),...lb])]}:{})})});
-  toast(ids.length===1?"Aggiornato 1 ticket.":`Aggiornati ${ids.length} ticket.`,()=>{snap.forEach(([id,d])=>put("tickets",id,d));toast("Modifiche annullate.")})};
+  ids.forEach(id=>put("tickets",id,t=>t&&{...t,...(ep?{epic:ep}:{}),...(rel?{release:rel}:{}),...(wk?{work:wk}:{}),...(lb.length?{labels:[...new Set([...(t.labels||[]),...lb])]}:{})}));
+  toast(ids.length===1?"Aggiornato 1 ticket.":`Aggiornati ${ids.length} ticket.`,()=>{snap.forEach(([id,d])=>put("tickets",id,t=>t&&{...t,...(ep?{epic:d.epic}:{}),...(rel?{release:d.release}:{}),...(wk?{work:d.work}:{}),...(lb.length?{labels:d.labels}:{})}));toast("Modifiche annullate.")})};
 A.tBulkDel=el=>arm("tbulk",el,()=>{const ids=[...T.tsel].filter(id=>S.tickets[id]&&S.tickets[id].state!=="created");ids.forEach(id=>T.tsel.delete(id));if(T.panel?.kind==="ticket"&&ids.includes(T.panel.id))T.panel=null;
   trash("tickets",ids,ids.length===1?"Eliminata 1 bozza.":`Eliminate ${ids.length} bozze.`)});
 A.qaCopy=el=>{const t=qaTicket(el);if(t)copyText(QA.sheet(t,qaCtx()).md,el)};
@@ -1318,9 +1352,9 @@ function fieldsFor(t){const k=K(),j=S.jira,r=relOf(t.release),f={};
   (j.required||[]).forEach(x=>{const v=k.custom?.[x.key];if(v)f[x.key]=x.allowed?.length?{value:v}:v});return f}
 async function createOne(t){const p=P(),k=K();
   const input={cloudId:p.cloudId,projectKey:p.key,issueTypeName:k.types[t.type]||t.type,summary:fullTitle(t),description:t.desc,contentFormat:"markdown",additional_fields:fieldsFor(t)};
-  try{const r=await jira("createJiraIssue",input);const key=findKey(r);if(!key)throw{code:"upstream_error",message:"chiave non restituita"};await put("tickets",t.id,{...S.tickets[t.id],state:"created",key,err:"",verify:"",pushed:pushedOf(t)});logLine(`${t.ref} → ${key}  ${fullTitle(t)}`);return true}
-  catch(e){if(e?.code==="tool_error"){await put("tickets",t.id,{...S.tickets[t.id],state:"error",err:jiraMsg(e)});logLine(`${t.ref} non creato: ${jiraMsg(e)}`);return true}
-   if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};await put("tickets",t.id,{...S.tickets[t.id],state:"unknown",err:"Esito incerto: Jira non ha risposto. Usa «Cerca in Jira» prima di riprovare."});logLine(`${t.ref}: esito incerto, creazione fermata.`);return false}}
+  try{const r=await jira("createJiraIssue",input);const key=findKey(r);if(!key)throw{code:"upstream_error",message:"chiave non restituita"};const pushed=pushedOf(t),{id:_,...rest}=t;await put("tickets",t.id,x=>({...(x||rest),state:"created",key,err:"",verify:"",pushed}));logLine(`${t.ref} → ${key}  ${fullTitle(t)}`);return true}
+  catch(e){if(e?.code==="tool_error"){const err=jiraMsg(e);await put("tickets",t.id,x=>x?{...x,state:"error",err}:null);logLine(`${t.ref} non creato: ${jiraMsg(e)}`);return true}
+   if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};await put("tickets",t.id,x=>x?{...x,state:"unknown",err:"Esito incerto: Jira non ha risposto. Usa «Cerca in Jira» prima di riprovare."}:null);logLine(`${t.ref}: esito incerto, creazione fermata.`);return false}}
 // Se Jira risponde con un errore incerto ma il ticket è stato creato lo stesso, lo ritrova e lo riusa
 async function findCreated(type,summary,parentKey){const p=P();const q=String(summary).replace(/[\[\]"\\]/g," ").replace(/\s+/g," ").trim();if(!q)return"";
   try{const r=await jira("searchJiraIssuesUsingJql",{cloudId:p.cloudId,jql:`project = "${p.key}" AND issuetype = "${String(type).replace(/"/g,"")}" AND summary ~ "${q}" AND created >= -20m ORDER BY created DESC`,maxResults:10,fields:["summary","parent"]});
@@ -1351,7 +1385,7 @@ async function pushItem(it){const t=S.tickets[it.id];if(!t||it.gone)return false
   if(it.d.includes("summary"))input.summary=cur.summary;if(it.d.includes("desc"))input.description=t.desc;
   if(it.d.includes("labels")){const add=cur.labels.filter(l=>!t.pushed.labels.includes(l)),rem=t.pushed.labels.filter(l=>!cur.labels.includes(l));input.labels=[...new Set([...it.jiraLabels,...add])].filter(l=>!rem.includes(l))}
   if(it.d.includes("epic")&&cur.epic)input.parentKey=cur.epic;
-  await jira("editJiraIssue",input);await put("tickets",it.id,{...S.tickets[it.id],pushed:{...cur,epic:input.parentKey||t.pushed.epic},verify:""});
+  await jira("editJiraIssue",input);const pushed={...cur,epic:input.parentKey||t.pushed.epic};await put("tickets",it.id,x=>x?{...x,pushed,verify:""}:null);
   logLine(`${t.key} aggiornato in Jira: ${it.d.map(f=>PUSH_NAMES[f]).join(", ")}.`);return true}
 function pushPreview(scope){const pp=T.pushPlan;if(!pp||pp.scope!==scope)return"";const n=pp.items.filter(x=>!x.gone).length;
   return`<div class="card note" style="margin:10px 0 0"><b>${n?(n===1?"1 ticket da aggiornare in Jira":n+" ticket da aggiornare in Jira"):"Nessun ticket da aggiornare"}${pp.links?` · ${pp.links===1?"1 collegamento da creare":pp.links+" collegamenti da creare"}`:""}</b>
@@ -1384,7 +1418,7 @@ async function verifyStructure(){const k=K(),h=k.hier;if(!h?.enabled){T.structRe
 async function createLinks(){const p=P(),k=K(),ts=ticketList();let n=0;
   for(const t of ts){if(t.state!=="created")continue;for(const l of(t.links||[])){const id=l.type+":"+l.to;if((S.tickets[t.id].linksDone||[]).includes(id))continue;const o=ts.find(x=>x.ref===l.to);if(!o||o.state!=="created"||!S.tickets[o.id]?.key)continue;if(T.stop)return n;
    const type=k.links[l.type];if(!type){logLine(`${t.ref}: tipo di collegamento «${l.type}» non scelto nel kit`);continue}
-   try{await jira("createIssueLink",{cloudId:p.cloudId,type,inwardIssue:t.key,outwardIssue:S.tickets[o.id].key});const cur2=S.tickets[t.id];await put("tickets",t.id,{...cur2,linksDone:[...(cur2.linksDone||[]),id]});n++;logLine(`${t.key} ${l.type==="blocks"?"blocca":"è correlato a"} ${S.tickets[o.id].key}`)}
+   try{await jira("createIssueLink",{cloudId:p.cloudId,type,inwardIssue:t.key,outwardIssue:S.tickets[o.id].key});await put("tickets",t.id,x=>x?{...x,linksDone:[...new Set([...(x.linksDone||[]),id])]}:null);n++;logLine(`${t.key} ${l.type==="blocks"?"blocca":"è correlato a"} ${S.tickets[o.id].key}`)}
    catch(e){if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};logLine(`Collegamento ${t.key} → ${S.tickets[o.id].key} non creato: ${jiraMsg(e)}`)}}}return n}
 async function fetchIssues(keys,fields){const p=P();const map={},missing=new Set();
   for(let i=0;i<keys.length;i+=40){const part=keys.slice(i,i+40);
@@ -1400,7 +1434,7 @@ async function verify(){const p=P(),k=K(),c=ticketList().filter(t=>t.state==="cr
      (exp.labels||[]).forEach(l=>{if(!(f.labels||[]).includes(l))miss.push("label "+l)});     if(exp.parent&&f.parent?.key!==exp.parent.key)miss.push("epica");
      if(!exp.parent)miss.push("epica (non creata)");
      v=miss.length?"Manca: "+miss.join(", "):"ok";note=soft.join(", ")}
-    if(v==="ok")ok++;await put("tickets",t.id,{...S.tickets[t.id],verify:v,verifyNote:note||""})}}logLine(`Verifica: ${ok} di ${c.length} ticket con tutti i campi salvati.`);return{ok,tot:c.length}}
+    if(v==="ok")ok++;await put("tickets",t.id,x=>x&&{...x,verify:v,verifyNote:note||""})}}logLine(`Verifica: ${ok} di ${c.length} ticket con tutti i campi salvati.`);return{ok,tot:c.length}}
 function buildReport(v){const ts=ticketList(),c=ts.filter(t=>t.state==="created"),k=K(),pl=planOf();const clar=c.filter(t=>/## Points to clarify\s*\n\s*\*\s*\S/.test(t.desc||"")&&!/## Points to clarify\s*\n\s*\*\s*(none|n\/a)/i.test(t.desc||""));
   const by={};c.forEach(t=>{(by[t.area]=by[t.area]||[]).push(t)});
   return`<p><b>Creato:</b> ${c.length} ticket${k.epics.filter(e=>e.key).length?` e ${k.epics.filter(e=>e.key).length} epiche`:""}. ${Object.entries(by).map(([a,l])=>`${AREAS[a].label}: ${l.map(t=>browse(t.key)).join(" ")}`).join(" · ")}</p>
@@ -1431,7 +1465,7 @@ A.runStruct=el=>arm("struct",el,()=>run("runStruct","Creazione struttura…",asy
 A.retryOne=el=>run("retryOne","Creazione…",async()=>{const t=ticketList().find(x=>x.id===el.dataset.id);if(t&&!issuesOf(t).e.length)await createOne(t);else toast("Correggi prima gli errori del ticket al passo 5.")});
 A.reconcile=el=>run("reconcile","Ricerca…",async()=>{const t=ticketList().find(x=>x.id===el.dataset.id);const p=P();const r=await jira("searchJiraIssuesUsingJql",{cloudId:p.cloudId,jql:`project = "${p.key}" AND summary ~ "${fullTitle(t).replace(/[\[\]"\\]/g," ").replace(/\s+/g," ").trim()}" ORDER BY created DESC`,maxResults:10,fields:["summary"]});
   const hit=findIssues(r).find(i=>String(i.fields?.summary).toLowerCase()===fullTitle(t).toLowerCase());
-  if(hit){await put("tickets",t.id,{...t,state:"created",key:hit.key,err:"",pushed:pushedOf(t)});toast(`Trovato in Jira: ${hit.key}.`)}else{await put("tickets",t.id,{...t,state:"draft",err:""});toast("Non trovato in Jira: il ticket torna in bozza e verrà creato alla prossima creazione.")}});
+  if(hit){const pushed=pushedOf(t);await put("tickets",t.id,x=>x?{...x,state:"created",key:hit.key,err:"",pushed}:null);toast(`Trovato in Jira: ${hit.key}.`)}else{await put("tickets",t.id,x=>x&&x.state==="unknown"?{...x,state:"draft",err:""}:null);toast("Non trovato in Jira: il ticket torna in bozza e verrà creato alla prossima creazione.")}});
 function createdKeys(){const k=K(),h=k.hier;const set=new Set();ticketList().forEach(t=>{if(t.state==="created"&&t.key)set.add(t.key)});k.epics.forEach(e=>e.key&&set.add(e.key));(h?.phases||[]).forEach(f=>f.key&&set.add(f.key));h?.project?.key&&set.add(h.project.key);
   return[...set].sort((a,b)=>(+a.split("-").pop())-(+b.split("-").pop()))}
 async function syncJira(){const k=K(),h=k.hier;const ts=ticketList().filter(t=>t.state==="created"&&t.key);const keys=createdKeys();
@@ -1439,15 +1473,17 @@ async function syncJira(){const k=K(),h=k.hier;const ts=ticketList().filter(t=>t
   const {map,missing}=await fetchIssues(keys,["summary","issuetype","status","parent"]);
   const res={at:Date.now(),total:keys.length,deleted:[],parentDiff:[],renamed:[],status:{}};
   for(const t of ts){
-    if(missing.has(t.key)){res.deleted.push(`${t.key} ${fullTitle(t)}`);const{key,verify,linksDone,jiraStatus,syncedAt,pushed,...rest}=S.tickets[t.id];await put("tickets",t.id,{...rest,state:"draft",err:"Eliminato in Jira: tornato in bozza",linksDone:[]});continue}
+    if(missing.has(t.key)){res.deleted.push(`${t.key} ${fullTitle(t)}`);await put("tickets",t.id,x=>{if(!x||x.key!==t.key)return x;const{key,verify,linksDone,jiraStatus,syncedAt,pushed,...rest}=x;return{...rest,state:"draft",err:"Eliminato in Jira: tornato in bozza",linksDone:[]}});continue}
     const i=map[t.key],f=i?.fields||{},st=f.status?.name||"";res.status[st]=(res.status[st]||0)+1;
     const ep=k.epics.find(e=>e.name===t.epic),par=f.parent?.key||"";
     if(ep?.key&&par&&par!==ep.key)res.parentDiff.push(`${t.key} (in ${par}, previsto ${ep.key})`);
     if(String(f.summary||"").trim()&&String(f.summary).trim()!==fullTitle(t).trim())res.renamed.push(`${t.key} «${String(f.summary).slice(0,50)}»`);
-    if(S.tickets[t.id].jiraStatus!==st)await put("tickets",t.id,{...S.tickets[t.id],jiraStatus:st,syncedAt:Date.now()})}
+    if(S.tickets[t.id].jiraStatus!==st){const at=Date.now();await put("tickets",t.id,x=>x&&{...x,jiraStatus:st,syncedAt:at})}}
   // epiche, Fasi e Project eliminati in Jira: si dimentica la chiave, così possono essere ricreati
-  editKit(kk=>{kk.epics.forEach(e=>{if(e.key&&missing.has(e.key)){res.deleted.push(`${e.key} epica «${e.name}»`);e.key="";delete e.linkedTo}});
-    if(kk.hier){(kk.hier.phases||[]).forEach(f=>{if(f.key&&missing.has(f.key)){res.deleted.push(`${f.key} Fase «${f.name}»`);f.key=""}});if(kk.hier.project?.key&&missing.has(kk.hier.project.key)){res.deleted.push(`${kk.hier.project.key} Project «${kk.hier.project.name}»`);kk.hier.project.key=""}}});
+  const k1=K();k1.epics.forEach(e=>{if(e.key&&missing.has(e.key))res.deleted.push(`${e.key} epica «${e.name}»`)});
+  if(k1.hier){(k1.hier.phases||[]).forEach(f=>{if(f.key&&missing.has(f.key))res.deleted.push(`${f.key} Fase «${f.name}»`)});if(k1.hier.project?.key&&missing.has(k1.hier.project.key))res.deleted.push(`${k1.hier.project.key} Project «${k1.hier.project.name}»`)}
+  editKit(kk=>{kk.epics.forEach(e=>{if(e.key&&missing.has(e.key)){e.key="";delete e.linkedTo}});
+    if(kk.hier){(kk.hier.phases||[]).forEach(f=>{if(f.key&&missing.has(f.key))f.key=""});if(kk.hier.project?.key&&missing.has(kk.hier.project.key))kk.hier.project.key=""}});
   await verifyStructure();T.sync=res;T.report=null;
   const nd=res.deleted.length;logLine(`Sincronizzazione: ${keys.length-nd} elementi presenti in Jira, ${nd} eliminati (riportati in bozza), ${res.parentDiff.length} con epica diversa, ${res.renamed.length} rinominati.`)}
 // un solo pulsante: rilegge Jira (eliminati, stati, epiche, struttura) e verifica i campi dei ticket creati
@@ -1534,13 +1570,22 @@ document.addEventListener("change",e=>{const el=e.target;
   if(el.id==="createDup"){T.createDup=el.checked;render();return}
   if(el.id==="fileIn"){addFiles([...el.files]);el.value="";return}
   if(READONLY)return;
-  if(el.dataset.links){const id=el.dataset.links,t=S.tickets[id];const links=el.value.split(/[,;]+/).map(s=>s.trim()).filter(Boolean).map(s=>{const m=s.match(/^(blocks|blocca|relates|correlato)?\s*:?\s*(T-\d+)$/i);return m?{type:/^bloc/i.test(m[1]||"")?"blocks":"relates",to:m[2].toUpperCase()}:null}).filter(Boolean);put("tickets",id,{...t,links});return}
-  if(el.dataset.multi){const[c,id,f]=el.dataset.multi.split(":");const doc=clone(S[c][id]);const set=new Set(doc[f]||[]);el.checked?set.add(el.value):set.delete(el.value);doc[f]=REQ_COMPS.filter(x=>set.has(x));put(c,id,doc);return}
+  if(el.dataset.links){const id=el.dataset.links;const links=el.value.split(/[,;]+/).map(s=>s.trim()).filter(Boolean).map(s=>{const m=s.match(/^(blocks|blocca|relates|correlato)?\s*:?\s*(T-\d+)$/i);return m?{type:/^bloc/i.test(m[1]||"")?"blocks":"relates",to:m[2].toUpperCase()}:null}).filter(Boolean);put("tickets",id,t=>t?{...t,links}:null);return}
+  if(el.dataset.multi){const[c,id,f]=el.dataset.multi.split(":"),on=el.checked,val=el.value;put(c,id,d=>{if(!d)return null;const set=new Set(d[f]||[]);on?set.add(val):set.delete(val);return{...d,[f]:REQ_COMPS.filter(x=>set.has(x))}});return}
   if(el.dataset.bind){const[c,id,...rest]=el.dataset.bind.split(":");const f=rest.join(":");let v=el.type==="checkbox"?el.checked:el.dataset.type==="list"?el.value.split(",").map(s=>s.trim()).filter(Boolean):el.value;
-    if(c==="meta"&&id==="kit"&&/^epics\.\d+\.release$/.test(f)){epicRelease(+f.split(".")[1],v);return}
-    if(c==="meta"){const doc=clone(S[id])||{};setPath(doc,f,v);let old=null;if(id==="kit"&&/^releases\.\d+\.name$/.test(f)){old=getPath(S.kit,f);if(old&&old!==v){doc.epics.forEach(x=>{if(x.release===old)x.release=v});(doc.hier?.phases||[]).forEach(x=>{if(x.name===old)x.name=v})}else old=null}if(id==="kit")syncPhases(doc);
-      saveMeta(id,doc);if(old){arr("reqs").forEach(r=>{if(r.release===old){const{id:rid,...d}=r;put("reqs",rid,{...d,release:v})}});arr("tickets").forEach(t=>{if(t.release===old){const{id:tid,...d}=t;put("tickets",tid,{...d,release:v})}})}}
-    else{const doc=clone(S[c][id]);if(!doc)return;setPath(doc,f,v);put(c,id,doc);if(c==="tickets")refreshIssues(id);if(c==="questions")refreshQuestion(id)}}});
+    if(c==="meta"&&id==="kit")bindKit(f,v);
+    else if(c==="meta")saveMeta(id,d=>setPath(d||{},f,v));
+    else{if(!S[c]?.[id])return;put(c,id,d=>d?setPath(d,f,v):null);if(c==="tickets")refreshIssues(id);if(c==="questions")refreshQuestion(id)}}});
+/* Campi del kit. Release ed epiche si ritrovano per identità (release per nome e label, epica per nome) e non per posizione:
+   se nel frattempo un collega ne ha eliminata o aggiunta una, la modifica va comunque su quella giusta, o non si fa. */
+function bindKit(f,v){const m=f.match(/^(releases|epics)\.(\d+)\.(.+)$/);if(!m){editKit(k=>{setPath(k,f,v)});return}
+  const [,list,i,field]=m,cur=K()[list][+i];if(!cur)return;
+  if(list==="epics"&&field==="release"){epicRelease(cur.name,v);return}
+  const same=x=>x.name===cur.name&&(list==="epics"||x.label===cur.label),old=list==="releases"&&field==="name"&&cur.name&&cur.name!==v?cur.name:null;
+  editKit(k=>{const x=k[list].find(same);if(!x)return null;setPath(x,field,v);
+    if(old){k.epics.forEach(e=>{if(e.release===old)e.release=v});(k.hier?.phases||[]).forEach(p=>{if(p.name===old)p.name=v})}})
+  // requisiti e ticket seguono la rinomina solo se il kit è stato salvato e la release rinominata c'è ancora
+  .then(ok=>{if(!old||!ok||!K().releases.some(r=>r.name===v))return;const mv=d=>d&&d.release===old?{...d,release:v}:d;arr("reqs").forEach(r=>{if(r.release===old)put("reqs",r.id,mv)});arr("tickets").forEach(t=>{if(t.release===old)put("tickets",t.id,mv)})})}
 document.addEventListener("dragover",e=>{const d=e.target.closest?.("#drop");if(d){e.preventDefault();d.classList.add("over")}});
 document.addEventListener("dragleave",e=>{const d=e.target.closest?.("#drop");if(d)d.classList.remove("over")});
 document.addEventListener("drop",e=>{const d=e.target.closest?.("#drop");if(d){e.preventDefault();d.classList.remove("over");addFiles([...e.dataTransfer.files])}});
@@ -1592,12 +1637,11 @@ function applyAction(a){
   if(a.type==="update_requirement"){const r=reqList().find(x=>x.code===a.code),d=clone(S.reqs[r.id]);
     for(const[k,x]of Object.entries(a.fields))d[k]=k==="components"?(Array.isArray(x)?x:[]).filter(c=>REQ_COMPS.includes(c)):k==="designReady"?!!x:String(x);
     put("reqs",r.id,d);return`${r.code} aggiornato.`}
-  const t=ticketList().find(x=>x.ref===a.ref),d=clone(S.tickets[t.id]);for(const[k,x]of Object.entries(a.fields))d[k]=x;
-  put("tickets",t.id,d);const e=issuesOf({...d}).e;return`${t.ref} aggiornato.${e.length?" Restano errori: "+e.join("; "):""}`}
+  const t=ticketList().find(x=>x.ref===a.ref);put("tickets",t.id,d=>{if(!d||d.state==="created")return null;for(const[k,x]of Object.entries(a.fields))d[k]=x;return d});const e=issuesOf({...S.tickets[t.id]}).e;return`${t.ref} aggiornato.${e.length?" Restano errori: "+e.join("; "):""}`}
 function newReqCode(){const cs=reqList().map(r=>String(r.code)),m=cs.map(c=>c.match(/^([A-Za-z]+)-(\d+)$/)).filter(Boolean),pre={};m.forEach(x=>pre[x[1]]=(pre[x[1]]||0)+1);
   const best=Object.entries(pre).sort((a,b)=>b[1]-a[1])[0];if(!best)return nextReqCode();const mine=m.filter(x=>x[1]===best[0]),width=Math.max(...mine.map(x=>x[2].length)),used=new Set(cs);
   let n=Math.max(...mine.map(x=>+x[2]))+1,code;do{code=best[0]+"-"+String(n++).padStart(width,"0")}while(used.has(code));return code}
-function commitChat(mut){const c=clone(S.chat)||{};c.turns=c.turns||[];mut(c);c.turns=c.turns.slice(-40);saveMeta("chat",c)}
+function commitChat(mut){return saveMeta("chat",fresh=>{const c=fresh||{};c.turns=c.turns||[];if(mut(c)===null)return null;c.turns=c.turns.slice(-40);return c})}
 
 /* --- memoria: dove si trova l'utente, stato del progetto e riassunto delle conversazioni più vecchie --- */
 const CHAT_KEEP=12;
@@ -1620,7 +1664,7 @@ async function foldMemory(){if(folding||!SAMPLE||READONLY)return;const c=S.chat|
   if(live.length<CHAT_KEEP+4)return;const cut=live[live.length-CHAT_KEEP-1].at,old=turns.filter(t=>t.at>(c.sumAt||0)&&t.at<=cut);if(old.length<4)return;
   folding=true;
   try{const r=await SAMPLE([{role:"user",content:`Aggiorna il riassunto della conversazione tra il Product Owner e l'assistente di Trama.\n\nRIASSUNTO ATTUALE:\n${c.summary||"(vuoto)"}\n\nNUOVI MESSAGGI DA INCORPORARE:\n${old.map(t=>`[${t.role==="user"?"Utente":t.role==="note"?"Nota":"Assistente"}] ${String(t.content).slice(0,1500)}`).join("\n")}\n\nScrivi il nuovo riassunto in italiano, massimo 1500 caratteri, come elenco puntato: decisioni prese, preferenze e vincoli espressi dall'utente, ipotesi concordate, modifiche proposte (applicate o scartate solo se una nota lo dice: altrimenti scrivi «proposta»), domande rimaste aperte. NON riportare ciò che si legge già dallo stato del progetto (conteggi, passi completati, errori dei ticket, elenco dei requisiti). Nessun preambolo.`}],{cache:false,modelTier:"quick"});
-    const fresh=clone(S.chat)||{turns:[]};fresh.summary=r.text.trim().slice(0,2500);fresh.sumAt=cut;saveMeta("chat",fresh)}
+    const sum=r.text.trim().slice(0,2500);commitChat(c=>{c.summary=sum;c.sumAt=cut})}
   catch(e){}finally{folding=false}}
 
 /* --- suggerimenti: cambiano per passo e stato del progetto, e scompaiono una volta usati --- */
@@ -1824,6 +1868,8 @@ document.addEventListener("click",e=>{const b=e.target.closest(".dd-btn");if(b){
 document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;const open=document.querySelector(".dd-menu:not([hidden])");if(open){closeMenus();open.closest(".dd").querySelector(".dd-btn").focus()}});
 $("#logoutBtn").onclick=async()=>{try{await BS.api("/api/auth/logout",{method:"POST"})}catch(e){}location.href="/"};
 BS.onUnauthenticated=code=>{if(GATE!=="login")showGate("login",code==="needs_reauth"?"La sessione Atlassian è scaduta: accedi di nuovo per continuare. Il lavoro salvato non va perso.":"La sessione è scaduta: accedi di nuovo.")};
+// rete o server dei dati non disponibili: i salvataggi restano in coda e si ritentano; l'indicatore dice quanti sono
+BS.onPending=n=>{if(n===PEND)return;PEND=n;if(!GATE)renderChrome()};
 let syncFail=0;BS.onSync=ok=>{const was=syncFail;syncFail=ok?0:syncFail+1;if(!!was!==!!syncFail){caps.db=syncFail?"warn":"ok";renderChrome()}};
 
 async function checkBridge(){const h=await BS.checkBridge();const st=!h?"off":h.loggedIn===false?"login":"ok";if(st===caps.sample)return;caps.sample=st;SAMPLE=st==="ok"?BS.sample:null;render();renderChat()}
@@ -1839,7 +1885,8 @@ $("#main").innerHTML='<p class="empty" style="padding-top:10vh">Caricamento…</
   DB=BS.createDB(PID,st);caps.db="ok";MCP=BS.mcp;caps.mcp="ok";LIM=await BS.sample.limits();DL=BS.downloads;
   await checkBridge();setInterval(()=>{if(!document.hidden)checkBridge()},10000);
   const LOADED=new Set();
-  DB.collection("meta").onSnapshot(s=>{if(!LOADED.has("meta")){LOADED.add("meta");DATA_READY=["meta",...COLS].every(x=>LOADED.has(x));queueMicrotask(()=>migrateSpike(LOADED))}s.docs.forEach(d=>{if(d.exists)S[d.id]=d.data()});S.kit={...defaultKit(),...(S.kit||{}),team:{...defaultKit().team,...(S.kit?.team||{})}};renderChat();scheduleRender()});
+  const META0={project:()=>({}),kit:defaultKit,jira:()=>({}),chat:()=>({turns:[]}),quality:()=>({})};
+  DB.collection("meta").onSnapshot(s=>{const here=new Set(s.docs.map(d=>d.id));METAS.forEach(id=>{if(!here.has(id)){if(META0[id])S[id]=META0[id]();else delete S[id]}});s.docs.forEach(d=>METAS.add(d.id));if(!LOADED.has("meta")){LOADED.add("meta");DATA_READY=["meta",...COLS].every(x=>LOADED.has(x));queueMicrotask(()=>migrateSpike(LOADED))}s.docs.forEach(d=>{if(d.exists)S[d.id]=d.data()});S.kit=kitOf(S.kit);renderChat();scheduleRender()});
   // alla prima lettura di domande e registro si riallineano le decisioni nate dalle domande (anche quelle scritte da versioni precedenti)
   DB.collection("presence").onSnapshot(s=>{const o={};s.docs.forEach(d=>{if(d.exists)o[d.id]=d.data()});S.presence=o;renderPresence()});presenceBeat();
   BS.onRemote=(c,id,by)=>{if(c!=="tickets"||!by||by===ME?.accountId)return;(T.remote||(T.remote={}))[id]={by,at:Date.now()};if(T.panel?.kind==="ticket"&&T.panel.id===id)scheduleRender()};
