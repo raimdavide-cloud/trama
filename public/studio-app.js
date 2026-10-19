@@ -1957,7 +1957,9 @@ A.createProject=async()=>{const name=$("#npName").value.trim(),cloudId=$("#npSit
 A.forgetMe=el=>{arm("forgetMe",el,async()=>{try{await BS.api("/api/me",{method:"DELETE"});location.href="/?dati=eliminati"}catch(e){toast(e.message||"Cancellazione non riuscita: riprova tra poco.")}});if(GATE==="picker")renderPicker()};
 A.deleteProject=el=>{const id=el.dataset.id,k="dp"+id;if(T.arm[k]){delete T.arm[k];closeMenus();(async()=>{try{await BS.api("/api/projects/"+encodeURIComponent(id),{method:"DELETE"});toast("Progetto eliminato.");loadProjects()}catch(e){toast(e.message)}})()}else{T.arm[k]=1;renderPicker();setTimeout(()=>{if(T.arm[k]){delete T.arm[k];if(GATE==="picker")renderPicker()}},4000)}};
 const _scheduleRender=scheduleRender;scheduleRender=function(){if(GATE==="picker"){renderPicker();return}if(GATE)return;_scheduleRender()};
-A.setLang=async el=>{const l=el.dataset.lang;if(l===window.I18N?.lang){closeMenus();return}window.I18N?.set(l);try{await window.BS?.writesDone?.()}catch{}location.reload()};
+A.setLang=async el=>{const l=el.dataset.lang;if(l===window.I18N?.lang){closeMenus();return}window.I18N?.set(l);
+  // con il server dei dati giù la coda ritenta per 10 minuti: si aspetta al massimo 2 secondi, poi decide l'avviso del browser
+  try{await Promise.race([window.BS?.writesDone?.(),sleep(2000)])}catch{}location.reload()};
 /* menu a tendina della barra: progetto e account */
 function closeMenus(except){document.querySelectorAll(".dd").forEach(d=>{if(d===except)return;const b=d.querySelector(".dd-btn"),m=d.querySelector(".dd-menu");if(m&&!m.hidden){m.hidden=true;b.setAttribute("aria-expanded","false")}})}
 document.addEventListener("click",e=>{const b=e.target.closest(".dd-btn");if(b){const d=b.closest(".dd"),m=d.querySelector(".dd-menu"),open=m.hidden;closeMenus(d);m.hidden=!open;b.setAttribute("aria-expanded",String(open));if(open){if(d.id==="pmenu"&&PROJECTS===null&&ME){PROJECTS=[];BS.api("/api/projects").then(r=>{PROJECTS=r.projects||[];renderChrome()}).catch(()=>{})}m.querySelector("a,button")?.focus()}return}if(!e.target.closest(".dd-menu"))closeMenus()});

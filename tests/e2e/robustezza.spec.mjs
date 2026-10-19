@@ -157,6 +157,19 @@ test("server dei dati irraggiungibile: i salvataggi restano in coda, l'indicator
   expect(await page.evaluate((id) => S.tickets[id].title, ids.ticket)).toBe("Due");
 });
 
+test("cambio di lingua con il server dei dati giù: la pagina si ricarica lo stesso entro pochi secondi, l'avviso del browser protegge i salvataggi in coda", async ({ page, request }) => {
+  await page.route("**/items/presence/**", (r) => r.fulfill({ json: { ok: true } }));
+  await openStudio(page);
+  await saved(page);
+  await request.post("/__sim/fault", { data: { kind: "api503", times: 1000 } });
+  await page.evaluate(() => { const t = ticketList()[0]; put("tickets", t.id, (x) => ({ ...x, title: "In coda" })); });
+  await expect(page.locator("#savePend")).toHaveText("1 salvataggio in attesa");
+  page.on("dialog", (d) => d.accept()); // l'avviso di beforeunload: chi cambia lingua sceglie di lasciare la pagina
+  await page.locator("#langBtn").click();
+  await page.locator('[data-lang="en"]').click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en", { timeout: 8_000 });
+});
+
 test("kit: una modifica ancora in viaggio non torna indietro quando arriva un aggiornamento di un altro documento", async ({ page, request }) => {
   await openStudio(page);
   await goToStep(page, "Kit di progetto");
