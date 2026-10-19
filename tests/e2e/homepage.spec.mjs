@@ -82,6 +82,18 @@ test("aggancio morbido: fermandosi vicino all'inizio di una sezione la pagina la
   await page.evaluate((t) => scrollTo({ top: t, behavior: "instant" }), r + 140);
   await page.mouse.wheel(0, -50);
   await expect.poll(y, { timeout: 4000 }).toBe(r);
+  // scendendo e fermandosi appena dopo l'inizio di una sezione, non si torna indietro contro il movimento
+  await page.evaluate((t) => scrollTo({ top: t, behavior: "instant" }), r + 30);
+  await page.waitForTimeout(400);
+  await page.mouse.wheel(0, 50);
+  await settle();
+  expect(await y()).toBe(r + 80);
+  // scendendo, 150 px prima della sezione successiva: la aggancia
+  const e = await startOf("sicurezza");
+  await page.evaluate((t) => scrollTo({ top: t, behavior: "instant" }), e - 200);
+  await page.waitForTimeout(400);
+  await page.mouse.wheel(0, 50);
+  await expect.poll(y, { timeout: 4000 }).toBe(e);
   // a metà di una sezione lunga si resta dove si è
   await page.evaluate((t) => scrollTo({ top: t, behavior: "instant" }), r + 250);
   await page.mouse.wheel(0, 50);

@@ -48,6 +48,7 @@ La CI (`.github/workflows/ci.yml`) esegue controlli, test unitari e end-to-end. 
 | `npm run i18n:mancanti-home` | Testi della homepage senza traduzione inglese | Se tocchi la homepage |
 | `npm run test:visual` | Confronto con le immagini di riferimento (solo in locale, non in CI) | Se cambia qualcosa che si vede |
 | `npm run perf` | Tempi di ridisegno e salvataggi con 67, 134 e 268 ticket | Se tocchi liste, controlli o salvataggi |
+| `npm run perf:aggancio` | Aggancio delle sezioni della homepage con uno scorrimento da trackpad: inversioni, fotogrammi, tempi | Se tocchi lo scorrimento della homepage |
 
 - `npm test` esegue unitari ed end-to-end insieme.
 - I test end-to-end avviano da soli un simulatore sulla porta 8899. Se ne hai già uno aperto (`npm run sim`), lancia i test su un'altra porta, per esempio `SIM_PORT=8897 npm run test:e2e`, così non si pestano i dati.
