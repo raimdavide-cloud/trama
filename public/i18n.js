@@ -19,7 +19,7 @@
   const missing = new Set();
   const done = new Set(); // testi già tradotti: l'osservatore li rivede, ma non sono testi mancanti
 
-  // «Diario colturale» → «{q}», RF-012 / COM-1001 / T-051 → {k}, 3 / 10:42 / 16/10/2026 / 1,5 → {n}
+  // «Diario colturale» → «{q}», RF-012 / ORTO-1001 / T-051 → {k}, 3 / 10:42 / 16/10/2026 / 1,5 → {n}
   const TOKENS = /«[^«»]*»|\b[A-Z][A-Z0-9]*-\d+\b|\d+(?:[.,:/]\d+)*/g;
   function normalize(s) {
     const vals = { n: [], q: [], k: [] };

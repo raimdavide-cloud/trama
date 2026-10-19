@@ -17,6 +17,9 @@ const FAKE = {
   accountId: "account-di-prova",
   name: "Utente Prova",
   email: "utente.prova@example.com",
+  jiraKey: "ORTO",
+  jiraName: "OrtoComune",
+  jiraId: "10001",
 };
 
 // Ogni identità reale nota diventa un valore finto (anche dentro testi e decisioni).
@@ -31,9 +34,20 @@ const pairs = [
     [u.name, i ? `Collega ${i}` : FAKE.name],
   ]),
 ].filter(([a]) => a && String(a).length > 3);
+// Il progetto Jira del cliente (chiave, nome, id) si legge dal kit del progetto. Si sostituisce solo come parola intera:
+// la chiave è corta e non va toccata dentro altre parole; «KEY» copre anche le chiavi dei ticket «KEY-n».
+const jira = items.find((i) => i.col === "meta" && i.id === "project")?.data;
+if (!jira?.key) throw new Error(`Progetto ${id}: manca meta/project o la sua chiave Jira, non si può togliere il progetto del cliente dalla fixture`);
+const word = (s) => new RegExp("(?<!\\w)" + String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?!\\w)", "g");
+const words = [
+  [jira.key, FAKE.jiraKey],
+  [jira.jiraName, FAKE.jiraName],
+  [jira.jiraId, FAKE.jiraId],
+].filter(([a]) => a).map(([a, b]) => [word(a), b]);
 const scrub = (v) => {
   let s = JSON.stringify(v);
   for (const [a, b] of pairs) s = s.split(String(a)).join(b);
+  for (const [re, b] of words) s = s.replace(re, b);
   return JSON.parse(s);
 };
 
@@ -44,7 +58,7 @@ const out = {
   items: items.map((i) => ({ col: i.col, id: i.id, data: scrub(i.data) })),
 };
 const text = JSON.stringify(out);
-const leftovers = pairs.filter(([a]) => text.includes(String(a))).length;
+const leftovers = pairs.filter(([a]) => text.includes(String(a))).length + words.filter(([re]) => text.search(re) >= 0).length;
 writeFileSync(new URL("./progetto-prova.json", import.meta.url), JSON.stringify(out, null, 1));
 const byCol = out.items.reduce((m, i) => ((m[i.col] = (m[i.col] || 0) + 1), m), {});
 console.log(`progetto-prova.json: ${out.items.length} elementi`, byCol, leftovers ? `ATTENZIONE: ${leftovers} identità ancora presenti` : "nessuna identità reale");

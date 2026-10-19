@@ -112,7 +112,7 @@ test("kit da un altro progetto: riempie i campi vuoti, non copia le chiavi Jira,
   const r = await page.evaluate(() => {
     const k = clone(K());
     k.envs = ""; k.glossary = "già scritto";
-    const src = { envs: "Dev, Prod", glossary: "altro", links: { relates: "Relates", blocks: "Blocks" }, releases: [{ name: "Release 9", label: "Release9", key: "X-1" }], epics: [{ name: "Nuova area", release: "Release 9", key: "COM-999", linkedTo: "COM-1" }] };
+    const src = { envs: "Dev, Prod", glossary: "altro", links: { relates: "Relates", blocks: "Blocks" }, releases: [{ name: "Release 9", label: "Release9", key: "X-1" }], epics: [{ name: "Nuova area", release: "Release 9", key: "ORTO-999", linkedTo: "ORTO-1" }] };
     const n = kitMerge(k, src, { rules: true, releases: true, epics: true }, false);
     const k2 = clone(K()); kitMerge(k2, src, { rules: true, releases: false, epics: false }, true);
     return { n, envs: k.envs, glossary: k.glossary, epic: k.epics.find((e) => e.name === "Nuova area"), rel: k.releases.find((x) => x.name === "Release 9"), over: k2.glossary };

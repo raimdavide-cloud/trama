@@ -57,7 +57,7 @@ test("Crea su Jira dopo la creazione: esito", async ({ page }) => {
   await openSec(page, "Esito della creazione");
   await ready(page);
   const esito = page.locator('#main details.sec[data-sec="create:esito-della-creazione"]');
-  // chiavi e testi fissi (il simulatore riparte da COM-1001); altezza fissa: l'altezza totale varia di un pixel per arrotondamento
+  // chiavi e testi fissi (il simulatore riparte da ORTO-1001); altezza fissa: l'altezza totale varia di un pixel per arrotondamento
   await esito.evaluate((el) => el.scrollIntoView({ block: "start" }));
   const box = await esito.boundingBox();
   await expect(page).toHaveScreenshot("stato-esito-creazione.png", { ...shot, clip: { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: 700 } });

@@ -11,7 +11,7 @@ test("la pagina dei progetti mostra le schede e le azioni nel menu", async ({ pa
   await expect(page.getByRole("heading", { name: "I tuoi progetti" })).toBeVisible();
   const card = page.locator(".proj-card", { hasText: "Test Prova" });
   await expect(card).toContainText("requisiti");
-  await expect(card.locator(".key")).toHaveText("COM");
+  await expect(card.locator(".key")).toHaveText("ORTO");
   await card.getByRole("button", { name: /Altre azioni/ }).click();
   await expect(card.getByRole("menuitem", { name: "Elimina progetto" })).toBeVisible();
   await page.getByRole("button", { name: "+ Nuovo progetto" }).first().click();
@@ -173,7 +173,7 @@ test("il Registro apre il modulo dal pulsante e aggiunge la decisione", async ({
 test("barra in alto: menu del progetto con Apri in Jira e verifica dei collegamenti", async ({ page }) => {
   await openStudio(page);
   await page.locator("#projBtn").click();
-  await expect(page.getByRole("menuitem", { name: /Apri in Jira/ })).toHaveAttribute("href", /\/browse\/COM$/);
+  await expect(page.getByRole("menuitem", { name: /Apri in Jira/ })).toHaveAttribute("href", /\/browse\/ORTO$/);
   await page.keyboard.press("Escape");
   await expect(page.locator("#projMenu")).toBeHidden();
 

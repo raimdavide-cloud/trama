@@ -356,7 +356,7 @@ test("Scheda QA: dal pannello del ticket si vede, si copia e si scarica; dalla l
   await expect(pre).toContainText("- [ ] AC1 · ");
   await expect(pre).toContainText("## Da dove nasce");
   const [md] = await Promise.all([page.waitForEvent("download"), box.getByRole("button", { name: "Scarica .md" }).click()]);
-  expect(md.suggestedFilename()).toMatch(/^(COM-\d+|T-\d+)-[a-z0-9-]+\.md$/);
+  expect(md.suggestedFilename()).toMatch(/^(ORTO-\d+|T-\d+)-[a-z0-9-]+\.md$/);
   await expect(page.locator("#toast")).toHaveText("Scheda QA scaricata.");
   await page.keyboard.press("Escape");
   await page.locator(".exp-btn").click();

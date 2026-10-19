@@ -1,5 +1,5 @@
 /* Trama · dizionario inglese dell'interfaccia (vedi i18n.js).
-   exact: testo identico; templates: con {n} numeri, {q} nomi tra «», {k} chiavi (RF-012, COM-1001);
+   exact: testo identico; templates: con {n} numeri, {q} nomi tra «», {k} chiavi (RF-012, ORTO-1001);
    wild: con {*} testo libero (nomi, date relative). Testi nuovi da tradurre: npm run i18n:mancanti.
    Glossario: Requirement, Ticket, Project kit, Phase, Epic, Release (= Phase), Assumption, Decision log,
    Claude bridge, Step, Kick-off questions, Create in Jira, custom field. */

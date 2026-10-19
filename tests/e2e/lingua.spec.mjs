@@ -74,7 +74,7 @@ test("inglese: nessun testo dell'interfaccia resta in italiano, in tutti i passi
   // ticket «da aggiornare» e «da rivedere», con una collega che lo guarda e lo ha appena cambiato
   await page.evaluate(() => {
     const t = ticketList()[0];
-    put("tickets", t.id, { ...S.tickets[t.id], state: "created", key: "COM-1", pushed: { summary: "old", desc: "", labels: [], epic: "" }, review: { why: `il requisito ${t.req} è cambiato in «v2.md» (release).`, at: Date.now() } });
+    put("tickets", t.id, { ...S.tickets[t.id], state: "created", key: "ORTO-1", pushed: { summary: "old", desc: "", labels: [], epic: "" }, review: { why: `il requisito ${t.req} è cambiato in «v2.md» (release).`, at: Date.now() } });
     S.presence = { ...S.presence, laura: { name: "Laura Bianchi", at: Date.now(), step: "backlog", stepName: "Backlog", panel: "ticket:" + t.id, panelRef: t.ref } };
     (T.remote ||= {})[t.id] = { by: "laura", at: Date.now() };
     A.go({ dataset: { i: STEPS.findIndex((x) => x.id === "backlog") } });

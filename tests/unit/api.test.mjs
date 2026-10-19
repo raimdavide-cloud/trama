@@ -100,7 +100,7 @@ test("un documento si salva solo con collezione, id e corpo validi", async () =>
 });
 
 test("il nome del progetto salvato nei metadati aggiorna l'elenco", async () => {
-  await put("/api/projects/p1/items/meta/project", { name: "Nuovo nome", key: "COM" });
+  await put("/api/projects/p1/items/meta/project", { name: "Nuovo nome", key: "ORTO" });
   assert.equal(db.projects.p1.name, "Nuovo nome");
 });
 

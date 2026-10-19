@@ -12,7 +12,7 @@ const DEMOS={
    <div class="tk" data-s="0"><span class="key">T-016</span><span class="t" data-no-i18n><em>[FE - Web]</em> Shifts calendar</span><span class="m"><span class="pill">Story</span><span class="pill">2 AC</span></span></div>
    <div class="req" data-s="0"><span class="key">RF-020</span><b>Calendario dei turni di irrigazione</b><span class="pill primary">MVP</span></div>
    <div class="zipcard" data-s="3">${I("i-send")}<div><b>schede-qa-mvp.zip</b><small>piano-di-test.md · 31 schede</small></div></div></div>
-   <div class="stack"><p class="label-s" data-s="1">Scheda QA · COM-906.md</p><div class="mdv">
+   <div class="stack"><p class="label-s" data-s="1">Scheda QA · ORTO-906.md</p><div class="mdv">
    <div data-s="1"><b>## Cosa verificare</b></div><div data-s="1" data-no-i18n>☐ AC1 · Week and month views from 360 px</div><div data-s="1" data-no-i18n>☐ AC2 · Loads in under 2 s with 200 shifts</div>
    <div data-s="2"><b>## Da dove nasce</b></div><div data-s="2">RF-020 · Calendario dei turni di irrigazione</div>
    <div data-s="2"><b>## Dipendenze</b></div><div data-s="2">Da collaudare dopo: T-015 [BE] Shifts API</div>
@@ -38,14 +38,14 @@ const DEMOS={
    <div class="chk">${I("i-check")}Label di release: MVP</div><div class="chk">${I("i-check")}Label di tipo lavoro: UI</div><div class="chk">${I("i-check")}Prefisso nel titolo: [FE - Mobile]</div>
    <div class="chk bad" data-x="4">${I("i-alert")}Epica mancante (K3)</div><div class="chk" data-s="4">${I("i-check")}Epica: Turni e presenze</div>
    <div data-s="4" style="margin-top:6px"><span class="pill ok">pronto per Jira</span></div></div></div></div></div>`},
- jira:{title:"trama · Passo 6 di 6 · Crea su Jira",steps:["Il controllo è verde: si conferma e si crea.","Prima il Project, sotto il cliente COM.","Poi le Fasi, con il Project come Principale.","Le epiche sotto la Fase, le storie sotto l'epica.","Trama rilegge Jira: ogni livello è collegato."],
+ jira:{title:"trama · Passo 6 di 6 · Crea su Jira",steps:["Il controllo è verde: si conferma e si crea.","Prima il Project, sotto il cliente ORTO.","Poi le Fasi, con il Project come Principale.","Le epiche sotto la Fase, le storie sotto l'epica.","Trama rilegge Jira: ogni livello è collegato."],
   html:`<div class="tree"><div class="row" data-s="0" style="margin-bottom:6px"><span class="pill ok">${I("i-check")}9 controlli superati</span><span class="pill">1 Project · 2 Fasi · 6 epiche · 48 ticket</span></div>
-   <div class="node" data-s="1"><span class="lv">Project</span><b>OrtoComune</b><span class="key">COM-901</span></div>
-   <div class="node n1" data-s="2"><span class="lv">Fase</span><b>Analisi</b><span class="key">COM-902</span></div>
-   <div class="node n1" data-s="2"><span class="lv">Fase</span><b>Sviluppo MVP</b><span class="key">COM-903</span></div>
-   <div class="node n2" data-s="3"><span class="lv">Feature Epic</span><b>Turni e presenze</b><span class="key">COM-904</span></div>
-   <div class="node n3" data-s="3"><span class="lv">Story</span><b>[BE] Shifts API and rotation rules</b><span class="key">COM-905</span></div>
-   <div class="node n3" data-s="3"><span class="lv">Story</span><b>[FE - Web] Shifts calendar</b><span class="key">COM-906</span></div>
+   <div class="node" data-s="1"><span class="lv">Project</span><b>OrtoComune</b><span class="key">ORTO-901</span></div>
+   <div class="node n1" data-s="2"><span class="lv">Fase</span><b>Analisi</b><span class="key">ORTO-902</span></div>
+   <div class="node n1" data-s="2"><span class="lv">Fase</span><b>Sviluppo MVP</b><span class="key">ORTO-903</span></div>
+   <div class="node n2" data-s="3"><span class="lv">Feature Epic</span><b>Turni e presenze</b><span class="key">ORTO-904</span></div>
+   <div class="node n3" data-s="3"><span class="lv">Story</span><b>[BE] Shifts API and rotation rules</b><span class="key">ORTO-905</span></div>
+   <div class="node n3" data-s="3"><span class="lv">Story</span><b>[FE - Web] Shifts calendar</b><span class="key">ORTO-906</span></div>
    <div data-s="4" style="margin-top:6px"><span class="done-badge">${I("i-check")}Struttura verificata: 57 di 57 livelli collegati</span></div></div>`},
  plan:{title:"trama · Passo 5 di 6 · Qualità del backlog",steps:["Chiedi a Tessa un controllo del backlog.","Segnala un criterio vago, con la correzione.","Le altre segnalazioni, in ordine di gravità.","Correggi e ricontrolla: il backlog è pronto."],
   html:`<div class="d-grid"><div class="stack"><div class="bub u" data-s="0">Controlla la qualità del backlog dell'MVP</div>

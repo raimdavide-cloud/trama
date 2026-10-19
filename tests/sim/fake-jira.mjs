@@ -6,7 +6,7 @@
 const realFetch = globalThis.fetch;
 
 export const sim = {
-  projectKey: "COM",
+  projectKey: "ORTO",
   cloudId: "00000000-0000-4000-8000-000000000001",
   types: [],
   components: [],
@@ -128,7 +128,7 @@ async function handle(url, init) {
   }
   if (method === "POST" && p === "/rest/api/3/search/jql") return runJql(body.jql || "", body);
   if (method === "GET" && p === "/rest/api/3/project/search") {
-    return json(200, { values: [{ id: "12422", key: sim.projectKey, name: "Compass", issueTypes: sim.types.map((t) => ({ id: t.id, name: t.name, subtask: false, hierarchyLevel: t.level })) }], isLast: true });
+    return json(200, { values: [{ id: "10001", key: sim.projectKey, name: "OrtoComune", issueTypes: sim.types.map((t) => ({ id: t.id, name: t.name, subtask: false, hierarchyLevel: t.level })) }], isLast: true });
   }
   if (method === "GET" && p === "/rest/api/3/issueLinkType") {
     return json(200, { issueLinkTypes: [{ name: "1. Relates", inward: "relates to", outward: "relates to" }, { name: "3. Blocking", inward: "is blocked by", outward: "blocks" }] });
