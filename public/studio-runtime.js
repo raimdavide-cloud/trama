@@ -23,7 +23,7 @@
       throw { code: data.code === "needs_reauth" ? "needs_reauth" : "unauthenticated", message: data.message || "Sessione scaduta: accedi di nuovo con Atlassian." };
     }
     if (!r.ok || data.ok === false) {
-      throw { code: data.code || "upstream_error", message: data.message || `HTTP ${r.status}`, retryable: !!data.retryable, status: r.status, ...("at" in data ? { at: data.at } : {}) };
+      throw { code: data.code || "upstream_error", message: data.message || `HTTP ${r.status}`, retryable: !!data.retryable, status: r.status, ...("at" in data ? { at: data.at } : {}), ...(data.status != null ? { jiraStatus: data.status } : {}) }; // jiraStatus: lo status di Jira dietro /api/jira
     }
     return data;
   }
@@ -64,8 +64,12 @@
     // versione di ogni elemento come la conosce il server (at della riga, viva o eliminata): è la base (x-base) delle scritture condizionali
     const ver = new Map();
     const mark = (k, at, live) => ver.set(k, { at: at == null ? (ver.get(k)?.at ?? 0) : Number(at), live });
+    // la risposta di una scrittura non abbassa mai la versione: se la sincronizzazione ne ha già portata una più recente (un collega
+    // ha salvato subito dopo), resta quella, con i suoi dati
+    const raise = (k, at, live) => { const v = ver.get(k); if (v && at != null && Number(at) < v.at) return false; mark(k, at, live); return true; };
     const baseOf = (k) => (ver.get(k)?.live ? String(ver.get(k).at) : "none");
     let since = initial.now;
+    if (initial.now) BS.onClock?.(Date.parse(initial.now) * 1000);
     for (const it of initial.items) { (store[it.col] ||= {})[it.id] = it.data; if (it.at != null) mark(`${it.col}/${it.id}`, it.at, true); }
     const snap = (c) => ({ docs: Object.entries(store[c] || {}).map(([id, d]) => ({ id, exists: true, data: () => d })) });
     const notify = (c) => (subs[c] || []).forEach((f) => { try { f(snap(c)); } catch (e) { console.error(e); } });
@@ -105,7 +109,7 @@
       pending.set(k, (pending.get(k) || 0) + 1);
       apply(c, id, data);
       touch();
-      const op = { c, id, k, fn, data, from: cur, cond: !!o.cond, tries: 0, size: data === null ? 0 : JSON.stringify(data).length };
+      const op = { c, id, k, fn, data, from: cur, cond: !!o.cond, base: o.base, tries: 0, size: data === null ? 0 : JSON.stringify(data).length };
       const accepted = new Promise((res, rej) => { op.ok = res; op.no = rej; });
       const done = new Promise((res, rej) => { op.res = res; op.rej = rej; });
       accepted.catch(() => {}); done.catch(() => {});
@@ -150,11 +154,11 @@
       else { pending.delete(op.k); known.delete(op.k); }
     }
     function done(op) {
-      known.set(op.k, op.data ?? undefined);
+      if (!op.stale) known.set(op.k, op.data ?? undefined);
       op.dead = true; // conclusa: il suo contenuto è ora in known e non va riapplicato
-      if (op.redo) refold(op.c, op.id);
+      if (op.redo || op.stale) refold(op.c, op.id);
       finish(op);
-      op.ok(); op.res();
+      op.ok(); op.res(op.at); // done si risolve con la versione scritta
     }
     function fail(op, e) {
       const err = writeErr(e);
@@ -215,11 +219,11 @@
         if (group.length === 1) {
           const g = group[0];
           const r = await api(url(g.c, g.id), g.data === null ? { method: "DELETE" } : { method: "PUT", body: g.data });
-          mark(g.k, r.at, g.data !== null);
+          g.stale = !raise(g.k, r.at, g.data !== null);
         } else {
           const r = await api(`/api/projects/${encodeURIComponent(pid)}/batch`, { method: "POST", body: { ops: group.map((g) => ({ col: g.c, id: g.id, data: g.data })) } });
           const at = new Map((r.items || []).map((x) => [`${x.col}/${x.id}`, x.at]));
-          for (const g of group) mark(g.k, at.get(g.k), g.data !== null);
+          for (const g of group) g.stale = !raise(g.k, at.get(g.k), g.data !== null);
         }
         group.forEach(done);
         return [];
@@ -238,9 +242,11 @@
         if (op.gone) { fail(op, { code: "gone" }); return true; }
         if (op.same) { done(op); return true; }
         try {
-          const headers = { "x-base": baseOf(op.k) };
+          // chi scrive può dare la base (il lock: la versione scritta da questa scheda) al posto di quella conosciuta
+          const headers = { "x-base": op.base ?? baseOf(op.k) };
           const r = await api(url(op.c, op.id), op.data === null ? { method: "DELETE", headers } : { method: "PUT", body: op.data, headers });
-          mark(op.k, r.at, op.data !== null);
+          op.stale = !raise(op.k, r.at, op.data !== null);
+          op.at = r.at;
           done(op);
           return true;
         } catch (e) {
@@ -261,6 +267,7 @@
     // Lettura di un elemento dal server (dati freschi, versione e ora del server); senza scritture in attesa aggiorna anche la pagina.
     async function fetchOne(c, id) {
       const r = await fetchItem(c, id), k = `${c}/${id}`;
+      if (r?.now) BS.onClock?.(Number(r.now));
       if (!pending.has(k)) {
         mark(k, r?.at, !!r);
         const before = get(c, id);
@@ -278,6 +285,7 @@
       try {
         const r = await api(`/api/projects/${encodeURIComponent(pid)}?since=${encodeURIComponent(since)}`);
         since = r.now;
+        BS.onClock?.(Date.parse(r.now) * 1000);
         const changed = new Set();
         for (const it of r.items) {
           const k = `${it.col}/${it.id}`;

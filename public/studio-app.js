@@ -177,10 +177,11 @@ function del(c,id,a,b){return typeof a==="function"?persist(c,id,f=>a(f)===null?
 // un ticket già creato in Jira (anche da un collega nel frattempo) non si elimina da qui
 const draftOnly=t=>t?.state==="created"?null:true;
 // eliminazione con «Annulla»: si tiene una copia completa e per qualche secondo si può rimettere tutto com'era
+// (se nel frattempo qualcuno l'ha rimesso, o creato in Jira, «Annulla» non lo tocca)
 async function trash(c,ids,msg){ids=ids.filter(id=>S[c]?.[id]);if(!ids.length)return;const snap=[];
   for(const id of ids){let d=S[c][id];if(lazy(d))d=await full(c,id).catch(()=>null);snap.push([id,d])}
   ids.forEach(id=>c==="tickets"?del(c,id,draftOnly):del(c,id));
-  toast(msg,()=>{const ok=snap.filter(([,d])=>d&&!lazy(d));ok.forEach(([id,d])=>put(c,id,d,{force:true}));toast(ok.length===1?"Ripristinato.":`Ripristinati ${ok.length} elementi.`)})}
+  toast(msg,()=>{const ok=snap.filter(([,d])=>d&&!lazy(d));ok.forEach(([id,d])=>put(c,id,x=>x??d));toast(ok.length===1?"Ripristinato.":`Ripristinati ${ok.length} elementi.`)})}
 // Apertura leggera: testo dei documenti, log della creazione e controllo di qualità arrivano come segnaposto e si caricano quando servono
 const lazy=d=>!!BS.isLazy?.(d);
 async function full(c,id){const get=()=>c==="meta"?S[id]:S[c]?.[id];if(!lazy(get())||!DB)return get();
@@ -459,9 +460,12 @@ function labelTableFields(root){root.querySelectorAll("table").forEach(tb=>{cons
 /* Cambio di release (= Fase) di un'epica dal Kit.
    In Trama: l'epica passa alla Fase della nuova release e i suoi ticket prendono la nuova release.
    In Jira (solo se l'epica esiste già, e solo dopo «Aggiorna Jira»): Principale dell'epica e label di release di epica e ticket. */
-function epicRelease(name,v){const k0=K(),e0=k0.epics.find(x=>x.name===name);if(!e0||e0.release===v)return;const old=e0.release;
+/* Un elemento del kit (release, epica) si ritrova per identità e, fra elementi uguali (due «Nuova epica»), per posizione fra quelli
+   uguali: così la modifica va sulla riga giusta anche se un collega ha aggiunto o tolto altre righe. Restituisce l'indice nei dati freschi, o -1. */
+function sameAt(list,i,same){const nth=list.slice(0,i).filter(same).length;return fresh=>{let n=-1;return fresh.findIndex(x=>same(x)&&++n===nth)}}
+function epicRelease(name,v,i){const k0=K(),idx=k0.epics[i]?.name===name?i:k0.epics.findIndex(x=>x.name===name),e0=k0.epics[idx];if(!e0||e0.release===v)return;const old=e0.release,find=sameAt(k0.epics,idx,x=>x.name===name);
   // i ticket seguono solo se il kit è stato salvato e l'epica c'è ancora (un collega può averla eliminata)
-  editKit(k=>{const e=k.epics.find(x=>x.name===name);if(!e)return null;e.release=v}).then(ok=>{if(!ok||!v||!K().epics.some(e=>e.name===name&&e.release===v))return;
+  editKit(k=>{const e=k.epics[find(k.epics)];if(!e)return null;e.release=v}).then(ok=>{if(!ok||!v||!K().epics.some(e=>e.name===name&&e.release===v))return;
     ticketList().filter(t=>t.epic===name&&t.release!==v).forEach(t=>put("tickets",t.id,f=>f&&f.epic===name?{...f,release:v}:f))});
   T.epicMove=e0.key&&k0.hier?.enabled&&v?{name:e0.name,from:old,to:v}:null;render()}
 function epicMoveCard(){const mv=T.epicMove;if(!mv)return"";const k=K(),e=k.epics.find(x=>x.name===mv.name);if(!e||!e.key){T.epicMove=null;return""}
@@ -485,7 +489,12 @@ async function epicMoveRun(){const mv=T.epicMove;if(!mv)return;const p=P(),k=K()
   progStart("epicMove",{label:`Sposto «${e.name}» nella Fase «${mv.to}»`,unit:"ticket",total:targets.length+1,detail:"Fase dell'epica"});
   try{
     if(!ph?.key){const pk=k.hier.project?.key;if(!pk)throw{code:"tool_error",message:"Il Project non esiste ancora in Jira."};
-      const key=await createNode(k.hier.phaseType,ph.name,`## Context\nPhase "${ph.name}" of the project.`,pk);editKit(kk=>{const x=kk.hier.phases.find(y=>y.id===ph.id);if(x)x.key=key});ph={...ph,key}}
+      // la Fase nuova si crea con il lock, come la struttura
+      if(!await lockTake("struct"))return;let key;
+      try{key=await createNode(k.hier.phaseType,ph.name,`## Context\nPhase "${ph.name}" of the project.`,pk)}
+      catch(err){if(err?.code==="uncertain")throw{message:`La Fase «${ph.name}» ha avuto un esito incerto e non si trova in Jira: verifica in Jira se esiste prima di riprovare.`};throw err}
+      finally{await lockRelease()}
+      await saveNodeKey(ph.name,key,kk=>kk.hier?.phases?.find(y=>y.id===ph.id),x=>{x.key=key});ph={...ph,key:K().hier.phases.find(y=>y.id===ph.id)?.key||key}}
     await jira("setIssueParent",{cloudId:p.cloudId,issueKey:e.key,parentKey:ph.key});editKit(kk=>{const x=kk.epics.find(y=>y.name===e.name);if(x)x.linkedTo=ph.key});
     Object.assign(T.prog.epicMove,{done:1,detail:`Fase aggiornata · label: 0 di ${targets.length}`});progPaint("epicMove");
     const {map}=await fetchIssues(targets,["labels"]);const fails=[];let i=0;
@@ -544,7 +553,7 @@ function secSpec(id,raw,memo={}){const r=x=>raw.includes(x),pill=(c,t)=>`<span c
     if(r("3. Ipotesi"))return{num:"3",title:"Ipotesi e scelte fatte al tuo posto",ok:!!T.ack||(!total&&created>0),todo:!T.ack&&total>0,status:T.ack?pill("ok","confermate"):!total&&created?pill("ok","niente da confermare"):pill("warn","da confermare")};
     if(r("4. Crea"))return{num:"4",title:"Crea su Jira",ok:ts.length>0&&created===ts.length,todo:!!T.running||(!!T.ack&&total>0)||T.log.length>0,status:plain(`${created} di ${ts.length} ticket in Jira`)};
     if(r("5. Esito")){const odd=ts.filter(t=>t.state==="error"||t.state==="unknown").length,bad=(T.structReport||[]).filter(x=>!x.ok).length;return{num:"5",title:"Esito della creazione",ok:created>0&&!odd&&!bad,todo:!!T.report||odd>0||bad>0,status:plain(n1(created,"ticket creato","ticket creati"))+(odd?pill("err",odd+" da sistemare"):"")+(bad?pill("err",n1(bad,"livello non collegato","livelli non collegati")):T.structReport?.length?pill("ok","struttura collegata"):"")}}
-    if(r("6. Sincronizzazione")){const sy=T.sync,warn=sy&&!sy.empty&&(sy.deleted.length||sy.parentDiff.length),dn=ts.filter(t=>dirtyOf(t).length).length;if(dn)return{num:"6",title:"Sincronizzazione con Jira",ok:false,todo:true,status:pill("warn",n1(dn,"ticket da aggiornare","ticket da aggiornare"))};return{num:"6",title:"Sincronizzazione con Jira",ok:!!sy&&!warn,todo:!!warn,status:sy?(warn?pill("warn","differenze trovate"):plain("sincronizzato alle "+new Date(sy.at).toLocaleTimeString(LOCALE(),{hour:"2-digit",minute:"2-digit"}))):plain("da sincronizzare")}}}
+    if(r("6. Sincronizzazione")){const sy=T.sync,warn=sy&&!sy.empty&&(sy.missing.length||sy.parentDiff.length),dn=ts.filter(t=>dirtyOf(t).length).length;if(dn)return{num:"6",title:"Sincronizzazione con Jira",ok:false,todo:true,status:pill("warn",n1(dn,"ticket da aggiornare","ticket da aggiornare"))};return{num:"6",title:"Sincronizzazione con Jira",ok:!!sy&&!warn,todo:!!warn,status:sy?(warn?pill("warn","differenze trovate"):plain("sincronizzato alle "+new Date(sy.at).toLocaleTimeString(LOCALE(),{hour:"2-digit",minute:"2-digit"}))):plain("da sincronizzare")}}}
   return{num:(raw.match(/^\s*(K?\d+)/)||[])[1]||"",title:raw.replace(/^\s*K?\d+\s*[.·]\s*/,""),todo:false,status:""}}
 /* Sblocco progressivo: in un progetto nuovo ogni sezione compare quando la precedente è completata.
    Una sezione già compilata resta sempre visibile, quindi un progetto completo si vede tutto. Il passo Domande non è
@@ -742,6 +751,7 @@ function issuesOf0(t){const e=[],w=[],k=K(),a=AREAS[t.area],j=S.jira;
   if(!WORK.includes(t.work))e.push("Label di tipo lavoro mancante (K5)");
   const extra=String(k.extraLabels||"").split(",").map(s=>s.trim()).filter(Boolean);
   (t.labels||[]).forEach(l=>{const c=canonLabel(l);if(c!==l)w.push(`Label «${l}» verrà scritta «${c}»`);else if(!LABELS.includes(l)&&!extra.includes(l)&&!k.releases.some(x=>x.label===l))w.push(`Label «${l}» fuori dal vocabolario del kit`)});
+  labelsOf(t).forEach(l=>{if(/\s/.test(l))e.push(`La label "${l}" contiene spazi: Jira non la accetta`)});
   (SECTIONS[t.type]||[]).forEach(s=>{if(!String(t.desc||"").includes(s))w.push(`Sezione «${s.slice(3)}» mancante nella descrizione`)});
   (j.required||[]).forEach(f=>{if(!k.custom?.[f.key])e.push(`Campo obbligatorio «${f.name}» senza valore (K1)`)});
   (t.links||[]).forEach(l=>{if(!ticketRefs().has(l.to))e.push(`Collegamento a ${l.to}: ticket inesistente`);if(!k.links[l.type])e.push(`Tipo di collegamento «${l.type}» non scelto nel kit`)});
@@ -779,7 +789,7 @@ function ticketsPanel(k,rs,ts,rels){const inRelAll=rs.filter(r=>T.rel==="*"||r.r
   const ids=[];
   const bodies=groups.map(({r,ts:gts})=>{const shown=T.onlyIssues?gts.filter(t=>{const i=issuesOf(t);return i.e.length||i.w.length||t.review}):gts;if(!shown.length)return"";const bad=gts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;shown.forEach(t=>ids.push(t.id));
    const vis=shown.filter(t=>tMatch(t,tq));
-   return`<tbody${vis.length?"":" hidden"}><tr class="dt-g"><th colspan="${READONLY?6:7}" scope="rowgroup"><div class="dt-gh">${r?`<span class="key">${esc(r.code)}</span><span class="dt-t">${esc(r.title)}</span>${r.removed?'<span class="pill err">requisito rimosso</span>':r.changed?'<span class="pill acc">requisito cambiato</span>':""}`:`<span>Ticket senza requisito</span>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r&&T.prevGen[r.code]?B("restoreGen",T.arm["rg"+r.code]?"Conferma: torna ai ticket di prima":"Torna ai ticket di prima",{cls:T.arm["rg"+r.code]?"armed":"link",data:{code:r.code}}):""}${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")}):""}</div></th></tr>${shown.map(t=>ticketRow(t,!tMatch(t,tq))).join("")}</tbody>`}).join("");
+   return`<tbody${vis.length?"":" hidden"}><tr class="dt-g"><th colspan="${READONLY?6:7}" scope="rowgroup"><div class="dt-gh">${r?`<span class="key">${esc(r.code)}</span><span class="dt-t">${esc(r.title)}</span>${r.removed?'<span class="pill err">requisito rimosso</span>':r.changed?'<span class="pill acc">requisito cambiato</span>':""}`:`<span>Ticket senza requisito</span>`}<span class="pill">${gts.length} ticket</span>${bad?`<span class="pill err">${bad} con errori</span>`:""}<span style="flex:1"></span>${r&&T.prevGen[r.code]?B("restoreGen",T.arm["rg"+r.code]?"Conferma: torna ai ticket di prima":"Torna ai ticket di prima",{cls:T.arm["rg"+r.code]?"armed":"link",data:{code:r.code}}):""}${r?AIB("regenReq","Rigenera",{cls:"link",data:{code:r.code},dis:gts.some(t=>t.state==="created")||!!lockMsg()}):""}</div></th></tr>${shown.map(t=>ticketRow(t,!tMatch(t,tq))).join("")}</tbody>`}).join("");
   T.panelIds=ids.filter(id=>tMatch(S.tickets[id],tq));
   const visIds=T.panelIds,allOn=visIds.length>0&&visIds.every(id=>T.tsel.has(id));
   h+=bodies?`<div class="dt-wrap"><table class="dt"><colgroup>${READONLY?"":'<col style="width:44px">'}<col style="width:calc(92px*var(--colk,1))"><col style="width:calc(96px*var(--colk,1))"><col><col style="width:calc(180px*var(--colk,1))"><col style="width:calc(150px*var(--colk,1))"><col style="width:calc(160px*var(--colk,1))"></colgroup>
@@ -810,6 +820,7 @@ function ticketForm(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked
  const dirty=dirtyOf(t);
  return`${ticketPeers(t)}${t.review?`<div class="msg warn">Da rivedere: ${esc(t.review.why)} <span class="row" style="display:inline-flex;margin-left:6px">${B("reviewDone","Segna come rivisto",{data:{id:t.id}})}</span></div>`:""}${locked?(dirty.length?`<div class="msg warn">Creato in Jira come ${browse(t.key)}. Modificato qui dopo la creazione: ${dirty.map(f=>PUSH_NAMES[f]).join(", ")}. <span class="row" style="display:inline-flex;margin-left:6px">${JB("pushCheck","Aggiorna in Jira",{data:{id:t.id},dis:T.running})}</span></div>${pushPreview(t.id)}`
    :`<div class="msg info">Creato in Jira come ${browse(t.key)}. Se lo modifichi qui, Trama ti propone di aggiornarlo anche in Jira.${vOf(t)&&vOf(t)!=="ok"?" "+esc(vOf(t)):""}</div>`):""}
+ ${locked&&missingOf(t.id)?`<div class="msg warn">Non trovato in Jira: eliminato, oppure non visibile con i tuoi permessi. <span class="row" style="display:inline-flex;margin-left:6px">${B("draftOne",T.arm["d1"+t.id]?"Conferma: riporta in bozza":"Riporta in bozza",{cls:T.arm["d1"+t.id]?"armed":"",data:{id:t.id}})}</span></div>`:""}
  ${t.err?`<div class="msg err">${esc(t.err)}</div>`:""}
  ${(e.length||w.length)&&!locked?`<div class="issues">${e.map(x=>`<span class="pill err">${esc(x)}</span>`).join("")}${w.map(x=>`<span class="pill warn">${esc(x)}</span>`).join("")}</div>`:""}
  <div class="grid">${F("Tipo",sel(b+"type",t.type,TYPES,{empty:false}))}${F("Area (prefisso)",sel(b+"area",t.area,Object.entries(AREAS).map(([k2,a])=>[k2,a.prefix+" "+a.label]),{empty:false}))}
@@ -894,9 +905,10 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
   return[{t:"Stato di Jira riletto prima di scrivere",ok:!!T.pre||c.length>0},{t:"Ipotesi lette e confermate",ok:T.ack||c.length>0},{t:"Tutti i ticket creati in Jira",ok:ts.length>0&&c.length===ts.length},{t:"Collegamenti creati con le chiavi reali",ok:c.length>0&&pend===0},{t:"Campi verificati rileggendo i ticket",ok:c.length>0&&c.every(t=>vOf(t)==="ok")}]},
  view(){const p=P(),pl=planOf(),ts=ticketList();
   if(!p.key)return`<div class="card warn">Collega prima il progetto Jira (passo 1).</div>`;
+  const lm=lockMsg();
   const ck=T.pre?computeChecks(pl):[],errs=ck.filter(c=>c.lvl==="err"),warns=ck.filter(c=>c.lvl==="warn");
   const ico={ok:'<span class="pill ok">ok</span>',warn:'<span class="pill warn">attenzione</span>',err:'<span class="pill err">blocca</span>'};
-  let h=`<div class="card"><h2>1. Controllo prima della creazione</h2><p class="small muted" style="margin:0 0 10px">Rilegge Jira (tipi, campi obbligatori, ticket già presenti) e verifica che tutto sia a posto. Parte da solo all'apertura del passo.</p>
+  let h=`${lm?`<div class="msg warn" role="status">${esc(lm)} <span>Crea su Jira e gli aggiornamenti si riattivano quando ha finito.</span></div>`:""}<div class="card"><h2>1. Controllo prima della creazione</h2><p class="small muted" style="margin:0 0 10px">Rilegge Jira (tipi, campi obbligatori, ticket già presenti) e verifica che tutto sia a posto. Parte da solo all'apertura del passo.</p>
    <div class="toolbar">${JB("preflight",T.pre?"Esegui di nuovo il controllo":"Esegui il controllo",{cls:T.pre?"":"primary"})}${T.pre?`<span class="small muted">Eseguito alle ${new Date(T.pre.at).toLocaleTimeString(LOCALE())} · ${Object.keys(T.pre.existing).length} ticket già in Jira</span>`:""}</div>
    ${ck.length?`<div class="tw" style="margin-top:10px"><table><tbody>${ck.map(c=>`<tr><td style="width:1%;white-space:nowrap">${ico[c.lvl]}</td><td><b>${esc(c.t)}</b><div class="small muted" style="font-weight:400">${esc(c.d)}</div></td></tr>`).join("")}</tbody></table></div>
    <div class="msg ${errs.length?"err":warns.length?"warn":"ok"}" style="margin:10px 0 0">${errs.length?`${errs.length} controlli bloccano la creazione: risolvili prima di procedere.`:warns.length?`Puoi procedere: ${warns.length} avvisi non bloccano la creazione.`:"Tutto in ordine: puoi procedere."}</div>`:""}</div>`;
@@ -907,28 +919,29 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
    <div class="card"><h2>3. Ipotesi e scelte fatte al tuo posto</h2><ul class="small">${assumptionsAll(pl).map(a=>`<li>${esc(a)}</li>`).join("")}</ul><label class="row"><input type="checkbox" id="ackBox" ${T.ack?"checked":""}> Ho letto le ipotesi e le confermo</label></div>
    <div class="card"><h2>4. Crea su Jira</h2>
    <p class="small muted" style="margin:0 0 10px">Un solo comando, nell'ordine giusto: Project › Fasi › epiche › ticket › collegamenti, poi rilegge Jira per verificare ogni livello.</p>
-   <div class="toolbar">${T.running?B("stopRun","Ferma dopo il ticket in corso",{cls:"danger"}):JB("runCreate",T.arm.run?`Conferma: crea tutto (${(pl.struct.project?1:0)+pl.struct.phases.length+pl.epics.length+pl.ready.length-(T.createDup?0:pl.dup.length)} elementi)`:"Crea su Jira",{cls:T.arm.run?"armed":"primary",dis:!T.ack||errs.length>0})}</div>
-   ${(()=>{const why=T.running?"Una creazione è in corso: attendi che finisca, oppure fermala.":errs.length?"Bloccato dal controllo: "+errs.map(e=>e.t).join("; ")+".":!T.ack?"Per attivare il pulsante, conferma le ipotesi nello step 3.":"";return why?`<p class="small" style="margin:10px 0 0;color:var(--warn)">${esc(why)}</p>`:""})()}
-   <details class="item" data-k="adv-create" style="margin-top:12px"><summary><span class="ttl">Azioni avanzate (singoli passaggi)</span></summary><div class="in"><div class="toolbar" style="margin-top:10px">${JB("runStruct",T.arm.struct?`Conferma: crea ${pl.struct.project?"1 Project, ":""}${pl.struct.phases.length} Fasi e collega ${pl.struct.link.length} epiche`:"Crea solo la struttura Jira",{cls:T.arm.struct?"armed":"",dis:T.running||!T.ack||!(pl.struct.phases.length||pl.struct.link.length||pl.epics.length)})}</div></div></details>
+   <div class="toolbar">${T.running?B("stopRun","Ferma dopo il ticket in corso",{cls:"danger"}):JB("runCreate",T.arm.run?`Conferma: crea tutto (${(pl.struct.project?1:0)+pl.struct.phases.length+pl.epics.length+pl.ready.length-(T.createDup?0:pl.dup.length)} elementi)`:"Crea su Jira",{cls:T.arm.run?"armed":"primary",dis:!T.ack||errs.length>0||!!lockMsg()})}</div>
+   ${(()=>{const why=T.running?"Una creazione è in corso: attendi che finisca, oppure fermala.":lockMsg()?lockMsg():errs.length?"Bloccato dal controllo: "+errs.map(e=>e.t).join("; ")+".":!T.ack?"Per attivare il pulsante, conferma le ipotesi nello step 3.":"";return why?`<p class="small" style="margin:10px 0 0;color:var(--warn)">${esc(why)}</p>`:""})()}
+   <details class="item" data-k="adv-create" style="margin-top:12px"><summary><span class="ttl">Azioni avanzate (singoli passaggi)</span></summary><div class="in"><div class="toolbar" style="margin-top:10px">${JB("runStruct",T.arm.struct?`Conferma: crea ${pl.struct.project?"1 Project, ":""}${pl.struct.phases.length} Fasi e collega ${pl.struct.link.length} epiche`:"Crea solo la struttura Jira",{cls:T.arm.struct?"armed":"",dis:T.running||!!lockMsg()||!T.ack||!(pl.struct.phases.length||pl.struct.link.length||pl.epics.length)})}</div></div></details>
    ${(()=>{if(!T.log.length&&lazy(S.runlog)){want("meta","runlog");return`<p class="small muted" style="margin:10px 0 4px">Ultimo log salvato (${new Date(S.runlog.at).toLocaleString(LOCALE())}): caricamento…</p>`}const lines=T.log.length?T.log:(S.runlog?.lines||[]);return lines.length?`${T.log.length?"":`<p class="small muted" style="margin:10px 0 4px">Ultimo log salvato (${new Date(S.runlog.at).toLocaleString(LOCALE())})</p>`}<div class="log">${esc(lines.join("\n"))}</div>`:""})()}</div>`}
   const odd=ts.filter(t=>t.state==="error"||t.state==="unknown"),keys=createdKeys(),created=ts.filter(t=>t.state==="created");
   // 5 · Esito della creazione: una sezione, con le sue parti come righe di secondo livello
   const erow=(k,sum,inner,open)=>`<details class="item" data-k="esito-${k}"${open?" open":""}><summary>${sum}</summary><div class="in">${inner}</div></details>`,esito=[];
-  if(odd.length)esito.push(erow("odd",`<span class="pill err">${odd.length===1?"1 ticket":odd.length+" ticket"}</span><span class="ttl">Ticket da sistemare</span>`,`<div class="list">${odd.map(t=>`<div class="row small"><span class="key">${esc(t.ref)}</span><b>${esc(fullTitle(t))}</b><span class="muted">${esc(t.err||"")}</span>${t.state==="unknown"?JB("reconcile","Cerca in Jira",{data:{id:t.id}}):JB("retryOne","Riprova",{data:{id:t.id}})}</div>`).join("")}</div>`,true));
+  if(odd.length)esito.push(erow("odd",`<span class="pill err">${odd.length===1?"1 ticket":odd.length+" ticket"}</span><span class="ttl">Ticket da sistemare</span>`,`<div class="list">${odd.map(t=>`<div class="row small"><span class="key">${esc(t.ref)}</span><b>${esc(fullTitle(t))}</b><span class="muted">${esc(t.err||"")}</span>${t.state==="unknown"?JB("reconcile","Cerca in Jira",{data:{id:t.id}})+(T.notFound?.has(t.id)?B("draftUnknown",T.arm["du"+t.id]?"Conferma: riporta in bozza":"Riporta in bozza",{cls:T.arm["du"+t.id]?"armed":"",data:{id:t.id}}):""):JB("retryOne","Riprova",{data:{id:t.id},dis:T.running||!!lockMsg()})}</div>`).join("")}</div>`,true));
   if(T.report)esito.push(erow("report",`<span class="ttl">Riepilogo per il PO</span>`,T.report,true));
   if(T.structReport&&T.structReport.length){const bad=T.structReport.filter(x=>!x.ok).length;esito.push(erow("struct",`<span class="ttl">Struttura in Jira</span>${bad?`<span class="pill err">${bad} non collegati</span>`:'<span class="pill ok">ogni livello è collegato</span>'}`,`<p class="small muted" style="margin:0 0 8px">Letta da Jira dopo la creazione: ogni livello deve avere come «Principale» quello sopra di lui.</p><div class="tw"><table><thead><tr><th>Livello</th><th>Nome</th><th>Chiave</th><th>Tipo</th><th>Principale</th><th></th></tr></thead><tbody>${T.structReport.map(r=>`<tr><td>${esc(r.level)}</td><td>${esc(r.name)}</td><td>${browse(r.key)}</td><td>${esc(r.type)}</td><td>${r.parent?browse(r.parent):"—"}</td><td><span class="pill ${r.ok?"ok":"err"}">${r.ok?"collegato":"non collegato"}</span></td></tr>`).join("")}</tbody></table></div>`,bad>0))}
   if(created.length)esito.push(erow("created",`<span class="ttl">Ticket creati (${created.length})</span>`,`<div class="tw"><table><thead><tr><th>Chiave</th><th>Titolo</th><th>Epica</th><th>Stato Jira</th><th>Verifica</th></tr></thead><tbody>${created.map(t=>`<tr><td>${browse(t.key)}</td><td>${esc(fullTitle(t))}</td><td>${esc(t.epic)}</td><td>${t.jiraStatus?`<span class="pill">${esc(t.jiraStatus)}</span>`:"—"}</td><td>${vOf(t)==="ok"?'<span class="pill ok">ok</span>':`<span class="pill warn">${esc(vOf(t)||"da verificare")}</span>`}</td></tr>`).join("")}</tbody></table></div>`,false));
   if(esito.length)h+=`<div class="card"><h2>5. Esito della creazione</h2><div class="list">${esito.join("")}</div></div>`;
   // 6 · Sincronizzazione: si ripete nel tempo, resta una sezione a sé
-  if(keys.length)h+=`<div class="card"><h2>6. Sincronizzazione con Jira</h2><p class="small muted" style="margin:0 0 10px">Rilegge da Jira tutto ciò che Trama ha creato: stato, Principale e titoli. Quello che è stato eliminato o rinominato a mano in Jira viene riconosciuto e Trama si riallinea (i ticket eliminati tornano in bozza, pronti da ricreare).</p>
+  if(keys.length)h+=`<div class="card"><h2>6. Sincronizzazione con Jira</h2><p class="small muted" style="margin:0 0 10px">Rilegge da Jira tutto ciò che Trama ha creato: stato, Principale e titoli. Quello che in Jira non si trova più o è stato rinominato a mano viene segnalato; i ticket non trovati tornano in bozza solo se lo confermi.</p>
     ${(()=>{const dirty=ticketList().filter(t=>dirtyOf(t).length),pl=pendingLinks();
       return`<div class="push-box"><h3 class="h-sub">Modifiche da portare in Jira</h3>${dirty.length||pl?`<p class="small" style="margin:0 0 8px">${dirty.length?(dirty.length===1?"1 ticket modificato in Trama dopo la creazione":dirty.length+" ticket modificati in Trama dopo la creazione"):""}${dirty.length&&pl?" · ":""}${pl?(pl===1?"1 collegamento da creare":pl+" collegamenti da creare"):""}</p>
       ${dirty.length?`<ul class="small" style="margin:0 0 8px">${dirty.slice(0,8).map(t=>`<li>${browse(t.key)} ${esc(fullTitle(t))} · ${dirtyOf(t).map(f=>PUSH_NAMES[f]).join(", ")}</li>`).join("")}${dirty.length>8?`<li>+ ${dirty.length-8} ticket</li>`:""}</ul>`:""}
       <div class="toolbar">${JB("pushCheck","Controlla e aggiorna Jira",{cls:"primary",dis:T.running})}</div>${pushPreview("all")}`:'<p class="small muted" style="margin:0">Nessuna modifica: Jira è allineato a Trama.</p>'}</div>`})()}
     <div class="toolbar">${JB("syncJira","Sincronizza e verifica")}${T.sync?`<span class="small muted">Ultima sincronizzazione ${new Date(T.sync.at).toLocaleTimeString(LOCALE())} · ${T.sync.total} elementi letti</span>`:""}</div>
-    ${T.sync&&!T.sync.empty?`<div class="stat" style="margin-top:12px"><div><b>${T.sync.total-T.sync.deleted.length}</b><span>presenti in Jira</span></div><div><b style="color:${T.sync.deleted.length?"var(--err)":"inherit"}">${T.sync.deleted.length}</b><span>eliminati in Jira</span></div><div><b style="color:${T.sync.parentDiff.length?"var(--warn)":"inherit"}">${T.sync.parentDiff.length}</b><span>con epica diversa</span></div><div><b style="color:${T.sync.renamed.length?"var(--warn)":"inherit"}">${T.sync.renamed.length}</b><span>rinominati</span></div></div>
+    ${T.sync&&!T.sync.empty?`<div class="stat" style="margin-top:12px"><div><b>${T.sync.total-T.sync.missing.length}</b><span>presenti in Jira</span></div><div><b style="color:${T.sync.missing.length?"var(--err)":"inherit"}">${T.sync.missing.length}</b><span>non trovati in Jira</span></div><div><b style="color:${T.sync.parentDiff.length?"var(--warn)":"inherit"}">${T.sync.parentDiff.length}</b><span>con epica diversa</span></div><div><b style="color:${T.sync.renamed.length?"var(--warn)":"inherit"}">${T.sync.renamed.length}</b><span>rinominati</span></div></div>
     ${Object.keys(T.sync.status).length?`<p class="small" style="margin:10px 0 0">Stato: ${Object.entries(T.sync.status).map(([k2,v])=>`<span class="pill">${esc(k2)} · ${v}</span>`).join(" ")}</p>`:""}
-    ${T.sync.deleted.length?`<div class="msg warn small" style="margin-top:10px"><b>Eliminati in Jira, tornati in bozza:</b> ${T.sync.deleted.slice(0,12).map(esc).join(" · ")}${T.sync.deleted.length>12?" …":""}</div>`:""}
+    ${T.sync.missing.length?`<div class="msg warn small" style="margin-top:10px"><b>Non trovati in Jira: eliminati, oppure non visibili con i tuoi permessi.</b> ${T.sync.missing.slice(0,12).map(m=>`<span class="key">${esc(m.key)}</span> ${esc(m.label)}${m.status?` (${m.status})`:""}`).join(" · ")}${T.sync.missing.length>12?" …":""}
+     <div class="toolbar" style="margin:8px 0 0">${B("syncDraft",T.arm.syncDraft?"Conferma: riporta in bozza":"Riporta in bozza",{cls:T.arm.syncDraft?"armed":""})}</div></div>`:""}
     ${T.sync.parentDiff.length?`<div class="msg warn small" style="margin-top:10px"><b>Epica diversa da quella prevista:</b> ${T.sync.parentDiff.slice(0,8).map(esc).join(" · ")}${T.sync.parentDiff.length>8?" …":""}</div>`:""}
     ${T.sync.renamed.length?`<div class="msg info small" style="margin-top:10px"><b>Titolo cambiato in Jira:</b> ${T.sync.renamed.slice(0,8).map(esc).join(" · ")}${T.sync.renamed.length>8?" …":""}</div>`:""}`:""}</div>`;
   return h},
@@ -1231,7 +1244,7 @@ A.copyQuestions=el=>{const t=arr("questions").filter(x=>!x.answer?.trim()&&!x.hy
 
 /* passo 5 */
 A.addRelease=()=>editKit(k=>{const n=k.releases.length+1;k.releases.push({name:"Release "+n,label:"Release"+n,date:""})});
-A.delRelease=el=>{const r=K().releases[+el.dataset.i];if(r)editKit(k=>{const j=k.releases.findIndex(x=>x.name===r.name&&x.label===r.label);if(j<0)return null;k.releases.splice(j,1)})};
+A.delRelease=el=>{const i=+el.dataset.i,r=K().releases[i];if(!r)return;const find=sameAt(K().releases,i,x=>x.name===r.name&&x.label===r.label);editKit(k=>{const j=find(k.releases);if(j<0)return null;k.releases.splice(j,1)})};
 A.addPhase=()=>editKit(k=>{(k.hier.phases||(k.hier.phases=[])).push({id:uid(),name:"Nuova fase",key:""})});
 A.delPhase=el=>{const id=K().hier?.phases?.[+el.dataset.i]?.id;if(id)editKit(k=>{const j=(k.hier.phases||[]).findIndex(x=>x.id===id);if(j<0)return null;k.hier.phases.splice(j,1);k.epics.forEach(e=>{if(e.phase===id)e.phase=""})})};
 A.phasesFromReleases=()=>editKit(k=>{const have=new Map((k.hier.phases||[]).map(f=>[f.name,f]));const list=k.releases.map(r=>have.get(r.name)||{id:uid(),name:r.name,key:""});k.hier.phases=list;
@@ -1247,7 +1260,7 @@ function autoStructure(){const ts=S.jira.types||[],pname=P().name||"";editKit(k=
 A.autoStruct=()=>{autoStructure();toast("Struttura generata: controlla tipi, nome del Project e Fasi.")};
 A.addEpic=()=>editKit(k=>k.epics.push({name:"Nuova epica",release:"",key:""}));
 A.addPolish=()=>editKit(k=>k.epics.push({name:"Cross-cutting polish",release:"",key:""}));
-A.delEpic=el=>{const e=K().epics[+el.dataset.i];if(e)editKit(k=>{const j=k.epics.findIndex(x=>x.name===e.name);if(j<0)return null;k.epics.splice(j,1)})};
+A.delEpic=el=>{const i=+el.dataset.i,e=K().epics[i];if(!e)return;const find=sameAt(K().epics,i,x=>x.name===e.name);editKit(k=>{const j=find(k.epics);if(j<0)return null;k.epics.splice(j,1)})};
 A.proposeKit=()=>run("proposeKit","Claude sta pensando…",async()=>{const ans=arr("questions").filter(q=>q.answer||q.hypothesis).map(q=>`- ${q.q} → ${q.answer||q.hypothesis}`).join("\n");
   await loadDocs();let out;try{out=await ask(`${RULES}\n\nCOMPITO: proponi il kit di progetto (K2, K3, K7, K8, K9) a partire da requisiti, risposte e documenti. Epiche: una per area funzionale (es. Autenticazione, Account, Notifiche, Integrazione dispositivi, Configurazione) più "Cross-cutting polish". Release: usa i nomi presenti nei requisiti; label Release1, Release2…; data solo se indicata (YYYY-MM-DD), altrimenti vuota. Elenca in "assumptions" ogni scelta non presente nei documenti.\nKit attuale: ${kitBrief()}\nRisposte e ipotesi:\n${ans||"(nessuna)"}\nRequisiti:\n${reqList().map(reqLine).join("\n").slice(0,50000)}\nDocumenti:${ctxDocs(40000)}\n\nRispondi SOLO con JSON: {"productName":"","releases":[{"name":"","label":"","date":""}],"epics":[{"name":"","release":""}],"glossary":"","constraints":"","envs":"","lang":{"po":"","tickets":"","client":""},"assumptions":[""]}`)}catch(e){throw{ai:1,e}}
   editKit(k=>{if(!k.productName&&out.productName)k.productName=out.productName;
@@ -1298,10 +1311,15 @@ A.genTickets=()=>run("genTickets","Claude sta scomponendo…",async()=>{const ts
   progStart("genTickets",{label:"Claude sta scomponendo i requisiti in ticket",unit:"gruppo",total:todo.length,detail:`Requisiti 0 di ${todo.length}`});T.fresh=new Set();const before=new Set(Object.keys(S.tickets));
   try{for(let i=0;i<todo.length;i+=3){if(T.prog.genTickets?.stop)break;const batch=todo.slice(i,i+3);Object.assign(T.prog.genTickets,{done:i,label:`Claude scompone ${batch.map(r=>r.code).join(", ")}`,detail:`Requisiti ${i} di ${todo.length} · ${tot} ticket finora`});progPaint("genTickets");T.genLog+=`Requisiti ${batch.map(r=>r.code).join(", ")}… `;scheduleRender();try{const n=await genFor(batch);tot+=n;T.genLog+=`${n} ticket\n`;Object.keys(S.tickets).forEach(id=>{if(!before.has(id))T.fresh.add(id)});Object.assign(T.prog.genTickets,{done:Math.min(i+3,todo.length),detail:`Requisiti ${Math.min(i+3,todo.length)} di ${todo.length} · ${tot} ticket finora`,items:[...T.fresh].map(id=>S.tickets[id]).filter(Boolean).slice(-4).map(t=>({code:t.ref,title:fullTitle(t)}))});progPaint("genTickets")}catch(e){T.genLog+="non riuscito\n";throw e}}}finally{stopped=progEnd("genTickets")}
   setMsg("backlog","ok",`${stopped?"Scomposizione fermata. ":""}${tot} ticket generati. Apri ognuno per controllare titolo, epica, descrizione e ipotesi; correggi gli errori segnalati in rosso.`)});
-A.regenReq=el=>{const code=el.dataset.code;arm("regen"+code,el,()=>run("regenReq","Rigenero…",async()=>{const old=ticketList().filter(t=>t.req===code&&t.state!=="created").map(t=>[t.id,S.tickets[t.id]]);old.forEach(([id])=>del("tickets",id,draftOnly));const r=reqList().find(x=>x.code===code);const n=await genFor([r]);
-  if(old.length)T.prevGen[code]=old;setMsg("backlog","ok",`${code}: ${n} ticket rigenerati.`);if(old.length)toast(`${code}: ${n} ticket rigenerati.`,()=>restoreGen(code))}));if(T.arm["regen"+code])toast("Premi di nuovo «Rigenera» per sostituire i ticket di "+code+".")};
+// le bozze di prima si tengono da parte prima di cancellarle: se la generazione non riesce tornano subito
+A.regenReq=el=>{const code=el.dataset.code;if(lockMsg()){toast(lockMsg());return}arm("regen"+code,el,()=>run("regenReq","Rigenero…",async()=>{const old=ticketList().filter(t=>t.req===code&&t.state!=="created").map(t=>[t.id,S.tickets[t.id]]);const r=reqList().find(x=>x.code===code);
+  if(old.length)T.prevGen[code]=old;old.forEach(([id])=>del("tickets",id,draftOnly));let n;
+  try{n=await genFor([r])}catch(e){restoreGen(code);throw e}
+  setMsg("backlog","ok",`${code}: ${n} ticket rigenerati.`);if(old.length)toast(`${code}: ${n} ticket rigenerati.`,()=>restoreGen(code))}));if(T.arm["regen"+code])toast("Premi di nuovo «Rigenera» per sostituire i ticket di "+code+".")};
 // torna ai ticket che c'erano prima di «Rigenera» (finché la pagina resta aperta)
-function restoreGen(code){const old=T.prevGen[code];if(!old)return;ticketList().filter(t=>t.req===code&&t.state!=="created").forEach(t=>del("tickets",t.id,{force:true}));old.forEach(([id,d])=>put("tickets",id,d,{force:true}));delete T.prevGen[code];toast(`${code}: tornati i ticket di prima.`)}
+// un ticket che nel frattempo è stato creato in Jira (anche da un collega) resta com'è, con la sua chiave
+function restoreGen(code){const old=T.prevGen[code];if(!old)return;const keep=x=>x&&(x.state==="created"||x.state==="unknown");
+  ticketList().filter(t=>t.req===code&&t.state!=="created").forEach(t=>del("tickets",t.id,x=>keep(x)?null:true));old.forEach(([id,d])=>put("tickets",id,x=>keep(x)?x:d));delete T.prevGen[code];toast(`${code}: tornati i ticket di prima.`)}
 A.restoreGen=el=>arm("rg"+el.dataset.code,el,()=>restoreGen(el.dataset.code));
 A.addTicket=()=>{const id=uid(),k=K();put("tickets",id,{ref:fmtRef(nextRef()),req:"",type:"Story",area:"be",title:"",epic:"",release:k.releases[0]?.name||"",work:"Back-End",labels:[],desc:TEMPLATES.Story,links:[],assumptions:[],state:"draft",order:Date.now()},{force:true});T.rel="*";T.bTab="tickets";T.panel={kind:"ticket",id};scheduleRender()};
 A.delTicket=el=>arm("t"+el.dataset.id,el,()=>{T.tsel.delete(el.dataset.id);T.panel=null;trash("tickets",[el.dataset.id],"Ticket eliminato.")});
@@ -1341,7 +1359,7 @@ function logLine(s){T.log.push(new Date().toLocaleTimeString(LOCALE())+"  "+s);s
   clearTimeout(logTimer);logTimer=setTimeout(()=>{if(!READONLY)saveMeta("runlog",{at:Date.now(),lines:T.log.slice(-300)})},800)}
 let EXT_TYPE={};
 async function fetchExisting(){const p=P(),ex={};EXT_TYPE={};let token,pages=0;do{const r=await jira("searchJiraIssuesUsingJql",{cloudId:p.cloudId,jql:`project = "${p.key}" ORDER BY created DESC`,maxResults:100,fields:["summary","issuetype"],...(token?{nextPageToken:token}:{})});
-  findIssues(r).forEach(i=>{const s=i.fields?.summary;if(s){ex[String(s).toLowerCase()]=i.key;EXT_TYPE[String(s).toLowerCase()]=i.fields?.issuetype?.name||""}});token=r?.nextPageToken;pages++}while(token&&pages<10);return ex}
+  findIssues(r).forEach(i=>{const s=i.fields?.summary;if(s){ex[String(s).toLowerCase()]=i.key;EXT_TYPE[String(s).toLowerCase()]=i.fields?.issuetype?.name||""}});token=r?.nextPageToken;pages++;await lockKeep()}while(token&&pages<10);return ex}
 A.preflight=()=>run("preflight","Lettura di Jira…",async()=>{await readConfig();const existing=await fetchExisting();T.pre={at:Date.now(),existing};T.ack=false;
   // riuso per nome solo se il ticket esistente ha lo stesso tipo: evita di agganciare per errore un ticket qualsiasi
   const same=(name,type)=>{const l=String(name||"").toLowerCase();return existing[l]&&(!type||EXT_TYPE[l]===type)?existing[l]:""};
@@ -1350,11 +1368,46 @@ A.preflight=()=>run("preflight","Lettura di Jira…",async()=>{await readConfig(
 function fieldsFor(t){const k=K(),j=S.jira,r=relOf(t.release),f={};
   f.labels=labelsOf(t);const ep=k.epics.find(e=>e.name===t.epic);if(ep?.key)f.parent={key:ep.key};
   (j.required||[]).forEach(x=>{const v=k.custom?.[x.key];if(v)f[x.key]=x.allowed?.length?{value:v}:v});return f}
-async function createOne(t){const p=P(),k=K();
+async function createOne(t){if(!await lockOk())return false;const p=P(),k=K();
   const input={cloudId:p.cloudId,projectKey:p.key,issueTypeName:k.types[t.type]||t.type,summary:fullTitle(t),description:t.desc,contentFormat:"markdown",additional_fields:fieldsFor(t)};
-  try{const r=await jira("createJiraIssue",input);const key=findKey(r);if(!key)throw{code:"upstream_error",message:"chiave non restituita"};const pushed=pushedOf(t),{id:_,...rest}=t;await put("tickets",t.id,x=>({...(x||rest),state:"created",key,err:"",verify:"",pushed}));logLine(`${t.ref} → ${key}  ${fullTitle(t)}`);return true}
-  catch(e){if(e?.code==="tool_error"){const err=jiraMsg(e);await put("tickets",t.id,x=>x?{...x,state:"error",err}:null);logLine(`${t.ref} non creato: ${jiraMsg(e)}`);return true}
-   if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};await put("tickets",t.id,x=>x?{...x,state:"unknown",err:"Esito incerto: Jira non ha risposto. Usa «Cerca in Jira» prima di riprovare."}:null);logLine(`${t.ref}: esito incerto, creazione fermata.`);return false}}
+  try{const r=await jira("createJiraIssue",input);const key=findKey(r);if(!key)throw{code:"upstream_error",message:"chiave non restituita"};const pushed=pushedOf(t),{id:_,...rest}=t,review={why:`eliminato in Trama mentre veniva creato in Jira come ${key}.`,at:Date.now()};
+    // esiste in Jira: se nel frattempo è stato eliminato in Trama torna, da rivedere, con la sua chiave
+    // una chiave diversa già salvata da un'altra scheda non si sovrascrive: quella appena creata è il doppione
+    const ok=await put("tickets",t.id,x=>x?.state==="created"&&x.key&&x.key!==key?x:{...(x||{...rest,review}),state:"created",key,err:"",verify:"",pushed},{wait:15000});
+    if(!ok){T.made=(T.made||0)+1;logLine(`${key} creato in Jira ma non salvato in Trama: non ricaricare, riprovo.`);return false}
+    const was=S.tickets[t.id]?.key;if(was&&was!==key){logLine(`${key} creato in Jira, ma il ticket era già ${was}: doppione da eliminare a mano in Jira.`);return true}
+    T.made=(T.made||0)+1;logLine(`${t.ref} → ${key}  ${fullTitle(t)}`);return true}
+  catch(e){if(e?.code==="tool_error"){const err=jiraMsg(e);await put("tickets",t.id,x=>x&&x.state!=="created"?{...x,state:"error",err}:x);logLine(`${t.ref} non creato: ${jiraMsg(e)}`);return true}
+   if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};await put("tickets",t.id,x=>x&&x.state!=="created"?{...x,state:"unknown",err:"Esito incerto: Jira non ha risposto. Usa «Cerca in Jira» prima di riprovare."}:x);logLine(`${t.ref}: esito incerto, creazione fermata.`);return false}}
+/* Lock di Jira (meta/lock): una sola scheda alla volta crea o aggiorna su Jira. Si prende con la versione letta dal server, si rinnova
+   al massimo ogni 30 secondi con la versione scritta da questa scheda e scade da solo dopo 120 secondi (ora del server, in µs).
+   Se un'altra scheda lo ha ripreso (scaduto), questa si ferma al controllo successivo; il rilascio non tocca il lock di un'altra. */
+const TAB_ID=crypto.randomUUID(),LOCK_TTL=120e6;
+let LOCK=null,SKEW=0; // il lock di questa scheda {at, t}; differenza tra l'ora del server e quella della pagina, in µs
+const serverUs=()=>Date.now()*1000+SKEW;
+function lockMsg(l=S.lock,now=serverUs()){if(!l?.by||l.by===TAB_ID||Number(l.until)<now)return"";return l.account&&l.account===ME?.accountId?"Stai già lavorando su Jira in un'altra scheda.":`${l.name||"Un collega"} sta già lavorando su Jira.`}
+// scrittura condizionale del lock: la versione scritta, oppure null (rifiutata o non confermata entro 15 secondi)
+async function lockWrite(data,base){const w=DB.write("meta","lock",data,{cond:true,base});if(!w.same&&!w.gone)S.lock=w.value;
+  return Promise.race([w.done,sleep(15000).then(()=>null)]).then(at=>at||null,()=>null)}
+async function lockRead(){const r=await DB.fetch("meta","lock");if(r)SKEW=Number(r.now)-Date.now()*1000;return r}
+async function lockTake(kind){if(!DB)return true;
+  const mine=now=>({by:TAB_ID,account:ME?.accountId||"",name:ME?.name||ME?.email||"",kind,until:now+LOCK_TTL});
+  // nessun lock nei dati del progetto: si prende direttamente (base «none»), senza leggerlo dal server
+  try{if(S.lock===undefined){const at=await lockWrite(mine(serverUs()),"none");if(at){LOCK={at,t:Date.now()};T.lost=false;return true}}
+    const r=await lockRead();if(!r)throw{code:"unavailable"};
+    const busyMsg=lockMsg(r.data||{},Number(r.now));if(busyMsg){toast(busyMsg);setMsg("create","warn",busyMsg);return false}
+    const at=await lockWrite(mine(Number(r.now)),String(r.at));
+    if(!at){const f=await lockRead().catch(()=>null),m=lockMsg(f?.data||{},Number(f?.now)||serverUs())||"Jira è occupato da un'altra operazione: riprova tra poco.";toast(m);setMsg("create","warn",m);return false}
+    LOCK={at,t:Date.now()};T.lost=false;return true}
+  catch(e){toast("Non riesco a prenotare Jira per questa scheda: controlla la connessione e riprova.");return false}}
+function lockLost(){LOCK=null;T.lost=true;T.stop=true;logLine("Hai perso il lock: creazione interrotta.")}
+async function lockKeep(){if(!LOCK)return!T.lost;if(Date.now()-LOCK.t<30000)return true;
+  let at=null;try{const r=await lockRead();if(r?.data?.by===TAB_ID)at=await lockWrite({...r.data,until:Number(r.now)+LOCK_TTL},LOCK.at)}catch(e){}
+  if(at){LOCK={at,t:Date.now()};return true}lockLost();return false}
+// prima di ogni creazione: il lock è ancora di questa scheda (rinnovato se serve) e nessun'altra lo tiene secondo la sincronizzazione
+async function lockOk(){if(T.stop)return false;if(!await lockKeep())return false;if(LOCK&&lockMsg()){lockLost();return false}return!T.stop}
+async function lockRelease(){const l=LOCK;LOCK=null;if(l)await lockWrite({},l.at)}
+addEventListener("pagehide",()=>{if(LOCK)fetch(`/api/projects/${encodeURIComponent(PID)}/items/meta/lock`,{method:"PUT",keepalive:true,credentials:"same-origin",headers:{"content-type":"application/json","x-base":LOCK.at},body:"{}"}).catch(()=>{})});
 // Se Jira risponde con un errore incerto ma il ticket è stato creato lo stesso, lo ritrova e lo riusa
 async function findCreated(type,summary,parentKey){const p=P();const q=String(summary).replace(/[\[\]"\\]/g," ").replace(/\s+/g," ").trim();if(!q)return"";
   try{const r=await jira("searchJiraIssuesUsingJql",{cloudId:p.cloudId,jql:`project = "${p.key}" AND issuetype = "${String(type).replace(/"/g,"")}" AND summary ~ "${q}" AND created >= -20m ORDER BY created DESC`,maxResults:10,fields:["summary","parent"]});
@@ -1363,9 +1416,10 @@ async function createNode(type,summary,description,parentKey,extra={}){const p=P
   try{const r=await jira("createJiraIssue",{cloudId:p.cloudId,projectKey:p.key,issueTypeName:type,summary,contentFormat:"markdown",description,additional_fields:f});const key=findKey(r);if(!key)throw{code:"upstream_error",message:"Jira non ha restituito la chiave"};return key}
   catch(err){if(err?.code==="tool_error"||LIFECYCLE.includes(err?.code))throw err;
     let key=await findCreated(type,summary,parentKey);if(key){logLine(`«${summary}»: Jira ha dato un errore (${err.code}) ma il ticket esiste già come ${key}: viene riusato.`);return key}
-    logLine(`«${summary}»: risposta incerta di Jira (${err.code}${err.message?": "+String(err.message).slice(0,160):""}). Non risulta creato: nuovo tentativo tra 4 secondi.`);await sleep(4000);
+    // Jira può non mostrare subito un ticket appena creato: si cerca di nuovo, ma non si ricrea mai (sarebbe un doppione)
+    logLine(`«${summary}»: risposta incerta di Jira (${err.code}${err.message?": "+String(err.message).slice(0,160):""}). Non lo trovo ancora: lo cerco di nuovo tra 4 secondi.`);await sleep(4000);
     key=await findCreated(type,summary,parentKey);if(key)return key;
-    const r=await jira("createJiraIssue",{cloudId:p.cloudId,projectKey:p.key,issueTypeName:type,summary,contentFormat:"markdown",description,additional_fields:f});key=findKey(r);if(!key)throw{code:"upstream_error",message:"Jira non ha restituito la chiave"};return key}}
+    logLine(`«${summary}»: esito incerto e non ritrovato in Jira. Non viene ricreato: verifica in Jira se esiste prima di riprendere.`);throw{code:"uncertain",logged:true}}}
 /* Modifiche dopo la creazione. Trama ricorda cosa ha scritto in Jira (pushed) e porta in Jira solo ciò che è cambiato:
    titolo, descrizione, label, epica. Prima rilegge Jira: se qualcuno ha cambiato titolo o epica in Jira lo dice prima della conferma;
    le label aggiunte in Jira restano. Nello stesso giro si creano i collegamenti che mancano. */
@@ -1390,46 +1444,50 @@ async function pushItem(it){const t=S.tickets[it.id];if(!t||it.gone)return false
 function pushPreview(scope){const pp=T.pushPlan;if(!pp||pp.scope!==scope)return"";const n=pp.items.filter(x=>!x.gone).length;
   return`<div class="card note" style="margin:10px 0 0"><b>${n?(n===1?"1 ticket da aggiornare in Jira":n+" ticket da aggiornare in Jira"):"Nessun ticket da aggiornare"}${pp.links?` · ${pp.links===1?"1 collegamento da creare":pp.links+" collegamenti da creare"}`:""}</b>
    <ul class="small" style="margin:6px 0 0">${pp.items.map(x=>`<li><span class="key">${esc(x.key)}</span> ${esc(x.title)} · ${x.d.map(f=>PUSH_NAMES[f]).join(", ")}${x.warn.map(w=>`<br><span class="pill warn">${esc(w)}</span>`).join("")}</li>`).join("")}</ul>
-   <div class="toolbar" style="margin-top:10px">${JB("pushRun",n||pp.links?"Conferma: aggiorna Jira":"Niente da aggiornare",{cls:"primary",dis:T.running||!(n||pp.links)})}${B("pushCancel","Annulla",{ro:1})}</div></div>`}
+   <div class="toolbar" style="margin-top:10px">${JB("pushRun",n||pp.links?"Conferma: aggiorna Jira":"Niente da aggiornare",{cls:"primary",dis:T.running||!!lockMsg()||!(n||pp.links)})}${B("pushCancel","Annulla",{ro:1})}</div>${lockMsg()?`<p class="small" style="margin:8px 0 0;color:var(--warn)">${esc(lockMsg())}</p>`:""}</div>`}
+// chiave di un livello della struttura: se un'altra scheda gliene ha già salvata una diversa non si sovrascrive (quella appena creata è un doppione)
+async function saveNodeKey(name,key,get,set){await editKit(k=>{const x=get(k);if(x&&!(x.key&&x.key!==key))set(x)});const cur=get(K())?.key;
+  if(cur&&cur!==key){logLine(`${key} creato in Jira, ma «${name}» era già ${cur}: doppione da eliminare a mano in Jira.`);return false}return true}
 async function createEpics(){const pl=planOf();const H0=K().hier;
-  const handle=(err,what)=>{if(err?.code==="tool_error"){logLine(`${what} non creato: ${jiraMsg(err)}`);return true}if(LIFECYCLE.includes(err?.code))throw{jira:1,...err};logLine(`${what}: esito incerto (${err?.code||"errore"}${err?.message?": "+String(err.message).slice(0,200):""}). Non risulta creato in Jira: creazione fermata.`);return false};
+  const handle=(err,what)=>{if(err?.logged)return false;if(err?.code==="tool_error"){logLine(`${what} non creato: ${jiraMsg(err)}`);return true}if(LIFECYCLE.includes(err?.code))throw{jira:1,...err};logLine(`${what}: esito incerto (${err?.code||"errore"}${err?.message?": "+String(err.message).slice(0,200):""}). Non risulta creato in Jira: creazione fermata.`);return false};
   if(H0?.enabled){
-    if(pl.struct.project){try{const key=await createNode(H0.projectType,H0.project.name,`## Context\nProject container for the client delivery "${H0.project.name}".`,"");editKit(k=>k.hier.project.key=key);logLine(`Project «${H0.project.name}» → ${key}`)}catch(err){if(!handle(err,`Project «${H0.project.name}»`))return false}}
-    for(const f of pl.struct.phases){if(T.stop)return false;const pk=K().hier.project.key;if(!pk){logLine(`Fase «${f.name}» saltata: manca il Project.`);continue}
-      try{const key=await createNode(H0.phaseType,f.name,`## Context\nPhase "${f.name}" of the project.`,pk);editKit(k=>{const x=k.hier.phases.find(y=>y.id===f.id);if(x)x.key=key});logLine(`Fase «${f.name}» → ${key} (sotto ${pk})`)}catch(err){if(!handle(err,`Fase «${f.name}»`))return false}}}
-  for(const e of pl.epics){if(T.stop)return false;const rel=K().releases.find(r=>r.name===e.release);let parent="";
+    if(pl.struct.project){if(!await lockOk())return false;try{const key=await createNode(H0.projectType,H0.project.name,`## Context\nProject container for the client delivery "${H0.project.name}".`,"");if(await saveNodeKey(H0.project.name,key,k=>k.hier?.project,x=>{x.key=key}))logLine(`Project «${H0.project.name}» → ${key}`)}catch(err){if(!handle(err,`Project «${H0.project.name}»`))return false}}
+    for(const f of pl.struct.phases){if(!await lockOk())return false;const pk=K().hier.project.key;if(!pk){logLine(`Fase «${f.name}» saltata: manca il Project.`);continue}
+      try{const key=await createNode(H0.phaseType,f.name,`## Context\nPhase "${f.name}" of the project.`,pk);if(await saveNodeKey(f.name,key,k=>k.hier?.phases?.find(y=>y.id===f.id),x=>{x.key=key}))logLine(`Fase «${f.name}» → ${key} (sotto ${pk})`)}catch(err){if(!handle(err,`Fase «${f.name}»`))return false}}}
+  for(const e of pl.epics){if(!await lockOk())return false;const rel=K().releases.find(r=>r.name===e.release);let parent="";
     if(K().hier?.enabled){const ph=K().hier.phases.find(f=>f.id===e.phase);parent=ph?.key||"";if(!parent){logLine(`Epica «${e.name}» saltata: la sua Fase non esiste ancora in Jira.`);continue}}
-    try{const key=await createNode(K().types.Epic||"Epic",e.name,`## Context\nEpic for the functional area "${e.name}"${e.release?` (${e.release})`:""}.`,parent,{labels:rel?.label?[rel.label]:[]});editKit(k=>{const x=k.epics.find(y=>y.name===e.name);if(x){x.key=key;if(parent)x.linkedTo=parent}});logLine(`Epica «${e.name}» → ${key}${parent?` (sotto ${parent})`:""}`)}
+    try{const key=await createNode(K().types.Epic||"Epic",e.name,`## Context\nEpic for the functional area "${e.name}"${e.release?` (${e.release})`:""}.`,parent,{labels:rel?.label?[rel.label]:[]});if(await saveNodeKey(e.name,key,k=>k.epics.find(y=>y.name===e.name),x=>{x.key=key;if(parent)x.linkedTo=parent}))logLine(`Epica «${e.name}» → ${key}${parent?` (sotto ${parent})`:""}`)}
     catch(err){if(!handle(err,`Epica «${e.name}»`))return false}}
-  for(const e of planOf().struct.link){if(T.stop)return false;const ph=K().hier.phases.find(f=>f.id===e.phase);
+  for(const e of planOf().struct.link){if(!await lockOk())return false;const ph=K().hier.phases.find(f=>f.id===e.phase);
     if(!ph?.key){logLine(`Epica «${e.name}» (${e.key}) non collegata: la sua Fase non esiste ancora in Jira.`);continue}
     try{await jira("setIssueParent",{cloudId:P().cloudId,issueKey:e.key,parentKey:ph.key});editKit(k=>{const x=k.epics.find(y=>y.name===e.name);if(x)x.linkedTo=ph.key});logLine(`Epica «${e.name}» (${e.key}) collegata a ${ph.key}`)}catch(err){if(!handle(err,`Collegamento di «${e.name}» a ${ph.key}`))return false}}
   return true}
 async function verifyStructure(){const k=K(),h=k.hier;if(!h?.enabled){T.structReport=null;return}
   const keys=[h.project?.key,...(h.phases||[]).map(f=>f.key),...k.epics.map(e=>e.key)].filter(Boolean);if(!keys.length){T.structReport=[];return}
-  const {map:by}=await fetchIssues(keys,["summary","issuetype","parent"]);const rep=[];
+  const {map:by,missing}=await fetchIssues(keys,["summary","issuetype","parent"]);const rep=[];
   // il Principale deve coincidere con il livello superiore: se il livello superiore non esiste ancora in Jira, il collegamento è comunque «non collegato»
   const row=(level,name,key,expParent,needsParent)=>{const i=by[key];const par=i?.fields?.parent?.key||"";rep.push({level,name,key,type:i?.fields?.issuetype?.name||"non trovato",parent:par,ok:!!i&&(!needsParent||(!!expParent&&par===expParent))})};
   if(h.project?.key)row("Project",h.project.name,h.project.key,"",false);
   (h.phases||[]).forEach(f=>{if(f.key)row("Fase",f.name,f.key,h.project?.key||"",true)});
   k.epics.forEach(e=>{if(e.key){const ph=(h.phases||[]).find(f=>f.id===e.phase);row("Epica",e.name,e.key,ph?.key||"",true)}});
-  editKit(kk=>kk.epics.forEach(e=>{if(!e.key)return;const par=by[e.key]?.fields?.parent?.key;if(par)e.linkedTo=par;else delete e.linkedTo}));
+  editKit(kk=>kk.epics.forEach(e=>{if(!e.key||missing.has(e.key))return;const par=by[e.key]?.fields?.parent?.key;if(par)e.linkedTo=par;else delete e.linkedTo}));
   T.structReport=rep;const bad=rep.filter(r=>!r.ok).length;logLine(`Struttura verificata: ${rep.length-bad} di ${rep.length} livelli collegati come previsto.`)}
 async function createLinks(){const p=P(),k=K(),ts=ticketList();let n=0;
-  for(const t of ts){if(t.state!=="created")continue;for(const l of(t.links||[])){const id=l.type+":"+l.to;if((S.tickets[t.id].linksDone||[]).includes(id))continue;const o=ts.find(x=>x.ref===l.to);if(!o||o.state!=="created"||!S.tickets[o.id]?.key)continue;if(T.stop)return n;
+  for(const t of ts){if(t.state!=="created")continue;for(const l of(t.links||[])){const id=l.type+":"+l.to;if((S.tickets[t.id].linksDone||[]).includes(id))continue;const o=ts.find(x=>x.ref===l.to);if(!o||o.state!=="created"||!S.tickets[o.id]?.key)continue;if(!await lockOk())return n;
    const type=k.links[l.type];if(!type){logLine(`${t.ref}: tipo di collegamento «${l.type}» non scelto nel kit`);continue}
    try{await jira("createIssueLink",{cloudId:p.cloudId,type,inwardIssue:t.key,outwardIssue:S.tickets[o.id].key});await put("tickets",t.id,x=>x?{...x,linksDone:[...new Set([...(x.linksDone||[]),id])]}:null);n++;logLine(`${t.key} ${l.type==="blocks"?"blocca":"è correlato a"} ${S.tickets[o.id].key}`)}
    catch(e){if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};logLine(`Collegamento ${t.key} → ${S.tickets[o.id].key} non creato: ${jiraMsg(e)}`)}}}return n}
-async function fetchIssues(keys,fields){const p=P();const map={},missing=new Set();
+// missing: chiavi che Jira non restituisce (eliminate, oppure non visibili con i permessi di chi legge); why: lo status HTTP, se c'è
+async function fetchIssues(keys,fields){const p=P();const map={},missing=new Set(),why={};
   for(let i=0;i<keys.length;i+=40){const part=keys.slice(i,i+40);
     try{const r=await jira("searchJiraIssuesUsingJql",{cloudId:p.cloudId,jql:`key in (${part.join(",")})`,maxResults:100,fields});findIssues(r).forEach(x=>{map[x.key]=x});part.filter(k=>!map[k]).forEach(k=>missing.add(k))}
     catch(e){if(e?.code!=="tool_error")throw e;
       // una chiave eliminata fa fallire l'intera ricerca: le controllo una per una
-      const queue=[...part];const worker=async()=>{while(queue.length){const key=queue.shift();try{map[key]=await jira("getJiraIssue",{cloudId:p.cloudId,issueIdOrKey:key,fields})}catch(err){if(err?.code==="tool_error")missing.add(key);else throw err}}};
+      const queue=[...part];const worker=async()=>{while(queue.length){const key=queue.shift();try{map[key]=await jira("getJiraIssue",{cloudId:p.cloudId,issueIdOrKey:key,fields})}catch(err){if(err?.code==="tool_error"){missing.add(key);if(err.jiraStatus)why[key]=err.jiraStatus}else throw err}}};
       await Promise.all([worker(),worker(),worker(),worker()])}}
-  return{map,missing}}
+  return{map,missing,why}}
 async function verify(){const p=P(),k=K(),c=ticketList().filter(t=>t.state==="created"&&t.key);let ok=0;
-  for(let i=0;i<c.length;i+=40){const part=c.slice(i,i+40);const {map:iss}=await fetchIssues(part.map(t=>t.key),["summary","labels","components","parent","assignee"]);
+  for(let i=0;i<c.length;i+=40){await lockKeep();const part=c.slice(i,i+40);const {map:iss}=await fetchIssues(part.map(t=>t.key),["summary","labels","components","parent","assignee"]);
    for(const t of part){const x=iss[t.key];let v,note="";if(!x)v="non trovato in Jira";else{const f=x.fields||{},miss=[],soft=[],exp=fieldsFor(t);
      (exp.labels||[]).forEach(l=>{if(!(f.labels||[]).includes(l))miss.push("label "+l)});     if(exp.parent&&f.parent?.key!==exp.parent.key)miss.push("epica");
      if(!exp.parent)miss.push("epica (non creata)");
@@ -1441,54 +1499,77 @@ function buildReport(v){const ts=ticketList(),c=ts.filter(t=>t.state==="created"
   <p><b>Scelte fatte al tuo posto:</b></p><ul>${assumptionsAll({...pl,ready:c}).slice(0,12).map(a=>`<li>${esc(a)}</li>`).join("")}</ul>
   <p><b>Cosa resta da decidere:</b> ${clar.length?`${clar.length} ticket hanno punti da chiarire (${clar.slice(0,10).map(t=>browse(t.key)).join(" ")}).`:"nessun punto da chiarire segnalato."}</p>
   ${v?`<p><b>Verifica:</b> ${v.ok} di ${v.tot} ticket con tutti i campi salvati.</p>`:""}`}
-A.runCreate=el=>arm("run",el,()=>run("runCreate","Creazione…",async()=>{T.running=true;T.stop=false;T.log=[];logLine("Inizio creazione.");
-  try{if(!await createEpics())return;const pl=planOf();const list=pl.ready.filter(t=>T.createDup||!pl.dup.includes(t));
-   for(const t of list){if(T.stop){logLine("Fermato su tua richiesta.");break}if(!await createOne(t))break}
-   if(!T.stop){const n=await createLinks();logLine(`${n} collegamenti creati.`);await verifyStructure();const v=await verify();T.report=buildReport(v)}
+/* Creazione: un ticket alla volta, ciascuno riletto prima (un collega può averlo appena creato o eliminato). Dopo un esito incerto,
+   uno Stop o il lock perso ci si ferma lì: niente collegamenti, verifica, riepilogo né decisione su un backlog a metà. */
+A.runCreate=el=>arm("run",el,()=>run("runCreate","Creazione…",async()=>{T.stop=false;if(!await lockTake("create"))return;T.running=true;T.made=0;T.log=[];logLine("Inizio creazione.");
+  try{let cut=!await createEpics();
+   if(!cut){const pl=planOf();const list=pl.ready.filter(t=>T.createDup||!pl.dup.includes(t));
+    for(const t0 of list){if(T.stop){if(!T.lost)logLine("Fermato su tua richiesta.");cut=true;break}
+     const t=S.tickets[t0.id];if(!t||t.state==="created"||t.state==="unknown")continue;
+     if(!await createOne({...t,id:t0.id})){cut=true;break}}}
+   const stopped=()=>{const m=`Creazione interrotta: ${T.made} creati, ricontrolla prima di riprendere.`;T.report=null;logLine(m);setMsg("create","warn",m)};
+   if(cut||T.stop){stopped();return}
+   const n=await createLinks();logLine(`${n} collegamenti creati.`);
+   if(T.stop){if(!T.lost)logLine("Fermato su tua richiesta.");stopped();return}
+   await verifyStructure();const v=await verify();T.report=buildReport(v);
    addAutoDecision(`Backlog iniziale creato in Jira (${ticketList().filter(t=>t.state==="created").length} ticket).`,"Strumento (passo 6)")}
   catch(e){logLine(`Errore: ${e?.message||jiraMsg(e)}`);throw e}
-  finally{T.running=false;T.arm={};}}));
+  finally{T.running=false;T.arm={};await lockRelease()}}));
 A.pushCheck=el=>run("pushCheck","Lettura di Jira…",async()=>{const id=el?.dataset?.id;const items=await pushPlan(id?[id]:null);T.pushPlan={scope:id||"all",items,links:id?0:pendingLinks(),at:Date.now()}});
 A.pushCancel=()=>{T.pushPlan=null;render()};
-A.pushRun=()=>run("pushRun","Aggiornamento di Jira…",async()=>{const pp=T.pushPlan;if(!pp)return;T.running=true;T.stop=false;let ok=0,links=0;
-  try{for(const it of pp.items){if(T.stop)break;try{if(await pushItem(it))ok++}catch(e){if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};logLine(`${it.key} non aggiornato: ${jiraMsg(e)}`)}}
+A.pushRun=()=>run("pushRun","Aggiornamento di Jira…",async()=>{const pp=T.pushPlan;if(!pp)return;T.stop=false;if(!await lockTake("push"))return;T.running=true;let ok=0,links=0;
+  try{for(const it of pp.items){if(!await lockOk())break;try{if(await pushItem(it))ok++}catch(e){if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};logLine(`${it.key} non aggiornato: ${jiraMsg(e)}`)}}
     if(pp.scope==="all"&&!T.stop){links=await createLinks()}
+    if(T.lost){const m=`Aggiornamento di Jira interrotto: lock perso. Aggiornati prima dell'interruzione: ${ok===1?"1 ticket":ok+" ticket"}.`;T.pushPlan=null;setMsg("create","warn",m);toast(m);return}
     if(ok)await verify();T.pushPlan=null;
     setMsg("create",ok===pp.items.filter(x=>!x.gone).length?"ok":"warn",`Jira aggiornato: ${ok===1?"1 ticket":ok+" ticket"}${links?`, ${links===1?"1 collegamento creato":links+" collegamenti creati"}`:""}.`);
     toast(ok===1?"1 ticket aggiornato in Jira.":`${ok} ticket aggiornati in Jira.`)}
-  finally{T.running=false}});
+  finally{T.running=false;await lockRelease()}});
 A.stopRun=()=>{T.stop=true;toast("La creazione si ferma dopo l'operazione in corso.")};
-A.runStruct=el=>arm("struct",el,()=>run("runStruct","Creazione struttura…",async()=>{T.running=true;T.stop=false;T.log=[];logLine("Inizio creazione della struttura (Project, Fasi, epiche).");
-  try{const ok=await createEpics();await verifyStructure();logLine(ok?"Struttura completata.":"Struttura interrotta: controlla Jira prima di riprovare.")}
+A.runStruct=el=>arm("struct",el,()=>run("runStruct","Creazione struttura…",async()=>{T.stop=false;if(!await lockTake("struct"))return;T.running=true;T.log=[];logLine("Inizio creazione della struttura (Project, Fasi, epiche).");
+  try{const ok=await createEpics();if(ok)await verifyStructure();logLine(ok?"Struttura completata.":"Struttura interrotta: controlla Jira prima di riprovare.")}
   catch(e){logLine(`Errore: ${e?.message||jiraMsg(e)}`);throw e}
-  finally{T.running=false;T.arm={}}}));
-A.retryOne=el=>run("retryOne","Creazione…",async()=>{const t=ticketList().find(x=>x.id===el.dataset.id);if(t&&!issuesOf(t).e.length)await createOne(t);else toast("Correggi prima gli errori del ticket al passo 5.")});
+  finally{T.running=false;T.arm={};await lockRelease()}}));
+A.retryOne=el=>run("retryOne","Creazione…",async()=>{const id=el.dataset.id,t=S.tickets[id]&&{...S.tickets[id],id};if(!t||t.state==="created"||t.state==="unknown")return;if(issuesOf(t).e.length){toast("Correggi prima gli errori del ticket al passo 5.");return}
+  T.stop=false;if(!await lockTake("create"))return;T.running=true;try{await createOne(t)}finally{T.running=false;await lockRelease()}});
 A.reconcile=el=>run("reconcile","Ricerca…",async()=>{const t=ticketList().find(x=>x.id===el.dataset.id);const p=P();const r=await jira("searchJiraIssuesUsingJql",{cloudId:p.cloudId,jql:`project = "${p.key}" AND summary ~ "${fullTitle(t).replace(/[\[\]"\\]/g," ").replace(/\s+/g," ").trim()}" ORDER BY created DESC`,maxResults:10,fields:["summary"]});
   const hit=findIssues(r).find(i=>String(i.fields?.summary).toLowerCase()===fullTitle(t).toLowerCase());
-  if(hit){const pushed=pushedOf(t);await put("tickets",t.id,x=>x?{...x,state:"created",key:hit.key,err:"",pushed}:null);toast(`Trovato in Jira: ${hit.key}.`)}else{await put("tickets",t.id,x=>x&&x.state==="unknown"?{...x,state:"draft",err:""}:null);toast("Non trovato in Jira: il ticket torna in bozza e verrà creato alla prossima creazione.")}});
+  if(hit){const pushed=pushedOf(t);await put("tickets",t.id,x=>x?{...x,state:"created",key:hit.key,err:"",pushed}:null);toast(`Trovato in Jira: ${hit.key}.`)}else{(T.notFound||(T.notFound=new Set())).add(t.id);toast("Non trovato in Jira: se sei sicuro che non sia stato creato, riportalo in bozza.")}});
+// solo su conferma: un ticket con esito incerto che la ricerca non trova torna in bozza (Jira può non mostrarlo ancora)
+A.draftUnknown=el=>{const id=el.dataset.id;arm("du"+id,el,()=>{T.notFound?.delete(id);put("tickets",id,x=>x&&x.state==="unknown"?{...x,state:"draft",err:""}:null)})};
 function createdKeys(){const k=K(),h=k.hier;const set=new Set();ticketList().forEach(t=>{if(t.state==="created"&&t.key)set.add(t.key)});k.epics.forEach(e=>e.key&&set.add(e.key));(h?.phases||[]).forEach(f=>f.key&&set.add(f.key));h?.project?.key&&set.add(h.project.key);
   return[...set].sort((a,b)=>(+a.split("-").pop())-(+b.split("-").pop()))}
+/* Sincronizzazione: le chiavi che Jira non restituisce (eliminate, oppure non visibili con i permessi di chi legge: Jira risponde 404
+   in entrambi i casi) restano dove sono e si elencano; tornano in bozza solo con «Riporta in bozza» confermato. */
 async function syncJira(){const k=K(),h=k.hier;const ts=ticketList().filter(t=>t.state==="created"&&t.key);const keys=createdKeys();
-  if(!keys.length){T.sync={at:Date.now(),empty:true,total:0,deleted:[],parentDiff:[],renamed:[],status:{}};return}
-  const {map,missing}=await fetchIssues(keys,["summary","issuetype","status","parent"]);
-  const res={at:Date.now(),total:keys.length,deleted:[],parentDiff:[],renamed:[],status:{}};
+  if(!keys.length){T.sync={at:Date.now(),empty:true,total:0,missing:[],parentDiff:[],renamed:[],status:{}};return}
+  const {map,missing,why}=await fetchIssues(keys,["summary","issuetype","status","parent"]);
+  const res={at:Date.now(),total:keys.length,missing:[],parentDiff:[],renamed:[],status:{}},miss=m=>res.missing.push({...m,status:why[m.key]||0});
   for(const t of ts){
-    if(missing.has(t.key)){res.deleted.push(`${t.key} ${fullTitle(t)}`);await put("tickets",t.id,x=>{if(!x||x.key!==t.key)return x;const{key,verify,linksDone,jiraStatus,syncedAt,pushed,...rest}=x;return{...rest,state:"draft",err:"Eliminato in Jira: tornato in bozza",linksDone:[]}});continue}
+    if(missing.has(t.key)){miss({kind:"ticket",id:t.id,key:t.key,label:fullTitle(t)});continue}
     const i=map[t.key],f=i?.fields||{},st=f.status?.name||"";res.status[st]=(res.status[st]||0)+1;
     const ep=k.epics.find(e=>e.name===t.epic),par=f.parent?.key||"";
     if(ep?.key&&par&&par!==ep.key)res.parentDiff.push(`${t.key} (in ${par}, previsto ${ep.key})`);
     if(String(f.summary||"").trim()&&String(f.summary).trim()!==fullTitle(t).trim())res.renamed.push(`${t.key} «${String(f.summary).slice(0,50)}»`);
     if(S.tickets[t.id].jiraStatus!==st){const at=Date.now();await put("tickets",t.id,x=>x&&{...x,jiraStatus:st,syncedAt:at})}}
-  // epiche, Fasi e Project eliminati in Jira: si dimentica la chiave, così possono essere ricreati
-  const k1=K();k1.epics.forEach(e=>{if(e.key&&missing.has(e.key))res.deleted.push(`${e.key} epica «${e.name}»`)});
-  if(k1.hier){(k1.hier.phases||[]).forEach(f=>{if(f.key&&missing.has(f.key))res.deleted.push(`${f.key} Fase «${f.name}»`)});if(k1.hier.project?.key&&missing.has(k1.hier.project.key))res.deleted.push(`${k1.hier.project.key} Project «${k1.hier.project.name}»`)}
-  editKit(kk=>{kk.epics.forEach(e=>{if(e.key&&missing.has(e.key)){e.key="";delete e.linkedTo}});
-    if(kk.hier){(kk.hier.phases||[]).forEach(f=>{if(f.key&&missing.has(f.key))f.key=""});if(kk.hier.project?.key&&missing.has(kk.hier.project.key))kk.hier.project.key=""}});
+  const k1=K();k1.epics.forEach(e=>{if(e.key&&missing.has(e.key))miss({kind:"epic",key:e.key,label:`epica «${e.name}»`})});
+  if(k1.hier){(k1.hier.phases||[]).forEach(f=>{if(f.key&&missing.has(f.key))miss({kind:"phase",key:f.key,label:`Fase «${f.name}»`})});if(k1.hier.project?.key&&missing.has(k1.hier.project.key))miss({kind:"project",key:k1.hier.project.key,label:`Project «${k1.hier.project.name}»`})}
   await verifyStructure();T.sync=res;T.report=null;
-  const nd=res.deleted.length;logLine(`Sincronizzazione: ${keys.length-nd} elementi presenti in Jira, ${nd} eliminati (riportati in bozza), ${res.parentDiff.length} con epica diversa, ${res.renamed.length} rinominati.`)}
+  const nm=res.missing.length;logLine(`Sincronizzazione: ${keys.length-nm} elementi presenti in Jira, ${nm} non trovati, ${res.parentDiff.length} con epica diversa, ${res.renamed.length} rinominati.`)}
+// «Riporta in bozza» confermato: i ticket perdono la chiave e tornano bozze da creare; epiche, Fasi e Project perdono la chiave nel kit
+function draftMissing(list){const kit=list.filter(m=>m.kind!=="ticket"),has=key=>kit.some(m=>m.key===key);
+  list.filter(m=>m.kind==="ticket").forEach(m=>put("tickets",m.id,x=>{if(!x||x.key!==m.key)return x;const{key,verify,linksDone,jiraStatus,syncedAt,pushed,...rest}=x;return{...rest,state:"draft",err:"Non trovato in Jira: riportato in bozza",linksDone:[]}}));
+  if(kit.length)editKit(kk=>{kk.epics.forEach(e=>{if(e.key&&has(e.key)){e.key="";delete e.linkedTo}});
+    if(kk.hier){(kk.hier.phases||[]).forEach(f=>{if(f.key&&has(f.key))f.key=""});if(kk.hier.project?.key&&has(kk.hier.project.key))kk.hier.project.key=""}});
+  if(T.sync)T.sync.missing=T.sync.missing.filter(m=>!list.includes(m));
+  toast(list.length===1?"Riportato in bozza.":`Riportati in bozza ${list.length} elementi.`)}
+A.syncDraft=el=>arm("syncDraft",el,()=>draftMissing(T.sync?.missing||[]));
+A.draftOne=el=>{const id=el.dataset.id;arm("d1"+id,el,()=>draftMissing((T.sync?.missing||[]).filter(m=>m.id===id)))};
+const missingOf=id=>(T.sync?.missing||[]).find(m=>m.id===id);
 // un solo pulsante: rilegge Jira (eliminati, stati, epiche, struttura) e verifica i campi dei ticket creati
 A.syncJira=()=>run("syncJira","Sincronizzazione…",async()=>{await syncJira();const v=T.sync.empty?null:await verify();
-  setMsg("create",T.sync.deleted.length||v&&v.ok<v.tot?"warn":"ok",T.sync.empty?"Non c'è ancora nulla creato da sincronizzare.":`${T.sync.deleted.length?`Sincronizzato: ${T.sync.deleted.length} elementi eliminati in Jira sono tornati in bozza.`:"Sincronizzato: tutto ciò che Trama ha creato è presente in Jira."} Verifica: ${v.ok} di ${v.tot} ticket con tutti i campi salvati.`)});
+  const nm=T.sync.missing.length;
+  setMsg("create",nm||v&&v.ok<v.tot?"warn":"ok",T.sync.empty?"Non c'è ancora nulla creato da sincronizzare.":`${nm?`Sincronizzato: ${nm===1?"1 elemento non trovato":nm+" elementi non trovati"} in Jira (eliminati, oppure non visibili con i tuoi permessi).`:"Sincronizzato: tutto ciò che Trama ha creato è presente in Jira."} Verifica: ${v.ok} di ${v.tot} ticket con tutti i campi salvati.`)});
 function addAutoDecision(text,source){const id=uid();put("decisions",id,{date:today(),text,who:"PO",type:"Organizzazione del backlog",source,impact:"",kit:"",replaces:"",at:Date.now()})}
 
 /* passo 8 */
@@ -1580,9 +1661,9 @@ document.addEventListener("change",e=>{const el=e.target;
    se nel frattempo un collega ne ha eliminata o aggiunta una, la modifica va comunque su quella giusta, o non si fa. */
 function bindKit(f,v){const m=f.match(/^(releases|epics)\.(\d+)\.(.+)$/);if(!m){editKit(k=>{setPath(k,f,v)});return}
   const [,list,i,field]=m,cur=K()[list][+i];if(!cur)return;
-  if(list==="epics"&&field==="release"){epicRelease(cur.name,v);return}
-  const same=x=>x.name===cur.name&&(list==="epics"||x.label===cur.label),old=list==="releases"&&field==="name"&&cur.name&&cur.name!==v?cur.name:null;
-  editKit(k=>{const x=k[list].find(same);if(!x)return null;setPath(x,field,v);
+  if(list==="epics"&&field==="release"){epicRelease(cur.name,v,+i);return}
+  const same=x=>x.name===cur.name&&(list==="epics"||x.label===cur.label),find=sameAt(K()[list],+i,same),old=list==="releases"&&field==="name"&&cur.name&&cur.name!==v?cur.name:null;
+  editKit(k=>{const x=k[list][find(k[list])];if(!x)return null;setPath(x,field,v);
     if(old){k.epics.forEach(e=>{if(e.release===old)e.release=v});(k.hier?.phases||[]).forEach(p=>{if(p.name===old)p.name=v})}})
   // requisiti e ticket seguono la rinomina solo se il kit è stato salvato e la release rinominata c'è ancora
   .then(ok=>{if(!old||!ok||!K().releases.some(r=>r.name===v))return;const mv=d=>d&&d.release===old?{...d,release:v}:d;arr("reqs").forEach(r=>{if(r.release===old)put("reqs",r.id,mv)});arr("tickets").forEach(t=>{if(t.release===old)put("tickets",t.id,mv)})})}
@@ -1868,6 +1949,8 @@ document.addEventListener("click",e=>{const b=e.target.closest(".dd-btn");if(b){
 document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;const open=document.querySelector(".dd-menu:not([hidden])");if(open){closeMenus();open.closest(".dd").querySelector(".dd-btn").focus()}});
 $("#logoutBtn").onclick=async()=>{try{await BS.api("/api/auth/logout",{method:"POST"})}catch(e){}location.href="/"};
 BS.onUnauthenticated=code=>{if(GATE!=="login")showGate("login",code==="needs_reauth"?"La sessione Atlassian è scaduta: accedi di nuovo per continuare. Il lavoro salvato non va perso.":"La sessione è scaduta: accedi di nuovo.")};
+// ora del server dalla sincronizzazione: un lock scaduto non deve sembrare vivo a chi ha l'orologio indietro
+BS.onClock=us=>{SKEW=us-Date.now()*1000};
 // rete o server dei dati non disponibili: i salvataggi restano in coda e si ritentano; l'indicatore dice quanti sono
 BS.onPending=n=>{if(n===PEND)return;PEND=n;if(!GATE)renderChrome()};
 let syncFail=0;BS.onSync=ok=>{const was=syncFail;syncFail=ok?0:syncFail+1;if(!!was!==!!syncFail){caps.db=syncFail?"warn":"ok";renderChrome()}};
