@@ -98,7 +98,7 @@ exact: {
 "pronto per Jira": "ready for Jira",
 // demo 3: Jira
 "Il controllo è verde: si conferma e si crea.": "The check is green: confirm and create.",
-"Prima il Project, sotto il cliente COM.": "First the Project, under the COM client.",
+"Prima il Project, sotto il cliente ORTO.": "First the Project, under the ORTO client.",
 "Poi le Fasi, con il Project come Principale.": "Then the Phases, with the Project as Parent.",
 "Le epiche sotto la Fase, le storie sotto l'epica.": "Epics under the Phase, stories under the epic.",
 "Trama rilegge Jira: ogni livello è collegato.": "Trama reads Jira back: every level is linked.",
@@ -309,7 +309,7 @@ exact: {
 "Requisiti estratti e ordinati, domande e ipotesi sempre in vista, backlog creato in Jira con un comando.": "Requirements extracted and ordered, questions and assumptions always in view, backlog created in Jira with one command.",
 "Scheda QA per il collaudo": "QA sheet for testing",
 "Scheda QA pronta per ogni ticket": "A ready QA sheet for every ticket",
-"Scheda QA · COM-906.md": "QA sheet · COM-906.md",
+"Scheda QA · ORTO-906.md": "QA sheet · ORTO-906.md",
 "Sviluppo": "Development",
 "Sviluppo e QA": "Development and QA",
 "Sviluppo e pianificazione": "Development and planning",

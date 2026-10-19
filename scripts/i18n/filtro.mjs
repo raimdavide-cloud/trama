@@ -11,7 +11,7 @@ export function datiDiProva() {
   return data;
 }
 
-const IGNORA = new Set(["Logic", "Manual_Test", "UP", "esempio.atlassian.net", "To Do", "rama", "iOS", "Android", "UI", "ticket", "Trama", "Utente Prova", "utente.prova@example.com", "Compass", "COM"]);
+const IGNORA = new Set(["Logic", "Manual_Test", "UP", "esempio.atlassian.net", "To Do", "rama", "iOS", "Android", "UI", "ticket", "Trama", "Utente Prova", "utente.prova@example.com", "OrtoComune", "ORTO"]);
 
 export function isData(s, data, dataN = (data.__n ??= new Set([...data].map(norm)))) {
   const k = norm(s), core = k.replace(/^\{k\}:? /, "").replace(/ \(\{n\}\)$/, "");

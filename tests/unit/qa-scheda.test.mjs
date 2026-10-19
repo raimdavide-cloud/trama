@@ -15,8 +15,8 @@ const T002 = ctx.tickets.find((t) => t.ref === "T-002");
 
 test("scheda: criteri come checklist, requisito d'origine, dipendenze nei due versi, ipotesi e punti da chiarire", () => {
   const s = QA.sheet(T002, ctx);
-  assert.match(s.md, /^---\nticket: COM-896\nref: T-002\n/);
-  assert.match(s.md, /jira: "https:\/\/esempio\.atlassian\.net\/browse\/COM-896"/);
+  assert.match(s.md, /^---\nticket: ORTO-896\nref: T-002\n/);
+  assert.match(s.md, /jira: "https:\/\/esempio\.atlassian\.net\/browse\/ORTO-896"/);
   assert.match(s.md, /## Cosa verificare\n- \[ \] AC1 · A new user can register/);
   assert.match(s.md, /\*\*RF-001 · Registrazione con email e password\*\* \(fonte: requisiti-ortocomune\.md\)/);
   assert.match(s.md, /- Sblocca: T-004/);
@@ -26,9 +26,9 @@ test("scheda: criteri come checklist, requisito d'origine, dipendenze nei due ve
   assert.ok(!s.md.includes("## Acceptance criteria"), "le sezioni già usate non si ripetono");
   assert.equal(s.ready, false);
   assert.deepEqual(s.gaps, ["5 ipotesi da confermare", "5 punti da chiarire"]);
-  assert.equal(s.name, "COM-896-email-password-registration-and-email-verification-api.md");
+  assert.equal(s.name, "ORTO-896-email-password-registration-and-email-verification-api.md");
   // chi è sbloccato da T-002 lo vede come «da collaudare dopo»
-  assert.match(QA.sheet(ctx.tickets.find((t) => t.ref === "T-004"), ctx).md, /- Da collaudare dopo: T-002 \(COM-896\)/);
+  assert.match(QA.sheet(ctx.tickets.find((t) => t.ref === "T-004"), ctx).md, /- Da collaudare dopo: T-002 \(ORTO-896\)/);
 });
 
 test("scheda: le righe segnaposto del modello non contano come criteri e un ticket completo è pronto", () => {
@@ -36,7 +36,7 @@ test("scheda: le righe segnaposto del modello non contano come criteri e un tick
   const s = QA.sheet(vuoto, ctx);
   assert.match(s.md, /Nessun criterio di accettazione nel ticket/);
   assert.ok(s.gaps.includes("Mancano i criteri di accettazione"));
-  const ok = { ref: "T-901", key: "COM-1", type: "Story", req: "RF-001", desc: "## Acceptance criteria\n* Works.", links: [] };
+  const ok = { ref: "T-901", key: "ORTO-1", type: "Story", req: "RF-001", desc: "## Acceptance criteria\n* Works.", links: [] };
   const r = QA.sheet(ok, ctx);
   assert.equal(r.ready, true);
   assert.match(r.md, /pronta_per_qa: true/);
@@ -44,7 +44,7 @@ test("scheda: le righe segnaposto del modello non contano come criteri e un tick
 });
 
 test("scheda: le decisioni sostituite non compaiono, quelle che citano il ticket sì", () => {
-  const t = { ref: "T-950", key: "COM-950", type: "Story", req: "RF-999", desc: "## Acceptance criteria\n* x", links: [] };
+  const t = { ref: "T-950", key: "ORTO-950", type: "Story", req: "RF-999", desc: "## Acceptance criteria\n* x", links: [] };
   const decisions = [
     { id: "a", date: "2026-10-01", text: "RF-999: login con email", who: "PO" },
     { id: "b", date: "2026-10-02", text: "RF-999: login con email e Google", replaces: "a", source: "Call" },
@@ -78,7 +78,7 @@ test("piano di test della release: sintesi, perimetro, fuori perimetro, requisit
   assert.match(p.md, /# Piano di test · MVP \(pilota\)/);
   assert.match(p.md, /- Ticket da collaudare: 31 /);
   assert.match(p.md, /- Fuori perimetro \(Spike e UX Story\): 36/);
-  assert.match(p.md, /\| T-002 \| COM-896 \| Story \|/);
+  assert.match(p.md, /\| T-002 \| ORTO-896 \| Story \|/);
   assert.match(p.md, /## Requisiti non funzionali da verificare\n- RNF-/);
   assert.match(p.md, /## Da compilare a cura del QA\n- Ambienti: \n- Dati di test: /);
   const order = p.md.split("## Ordine consigliato")[1];
@@ -116,4 +116,15 @@ test("più release: una cartella per release e i ticket senza release a parte", 
   const ts = [{ ref: "T-1", type: "Story", release: "R1", desc: "", links: [] }, { ref: "T-2", type: "Story", release: "", desc: "", links: [] }];
   const b = QA.bundle(["R1", null], { ...ctx, tickets: ts, reqs: [] });
   assert.deepEqual(b.files.map((f) => f.name), ["r1/piano-di-test.md", "r1/schede/T-1-senza-nome.md", "senza-release/piano-di-test.md", "senza-release/schede/T-2-senza-nome.md"]);
+});
+
+test("scheda: un codice requisito con metacaratteri delle espressioni regolari non rompe la ricerca delle decisioni", () => {
+  const t = { ref: "T-950", type: "Story", req: "RF+(1[", desc: "## Acceptance criteria\n* Works.", links: [] };
+  const decisions = [
+    { id: "d1", date: "2026-10-18", text: "RF+(1[ resta in MVP", who: "PO" },
+    { id: "d2", date: "2026-10-18", text: "RFF(1[ è un altro requisito", who: "PO" },
+  ];
+  const s = QA.sheet(t, { ...ctx, decisions });
+  assert.match(s.md, /RF\+\(1\[ resta in MVP/);
+  assert.ok(!s.md.includes("RFF(1[ è un altro requisito"));
 });

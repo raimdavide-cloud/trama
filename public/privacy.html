@@ -71,6 +71,7 @@ tr:last-child td{border-bottom:0}
       <tr><td>Elenco dei siti Atlassian a cui hai accesso</td><td>Atlassian</td><td>Mostrarti solo i progetti dei siti che puoi già vedere</td></tr>
       <tr><td>Contenuti di progetto: documenti caricati, requisiti, domande, kit, ticket in bozza, registro delle decisioni, conversazioni con Claude</td><td>Tu e i colleghi dello stesso sito Atlassian</td><td>Il funzionamento dello strumento</td></tr>
       <tr><td>Presenza nel progetto: nome, passo e ticket aperti in quel momento</td><td>Trama, mentre hai il progetto aperto</td><td>Mostrare ai colleghi chi sta lavorando sullo stesso progetto ed evitare modifiche sovrapposte; cancellata dopo un giorno</td></tr>
+      <tr><td>Chi sta lavorando su Jira: nome e ID account di chi sta creando o aggiornando ticket in Jira</td><td>Trama, mentre crei o aggiorni in Jira</td><td>Mostrare ai colleghi chi sta lavorando su Jira ed evitare doppioni; si svuota alla fine dell'operazione e scade dopo 2 minuti</td></tr>
       <tr><td>Cookie di sessione tecnico</td><td>Trama</td><td>Tenerti collegato per al massimo 30 giorni</td></tr>
     </tbody></table></div>
     <p class="muted">Non usiamo cookie di profilazione né strumenti di analisi o pubblicità. Nel browser restano solo preferenze tecniche (passo aperto, indirizzo del ponte).</p>
@@ -92,7 +93,7 @@ tr:last-child td{border-bottom:0}
       <li><b>Sessione:</b> 30 giorni dall'ultimo accesso.</li>
       <li><b>Account e token:</b> finché usi Trama o finché non chiedi la cancellazione.</li>
       <li><b>Account Atlassian chiusi:</b> Trama segnala periodicamente ad Atlassian gli account che conserva (Personal Data Reporting API). Se un account risulta chiuso, i suoi dati personali vengono cancellati automaticamente; se risulta modificato, nome ed email vengono riletti.</li>
-      <li><b>Contenuti di progetto:</b> finché il progetto esiste. Chi l'ha creato può eliminarlo in qualsiasi momento.</li>
+      <li><b>Contenuti di progetto:</b> finché il progetto esiste. Chi l'ha creato può eliminarlo in qualsiasi momento; se l'autore ha cancellato il proprio account, può eliminarlo chiunque abbia accesso allo stesso sito Atlassian.</li>
     </ul>
 
     <h2>I tuoi diritti</h2>

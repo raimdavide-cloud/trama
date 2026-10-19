@@ -275,21 +275,31 @@ test("pagine pubbliche: ogni collegamento interno porta a una pagina che esiste"
   expect(seen.size).toBeGreaterThan(4);
 });
 
-test("salvataggio in blocco: rinominare una release aggiorna decine di elementi con una sola richiesta, salvata sul server", async ({ page, request }) => {
+test("salvataggio in blocco: rinominare una release aggiorna decine di elementi, i requisiti in una sola richiesta e i ticket con il controllo, 4 alla volta", async ({ page, request }) => {
   await openStudio(page);
+  await page.evaluate(() => BS.writesDone()); // i salvataggi dell'apertura (registro delle decisioni) non contano
   const writes = [];
-  page.on("request", (r) => { if (["PUT", "POST", "DELETE"].includes(r.method()) && r.url().includes("/api/projects/")) writes.push(`${r.method()} ${new URL(r.url()).pathname.split("/").slice(3).join("/")}`); });
+  let open = 0, most = 0; // richieste condizionali sui ticket in viaggio insieme
+  page.on("request", (r) => { if (!["PUT", "POST", "DELETE"].includes(r.method()) || !r.url().includes("/api/projects/")) return; writes.push(`${r.method()} ${new URL(r.url()).pathname.split("/").slice(3).join("/")} ${r.headers()["x-base"] ? "base" : ""}`); if (r.url().includes("/items/tickets/")) most = Math.max(most, ++open); });
+  page.on("requestfinished", (r) => { if (r.url().includes("/items/tickets/")) open--; });
   await goToStep(page, "Kit di progetto");
   const old = await page.evaluate(() => K().releases[0].name);
-  const touched = await page.evaluate((o) => reqList().filter((x) => x.release === o).length + ticketList().filter((x) => x.release === o).length, old);
-  expect(touched).toBeGreaterThan(20);
+  const reqs = await page.evaluate((o) => reqList().filter((x) => x.release === o).length, old);
+  const tickets = await page.evaluate((o) => ticketList().filter((x) => x.release === o).length, old);
+  const touched = reqs + tickets;
+  expect(reqs).toBeGreaterThan(5);
+  expect(tickets).toBeGreaterThan(5);
   await openSec(page, "Release (= Fase)");
   const name = page.locator('[data-bind="meta:kit:releases.0.name"]');
   await name.fill(`${old} bis`);
   await name.press("Tab");
   await page.evaluate(() => BS.writesDone());
-  expect(writes.filter((w) => w.startsWith("POST") && w.endsWith("/batch")).length, writes.join("\n")).toBe(1);
-  expect(writes.length, "nessuna richiesta per singolo elemento").toBeLessThanOrEqual(2);
+  const list = writes.join("\n");
+  expect(writes.filter((w) => w.startsWith("POST") && w.includes("/batch")).length, list).toBe(1); // tutti i requisiti insieme
+  expect(writes.filter((w) => w.startsWith("PUT") && w.includes("/items/reqs/")), list).toHaveLength(0);
+  expect(writes.filter((w) => w === "PUT progetto-prova/items/meta/kit base"), list).toHaveLength(1);
+  expect(writes.filter((w) => w.startsWith("PUT") && w.includes("/items/tickets/") && w.endsWith("base")), list).toHaveLength(tickets); // ognuno con la sua versione
+  expect(most).toBeLessThanOrEqual(4);
   const saved = (await (await request.get("/api/projects/progetto-prova")).json()).items;
   expect(saved.filter((i) => (i.col === "reqs" || i.col === "tickets") && i.data.release === old)).toHaveLength(0);
   expect(saved.filter((i) => (i.col === "reqs" || i.col === "tickets") && i.data.release === `${old} bis`)).toHaveLength(touched);
@@ -356,7 +366,7 @@ test("Scheda QA: dal pannello del ticket si vede, si copia e si scarica; dalla l
   await expect(pre).toContainText("- [ ] AC1 · ");
   await expect(pre).toContainText("## Da dove nasce");
   const [md] = await Promise.all([page.waitForEvent("download"), box.getByRole("button", { name: "Scarica .md" }).click()]);
-  expect(md.suggestedFilename()).toMatch(/^(COM-\d+|T-\d+)-[a-z0-9-]+\.md$/);
+  expect(md.suggestedFilename()).toMatch(/^(ORTO-\d+|T-\d+)-[a-z0-9-]+\.md$/);
   await expect(page.locator("#toast")).toHaveText("Scheda QA scaricata.");
   await page.keyboard.press("Escape");
   await page.locator(".exp-btn").click();
@@ -366,4 +376,59 @@ test("Scheda QA: dal pannello del ticket si vede, si copia e si scarica; dalla l
   const buf = Buffer.concat(await (async () => { const out = []; for await (const c of await zip.createReadStream()) out.push(c); return out; })());
   expect(buf.subarray(0, 4).toString("hex")).toBe("504b0304");
   expect(buf.includes(Buffer.from("piano-di-test.md"))).toBe(true);
+});
+
+test("CSV: una cella che inizia con = + - @ resta testo (apostrofo davanti), anche per Excel", async ({ page }) => {
+  await openStudio(page);
+  await page.evaluate(() => {
+    put("decisions", "d-formula", { date: "2026-10-18", text: '=HYPERLINK("http://esempio.invalid","clic")', who: "@PO", type: "Altro", source: "+39 333", impact: "-1", kit: "", replaces: "", at: Date.now() });
+    DL = { save: async ({ data }) => { window.csvOut = await data.text(); } };
+    A.exportDecisions();
+  });
+  await expect.poll(() => page.evaluate(() => !!window.csvOut)).toBe(true);
+  const csv = await page.evaluate(() => window.csvOut);
+  const row = csv.split("\r\n").find((l) => l.includes("HYPERLINK"));
+  expect(row).toContain(`"'=HYPERLINK(""http://esempio.invalid"",""clic"")"`);
+  expect(row).toContain(`"'@PO"`);
+  expect(row).toContain(`"'+39 333"`);
+  expect(row).toContain(`"'-1"`);
+});
+
+test("indirizzo del sito: solo https diventa un collegamento; javascript: resta testo", async ({ page }) => {
+  await openStudio(page);
+  await page.evaluate(() => new Promise((r) => setTimeout(r, 200))); // all'apertura il progetto si riallinea al sito del server (dopo 60 ms)
+  await page.evaluate(() => editProject((p) => { p.siteUrl = "javascript:alert(1)"; }));
+  await goToStep(page, "Progetto Jira");
+  await openSec(page, "Sito Atlassian");
+  await expect(page.locator("#main")).toContainText("javascript:alert(1)");
+  await goToStep(page, "Crea su Jira");
+  expect(await page.locator('a[href^="javascript"]').count()).toBe(0);
+  expect(await page.evaluate(() => [browse("ORTO-1"), document.querySelector("#projMenu").innerHTML.includes("Apri in Jira")])).toEqual(['<span class="key">ORTO-1</span>', false]);
+  await page.evaluate(() => editProject((p) => { p.siteUrl = "https://esempio.atlassian.net"; }));
+  expect(await page.evaluate(() => browse("ORTO-1"))).toContain('href="https://esempio.atlassian.net/browse/ORTO-1"');
+});
+
+test("chat, «update_ticket»: i valori arrivano nel tipo giusto, quelli non validi si scartano senza fermare il resto", async ({ page }) => {
+  await openStudio(page);
+  const r = await page.evaluate(() => {
+    const t = ticketList().find((x) => x.state !== "created");
+    const msg = applyAction({ type: "update_ticket", ref: t.ref, fields: { labels: " Android, iOS ,", area: "nessuna", type: "Spike", title: "  New title  ", links: ["blocks: t-002", { type: "relates", to: "T-003" }, { type: "boh", to: "T-004" }, 7] } });
+    const d = S.tickets[t.id];
+    return { msg, labels: d.labels, area: d.area === t.area, type: d.type === t.type, title: d.title, links: d.links };
+  });
+  expect(r.labels).toEqual(["Android", "iOS"]);
+  expect([r.area, r.type, r.title]).toEqual([true, true, "New title"]);
+  expect(r.links).toEqual([{ type: "blocks", to: "T-002" }, { type: "relates", to: "T-003" }]);
+  expect(r.msg).toContain("Valori non validi scartati: area, type.");
+});
+
+test("presenza: con la pagina che si ridisegna di continuo il battito parte comunque ogni 30 secondi", async ({ page }) => {
+  await page.clock.install();
+  const beats = [];
+  page.on("request", (r) => { if (r.method() === "PUT" && r.url().includes("/items/presence/")) beats.push(r.url()); });
+  await page.goto("/studio?p=progetto-prova");
+  await expect(page.locator(".progress b")).toContainText("di 6 passi completati");
+  const n = beats.length;
+  for (let t = 0; t < 95_000; t += 2000) { await page.evaluate(() => render()); await page.clock.runFor(2000); await page.waitForTimeout(20); }
+  expect(beats.length - n).toBeGreaterThanOrEqual(3);
 });

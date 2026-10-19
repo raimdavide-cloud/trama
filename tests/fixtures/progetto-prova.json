@@ -101,13 +101,13 @@
    "col": "meta",
    "id": "project",
    "data": {
-    "key": "COM",
+    "key": "ORTO",
     "name": "Test Prova",
     "style": "classic",
-    "jiraId": "12422",
+    "jiraId": "10001",
     "cloudId": "00000000-0000-4000-8000-000000000001",
     "siteUrl": "https://esempio.atlassian.net",
-    "jiraName": "Compass",
+    "jiraName": "OrtoComune",
     "issueTypes": [
      {
       "id": "11537",
@@ -207,7 +207,7 @@
      "phases": [
       {
        "id": "mvavxnj8ofzx6",
-       "key": "COM-886",
+       "key": "ORTO-886",
        "name": "MVP (pilota)"
       },
       {
@@ -223,7 +223,7 @@
      ],
      "enabled": true,
      "project": {
-      "key": "COM-885",
+      "key": "ORTO-885",
       "name": "Test Prova"
      },
      "examples": {
@@ -249,53 +249,53 @@
     },
     "epics": [
      {
-      "key": "COM-887",
+      "key": "ORTO-887",
       "name": "Autenticazione",
       "phase": "mvavxnj8ofzx6",
       "release": "MVP (pilota)",
-      "linkedTo": "COM-886"
+      "linkedTo": "ORTO-886"
      },
      {
-      "key": "COM-888",
+      "key": "ORTO-888",
       "name": "Account",
       "phase": "mvavxnj8ofzx6",
       "release": "MVP (pilota)",
-      "linkedTo": "COM-886"
+      "linkedTo": "ORTO-886"
      },
      {
-      "key": "COM-889",
+      "key": "ORTO-889",
       "name": "Giardini e lotti",
       "phase": "mvavxnj8ofzx6",
       "release": "MVP (pilota)",
-      "linkedTo": "COM-886"
+      "linkedTo": "ORTO-886"
      },
      {
-      "key": "COM-890",
+      "key": "ORTO-890",
       "name": "Turni e attività comuni",
       "phase": "mvavxnj8ofzx6",
       "release": "MVP (pilota)",
-      "linkedTo": "COM-886"
+      "linkedTo": "ORTO-886"
      },
      {
-      "key": "COM-891",
+      "key": "ORTO-891",
       "name": "Diario colturale",
       "phase": "mvavxnj8ofzx6",
       "release": "MVP (pilota)",
-      "linkedTo": "COM-886"
+      "linkedTo": "ORTO-886"
      },
      {
-      "key": "COM-892",
+      "key": "ORTO-892",
       "name": "Scambi e comunità",
       "phase": "mvavxnj8ofzx6",
       "release": "MVP (pilota)",
-      "linkedTo": "COM-886"
+      "linkedTo": "ORTO-886"
      },
      {
-      "key": "COM-893",
+      "key": "ORTO-893",
       "name": "Notifiche",
       "phase": "mvavxnj8ofzx6",
       "release": "MVP (pilota)",
-      "linkedTo": "COM-886"
+      "linkedTo": "ORTO-886"
      },
      {
       "key": "",
@@ -340,11 +340,11 @@
       "release": "Release 1.x"
      },
      {
-      "key": "COM-894",
+      "key": "ORTO-894",
       "name": "Cross-cutting polish",
       "phase": "mvavxnj8ofzx6",
       "release": "MVP (pilota)",
-      "linkedTo": "COM-886"
+      "linkedTo": "ORTO-886"
      }
     ],
     "links": {
@@ -387,7 +387,7 @@
      "web": "OrtoComune - Web App",
      "mobile": "OrtoComune - Mobile App"
     },
-    "constraints": "V-1: team di 6 persone per 7 mesi (2 back-end/cloud, 1 web, 1 mobile cross-platform, 1 UX/UI, 1 QA con automation) per MVP e Release 1.0; la Release 1.x è finanziata a parte. V-2: tutti i dati personali e il provider cloud in data center UE, anche per email, notifiche, meteo e riconoscimento immagini. V-3: pilota in 4 giardini di una sola città (Comune di Montelupo), avvio indicativo 2027-03-15; l'MVP non può slittare oltre aprile 2027. Un solo marchio (OrtoComune), nessun white label. Nessun firmware né dispositivo fisico; sensoristica IoT fuori ambito. Web responsive da 360 px; iOS 16+ e Android 10+ con app Flutter unica. Età minima di registrazione 16 anni. Titolare del trattamento: il Comune. Testi legali forniti dal Comune in italiano e inglese entro dicembre 2026. Priorità e release decise da Elena Marchetti; UX approvata da Giorgio Bellini; riferimento tecnico Davide Sala. Sprint di due settimane, planning il lunedì mattina. Rilascio in Staging ogni due settimane il giovedì pomeriggio, mai il venerdì, con via libera di Elena Marchetti dopo il report QA. Design in Figma, documentazione tecnica in Confluence, documento dei requisiti come fonte contrattuale. Progetto Jira esistente COM, nessun campo custom obbligatorio. Se serve tagliare, si toglie prima ciò che è Could (RF-023, RF-024, RF-016).",
+    "constraints": "V-1: team di 6 persone per 7 mesi (2 back-end/cloud, 1 web, 1 mobile cross-platform, 1 UX/UI, 1 QA con automation) per MVP e Release 1.0; la Release 1.x è finanziata a parte. V-2: tutti i dati personali e il provider cloud in data center UE, anche per email, notifiche, meteo e riconoscimento immagini. V-3: pilota in 4 giardini di una sola città (Comune di Montelupo), avvio indicativo 2027-03-15; l'MVP non può slittare oltre aprile 2027. Un solo marchio (OrtoComune), nessun white label. Nessun firmware né dispositivo fisico; sensoristica IoT fuori ambito. Web responsive da 360 px; iOS 16+ e Android 10+ con app Flutter unica. Età minima di registrazione 16 anni. Titolare del trattamento: il Comune. Testi legali forniti dal Comune in italiano e inglese entro dicembre 2026. Priorità e release decise da Elena Marchetti; UX approvata da Giorgio Bellini; riferimento tecnico Davide Sala. Sprint di due settimane, planning il lunedì mattina. Rilascio in Staging ogni due settimane il giovedì pomeriggio, mai il venerdì, con via libera di Elena Marchetti dopo il report QA. Design in Figma, documentazione tecnica in Confluence, documento dei requisiti come fonte contrattuale. Progetto Jira esistente ORTO, nessun campo custom obbligatorio. Se serve tagliare, si toglie prima ciò che è Could (RF-023, RF-024, RF-016).",
     "extraLabels": "",
     "productName": "OrtoComune"
    }
@@ -2038,7 +2038,7 @@
     "std": true,
     "who": "Cliente (risposta di prova)",
     "order": 14,
-    "answer": "Progetto Jira esistente (COM). Nessun campo custom obbligatorio oltre a quelli standard; le label seguono il playbook.",
+    "answer": "Progetto Jira esistente (ORTO). Nessun campo custom obbligatorio oltre a quelli standard; le label seguono il playbook.",
     "decisionId": "mvavw9d9ovklg",
     "hypothesis": ""
    }
@@ -2077,11 +2077,11 @@
     "kit": "",
     "who": "Cliente (risposta di prova)",
     "date": "2026-10-16",
-    "text": "Progetto nel tracker esistente o da creare? Campi custom obbligatori? → Progetto Jira esistente (COM). Nessun campo custom obbligatorio oltre a quelli standard; le label seguono il playbook.",
+    "text": "Progetto nel tracker esistente o da creare? Campi custom obbligatori? → Progetto Jira esistente (ORTO). Nessun campo custom obbligatorio oltre a quelli standard; le label seguono il playbook.",
     "type": "Perimetro funzionale",
     "impact": "",
     "source": "Domande di apertura",
-    "autoText": "Progetto nel tracker esistente o da creare? Campi custom obbligatori? → Progetto Jira esistente (COM). Nessun campo custom obbligatorio oltre a quelli standard; le label seguono il playbook.",
+    "autoText": "Progetto nel tracker esistente o da creare? Campi custom obbligatori? → Progetto Jira esistente (ORTO). Nessun campo custom obbligatorio oltre a quelli standard; le label seguono il playbook.",
     "replaces": ""
    }
   },
@@ -2556,7 +2556,7 @@
    "id": "mvavzcepulbcs",
    "data": {
     "err": "",
-    "key": "COM-896",
+    "key": "ORTO-896",
     "ref": "T-002",
     "req": "RF-001",
     "area": "be",
@@ -2605,7 +2605,7 @@
    "id": "mvavzdr5ejbxc",
    "data": {
     "err": "",
-    "key": "COM-898",
+    "key": "ORTO-898",
     "ref": "T-004",
     "req": "RF-002",
     "area": "be",
@@ -2641,7 +2641,7 @@
    "id": "mvaw1jhilvybc",
    "data": {
     "err": "",
-    "key": "COM-915",
+    "key": "ORTO-915",
     "ref": "T-021",
     "req": "RF-012",
     "area": "ux-web",
@@ -2675,7 +2675,7 @@
    "id": "mvaw2h029rk0n",
    "data": {
     "err": "",
-    "key": "COM-919",
+    "key": "ORTO-919",
     "ref": "T-025",
     "req": "RF-014",
     "area": "ux-web",
@@ -2737,7 +2737,7 @@
      {
       "at": 1792161906750,
       "role": "assistant",
-      "content": "Il progetto COM esiste già, quindi non serve crearne un altro. Mancano solo componenti e versioni, e io non posso crearli: lo strumento non crea progetti, componenti, versioni o sprint. Vanno creati a mano in Jira da un amministratore del progetto.\n\n**1. Verifica il tipo di progetto**\nIn *Project settings → Details* controlla che sia **company-managed**. I progetti team-managed non hanno i componenti, quindi in quel caso servirebbe un progetto company-managed (ipotesi: COM lo è, ma al momento non posso verificarlo).\n\n**2. Crea i componenti**\n*Project settings → Components → Create component*, con questi nomi esatti:\n- `OrtoComune - Cloud`\n- `OrtoComune - Web App`\n- `OrtoComune - Mobile App`\n\nNon crearne uno per il firmware: il progetto non ne ha.\n\n**3. Crea le versioni**\n*Project settings → Releases* (o *Versions*) *→ Create version*:\n- `0.1.0` (MVP pilota), data di rilascio 2027-03-11\n- `1.0.0` (Release 1.0), data di rilascio 2027-06-10\n- `1.1.0` (Release 1.x), **senza data**, perché non è confermata\n\n**4. Cosa è già a posto**\n- I tipi di collegamento \"Blocks\" e \"Relates\" esistono.\n- Le label (Release1, Release2, Back-End, UI e le altre) non richiedono configurazione: nascono quando si usano.\n- Le epiche usano il tipo \"Feature Epic\", come nella gerarchia del kit.\n\n**5. Poi torna qui**\nRicarica la configurazione al passo 1: devo vedere componenti e versioni prima di procedere. Finché sono vuoti, il passo 7 non può assegnare componente e fixVersion.\n\n**Punti aperti**\n- Dei 67 ticket in elenco, 65 hanno già una chiave COM (COM-895…COM-959). Quando li hai creati i componenti e le versioni non esistevano, quindi probabilmente non hanno questi metadati. Dopo aver creato componenti e versioni li controlliamo e li completiamo, senza toccare i dati senza la tua conferma.\n- T-051 e T-052 (RF-031) non hanno ancora chiave e hanno l'errore \"Epica mancante (K4)\".\n- Gli assegnatari predefiniti del team sono vuoti.\n\nSe vuoi, posso preparare un elenco di controllo per verificare cosa manca sui ticket già creati."
+      "content": "Il progetto ORTO esiste già, quindi non serve crearne un altro. Mancano solo componenti e versioni, e io non posso crearli: lo strumento non crea progetti, componenti, versioni o sprint. Vanno creati a mano in Jira da un amministratore del progetto.\n\n**1. Verifica il tipo di progetto**\nIn *Project settings → Details* controlla che sia **company-managed**. I progetti team-managed non hanno i componenti, quindi in quel caso servirebbe un progetto company-managed (ipotesi: ORTO lo è, ma al momento non posso verificarlo).\n\n**2. Crea i componenti**\n*Project settings → Components → Create component*, con questi nomi esatti:\n- `OrtoComune - Cloud`\n- `OrtoComune - Web App`\n- `OrtoComune - Mobile App`\n\nNon crearne uno per il firmware: il progetto non ne ha.\n\n**3. Crea le versioni**\n*Project settings → Releases* (o *Versions*) *→ Create version*:\n- `0.1.0` (MVP pilota), data di rilascio 2027-03-11\n- `1.0.0` (Release 1.0), data di rilascio 2027-06-10\n- `1.1.0` (Release 1.x), **senza data**, perché non è confermata\n\n**4. Cosa è già a posto**\n- I tipi di collegamento \"Blocks\" e \"Relates\" esistono.\n- Le label (Release1, Release2, Back-End, UI e le altre) non richiedono configurazione: nascono quando si usano.\n- Le epiche usano il tipo \"Feature Epic\", come nella gerarchia del kit.\n\n**5. Poi torna qui**\nRicarica la configurazione al passo 1: devo vedere componenti e versioni prima di procedere. Finché sono vuoti, il passo 7 non può assegnare componente e fixVersion.\n\n**Punti aperti**\n- Dei 67 ticket in elenco, 65 hanno già una chiave ORTO (ORTO-895…ORTO-959). Quando li hai creati i componenti e le versioni non esistevano, quindi probabilmente non hanno questi metadati. Dopo aver creato componenti e versioni li controlliamo e li completiamo, senza toccare i dati senza la tua conferma.\n- T-051 e T-052 (RF-031) non hanno ancora chiave e hanno l'errore \"Epica mancante (K4)\".\n- Gli assegnatari predefiniti del team sono vuoti.\n\nSe vuoi, posso preparare un elenco di controllo per verificare cosa manca sui ticket già creati."
      },
      {
       "at": 1792162674369,
@@ -2749,14 +2749,14 @@
       "id": "mvb3dtq9w0cfl",
       "meta": {
        "next": [
-        "Come verifico se COM è company-managed o team-managed?",
+        "Come verifico se ORTO è company-managed o team-managed?",
         "Quale epica assegno a T-051 e T-052?",
         "Prepari un elenco di controllo per i ticket già creati?"
        ],
        "actions": []
       },
       "role": "assistant",
-      "content": "Il progetto COM esiste già, quindi in teoria non serve crearne un altro. Ti ripeto i passi, perché lo strumento non può farli: non crea progetti, componenti, versioni o sprint.\n\n**1. Controlla il tipo di progetto**\nIn *Project settings → Details* verifica che COM sia **company-managed**. Nei progetti team-managed i componenti e le versioni non esistono. Non posso verificarlo da qui, quindi è un'ipotesi.\n\n**2. Se è company-managed, crea componenti e versioni** (serve il ruolo di amministratore del progetto)\n- *Project settings → Components → Create component*: `OrtoComune - Cloud`, `OrtoComune - Web App`, `OrtoComune - Mobile App`. Il firmware non serve.\n- *Releases → Create version*:\n  - `0.1.0`, rilascio 2027-03-11\n  - `1.0.0`, rilascio 2027-06-10\n  - `1.1.0`, senza data, perché non è confermata\n\n**3. Se è team-managed, fermati e decidi tu**\nNon si può convertire. Servirebbe un nuovo progetto company-managed (*Projects → Create project → Company-managed*, chiave a tua scelta) e lo spostamento dei 65 ticket già creati. Questo ha un costo e non è facilmente reversibile, quindi non procedo senza la tua decisione. Cambierebbe anche la chiave COM e il Project COM-885 nel kit.\n\n**4. Poi torna al passo 1**\nRicarica la configurazione: devo vedere componenti e versioni prima del passo 7. Dopo, controlliamo se i 65 ticket già creati hanno componente e fixVersion, senza modificare nulla senza il tuo consenso.\n\n**Punti aperti**\n- T-051 e T-052 non hanno epica (errore K4). La proposta più probabile è l'epica \"Diario colturale\", perché riguardano RF-031 e quella è l'epica di RF-030. Va confermata da te.\n- Gli assegnatari predefiniti del team sono vuoti."
+      "content": "Il progetto ORTO esiste già, quindi in teoria non serve crearne un altro. Ti ripeto i passi, perché lo strumento non può farli: non crea progetti, componenti, versioni o sprint.\n\n**1. Controlla il tipo di progetto**\nIn *Project settings → Details* verifica che ORTO sia **company-managed**. Nei progetti team-managed i componenti e le versioni non esistono. Non posso verificarlo da qui, quindi è un'ipotesi.\n\n**2. Se è company-managed, crea componenti e versioni** (serve il ruolo di amministratore del progetto)\n- *Project settings → Components → Create component*: `OrtoComune - Cloud`, `OrtoComune - Web App`, `OrtoComune - Mobile App`. Il firmware non serve.\n- *Releases → Create version*:\n  - `0.1.0`, rilascio 2027-03-11\n  - `1.0.0`, rilascio 2027-06-10\n  - `1.1.0`, senza data, perché non è confermata\n\n**3. Se è team-managed, fermati e decidi tu**\nNon si può convertire. Servirebbe un nuovo progetto company-managed (*Projects → Create project → Company-managed*, chiave a tua scelta) e lo spostamento dei 65 ticket già creati. Questo ha un costo e non è facilmente reversibile, quindi non procedo senza la tua decisione. Cambierebbe anche la chiave ORTO e il Project ORTO-885 nel kit.\n\n**4. Poi torna al passo 1**\nRicarica la configurazione: devo vedere componenti e versioni prima del passo 7. Dopo, controlliamo se i 65 ticket già creati hanno componente e fixVersion, senza modificare nulla senza il tuo consenso.\n\n**Punti aperti**\n- T-051 e T-052 non hanno epica (errore K4). La proposta più probabile è l'epica \"Diario colturale\", perché riguardano RF-031 e quella è l'epica di RF-030. Va confermata da te.\n- Gli assegnatari predefiniti del team sono vuoti."
      },
      {
       "at": 1792164043844,
@@ -2859,7 +2859,7 @@
    "id": "mvavzfd1bludt",
    "data": {
     "err": "",
-    "key": "COM-901",
+    "key": "ORTO-901",
     "ref": "T-007",
     "req": "RF-003",
     "area": "be",
@@ -2931,7 +2931,7 @@
    "id": "mvaw0kgidlyaz",
    "data": {
     "err": "",
-    "key": "COM-902",
+    "key": "ORTO-902",
     "ref": "T-008",
     "req": "RF-004",
     "area": "ux-both",
@@ -2966,7 +2966,7 @@
    "id": "mvaw0kzytc44x",
    "data": {
     "err": "",
-    "key": "COM-903",
+    "key": "ORTO-903",
     "ref": "T-009",
     "req": "RF-004",
     "area": "be",
@@ -3002,7 +3002,7 @@
    "id": "mvaw0lgt7zncc",
    "data": {
     "err": "",
-    "key": "COM-904",
+    "key": "ORTO-904",
     "ref": "T-010",
     "req": "RF-005",
     "area": "ux-web",
@@ -3044,7 +3044,7 @@
    "id": "mvaw2i1ot1ehp",
    "data": {
     "err": "",
-    "key": "COM-921",
+    "key": "ORTO-921",
     "ref": "T-027",
     "req": "RF-015",
     "area": "ux-both",
@@ -3142,7 +3142,7 @@
    "id": "mvaw0nimjkspp",
    "data": {
     "err": "",
-    "key": "COM-908",
+    "key": "ORTO-908",
     "ref": "T-014",
     "req": "RF-006",
     "area": "ux-web",
@@ -3179,7 +3179,7 @@
    "id": "mvaw3okxgv6ew",
    "data": {
     "err": "",
-    "key": "COM-924",
+    "key": "ORTO-924",
     "ref": "T-030",
     "req": "RF-016",
     "area": "ux-mobile",
@@ -3216,7 +3216,7 @@
    "id": "mvaw3pkzbyuxu",
    "data": {
     "err": "",
-    "key": "COM-926",
+    "key": "ORTO-926",
     "ref": "T-032",
     "req": "RF-020",
     "area": "ux-web",
@@ -3285,7 +3285,7 @@
    "id": "mvaw1ihpbu9uf",
    "data": {
     "err": "",
-    "key": "COM-913",
+    "key": "ORTO-913",
     "ref": "T-019",
     "req": "RF-011",
     "area": "ux-both",
@@ -3324,7 +3324,7 @@
    "id": "mvaw3stkpn47z",
    "data": {
     "err": "",
-    "key": "COM-932",
+    "key": "ORTO-932",
     "ref": "T-038",
     "req": "RF-021",
     "area": "be",
@@ -3363,7 +3363,7 @@
    "id": "mvaw7502eq9bs",
    "data": {
     "err": "",
-    "key": "COM-943",
+    "key": "ORTO-943",
     "ref": "T-049",
     "req": "RF-030",
     "area": "ux-both",
@@ -3399,7 +3399,7 @@
    "id": "mvaw8h1ifuk7j",
    "data": {
     "err": "",
-    "key": "COM-952",
+    "key": "ORTO-952",
     "ref": "T-060",
     "req": "RF-060",
     "area": "ux-mobile",
@@ -3439,7 +3439,7 @@
    "id": "mvaw1jy6aeou4",
    "data": {
     "err": "",
-    "key": "COM-916",
+    "key": "ORTO-916",
     "ref": "T-022",
     "req": "RF-012",
     "area": "be",
@@ -3478,7 +3478,7 @@
    "id": "mvaw2fpdej1am",
    "data": {
     "err": "",
-    "key": "COM-917",
+    "key": "ORTO-917",
     "ref": "T-023",
     "req": "RF-013",
     "area": "ux-both",
@@ -3513,7 +3513,7 @@
    "id": "mvaw2gii6cjej",
    "data": {
     "err": "",
-    "key": "COM-918",
+    "key": "ORTO-918",
     "ref": "T-024",
     "req": "RF-013",
     "area": "be",
@@ -3553,7 +3553,7 @@
    "id": "mvaw3q26bt65y",
    "data": {
     "err": "",
-    "key": "COM-927",
+    "key": "ORTO-927",
     "ref": "T-033",
     "req": "RF-020",
     "area": "ux-mobile",
@@ -3589,7 +3589,7 @@
    "id": "mvaw2hhry2jwi",
    "data": {
     "err": "",
-    "key": "COM-920",
+    "key": "ORTO-920",
     "ref": "T-026",
     "req": "RF-014",
     "area": "be",
@@ -3629,7 +3629,7 @@
    "id": "mvaw2ij2p0yfx",
    "data": {
     "err": "",
-    "key": "COM-922",
+    "key": "ORTO-922",
     "ref": "T-028",
     "req": "RF-015",
     "area": "be",
@@ -3666,7 +3666,7 @@
    "id": "mvaw3o3lz2qg1",
    "data": {
     "err": "",
-    "key": "COM-923",
+    "key": "ORTO-923",
     "ref": "T-029",
     "req": "RF-016",
     "area": "ux-web",
@@ -3705,7 +3705,7 @@
    "id": "mvaw3p2d432ah",
    "data": {
     "err": "",
-    "key": "COM-925",
+    "key": "ORTO-925",
     "ref": "T-031",
     "req": "RF-016",
     "area": "be",
@@ -3743,7 +3743,7 @@
    "col": "meta",
    "id": "jira",
    "data": {
-    "key": "COM",
+    "key": "ORTO",
     "links": [
      {
       "name": "Action item",
@@ -3905,7 +3905,7 @@
    "id": "mvaw3rpsp2iqa",
    "data": {
     "err": "",
-    "key": "COM-930",
+    "key": "ORTO-930",
     "ref": "T-036",
     "req": "RF-021",
     "area": "ux-mobile",
@@ -3946,7 +3946,7 @@
    "id": "mvaw3s9on8x3k",
    "data": {
     "err": "",
-    "key": "COM-931",
+    "key": "ORTO-931",
     "ref": "T-037",
     "req": "RF-021",
     "area": "be",
@@ -3991,7 +3991,7 @@
    "id": "mvaw4q8koxlhy",
    "data": {
     "err": "",
-    "key": "COM-935",
+    "key": "ORTO-935",
     "ref": "T-041",
     "req": "RF-022",
     "area": "be",
@@ -4026,7 +4026,7 @@
    "id": "mvaw4slpkr1m2",
    "data": {
     "err": "",
-    "key": "COM-939",
+    "key": "ORTO-939",
     "ref": "T-045",
     "req": "RF-024",
     "area": "ux-web",
@@ -4061,7 +4061,7 @@
    "id": "mvavzd7qct7bb",
    "data": {
     "err": "",
-    "key": "COM-897",
+    "key": "ORTO-897",
     "ref": "T-003",
     "req": "RF-002",
     "area": "ux-both",
@@ -4103,7 +4103,7 @@
    "id": "mvaw0mhp6kzuq",
    "data": {
     "err": "",
-    "key": "COM-906",
+    "key": "ORTO-906",
     "ref": "T-012",
     "req": "RF-005",
     "area": "be",
@@ -4177,7 +4177,7 @@
    "id": "mvaw73zwnbifd",
    "data": {
     "err": "",
-    "key": "COM-941",
+    "key": "ORTO-941",
     "ref": "T-047",
     "req": "RF-025",
     "area": "ux-both",
@@ -4213,7 +4213,7 @@
    "id": "mvaw74gur74bt",
    "data": {
     "err": "",
-    "key": "COM-942",
+    "key": "ORTO-942",
     "ref": "T-048",
     "req": "RF-025",
     "area": "be",
@@ -4249,7 +4249,7 @@
    "id": "mvaw75hcri3nw",
    "data": {
     "err": "",
-    "key": "COM-944",
+    "key": "ORTO-944",
     "ref": "T-050",
     "req": "RF-030",
     "area": "be",
@@ -4316,7 +4316,7 @@
    "id": "mvaw8dyk91u26",
    "data": {
     "err": "",
-    "key": "COM-946",
+    "key": "ORTO-946",
     "ref": "T-054",
     "req": "RF-040",
     "area": "ux-mobile",
@@ -4352,7 +4352,7 @@
    "id": "mvaw8eg30s856",
    "data": {
     "err": "",
-    "key": "COM-947",
+    "key": "ORTO-947",
     "ref": "T-055",
     "req": "RF-040",
     "area": "be",
@@ -4393,7 +4393,7 @@
    "id": "mvaw8exlcegng",
    "data": {
     "err": "",
-    "key": "COM-948",
+    "key": "ORTO-948",
     "ref": "T-056",
     "req": "RF-041",
     "area": "ux-web",
@@ -4430,7 +4430,7 @@
    "id": "mvaw0ojkmtsrh",
    "data": {
     "err": "",
-    "key": "COM-910",
+    "key": "ORTO-910",
     "ref": "T-016",
     "req": "RF-006",
     "area": "be",
@@ -4469,7 +4469,7 @@
    "id": "mvaw1iyq8r0o2",
    "data": {
     "err": "",
-    "key": "COM-914",
+    "key": "ORTO-914",
     "ref": "T-020",
     "req": "RF-011",
     "area": "be",
@@ -4512,7 +4512,7 @@
    "id": "mvaw8g0hp7gg6",
    "data": {
     "err": "",
-    "key": "COM-950",
+    "key": "ORTO-950",
     "ref": "T-058",
     "req": "RF-041",
     "area": "be",
@@ -4558,7 +4558,7 @@
    "id": "mvaw8ghqaw5yo",
    "data": {
     "err": "",
-    "key": "COM-951",
+    "key": "ORTO-951",
     "ref": "T-059",
     "req": "RF-060",
     "area": "ux-web",
@@ -4599,7 +4599,7 @@
    "id": "mvaw3qm0ovwbj",
    "data": {
     "err": "",
-    "key": "COM-928",
+    "key": "ORTO-928",
     "ref": "T-034",
     "req": "RF-020",
     "area": "be",
@@ -4643,7 +4643,7 @@
    "id": "mvaw8hle3bbia",
    "data": {
     "err": "",
-    "key": "COM-953",
+    "key": "ORTO-953",
     "ref": "T-061",
     "req": "RF-060",
     "area": "be",
@@ -4687,7 +4687,7 @@
    "id": "mvaw8i4ktn3lm",
    "data": {
     "err": "",
-    "key": "COM-954",
+    "key": "ORTO-954",
     "ref": "T-062",
     "req": "RF-060",
     "area": "be",
@@ -4730,7 +4730,7 @@
    "id": "mvaw99o19cwjl",
    "data": {
     "err": "",
-    "key": "COM-955",
+    "key": "ORTO-955",
     "ref": "T-063",
     "req": "RF-061",
     "area": "be",
@@ -5250,7 +5250,7 @@
    "id": "mvaw9a50u9nv0",
    "data": {
     "err": "",
-    "key": "COM-956",
+    "key": "ORTO-956",
     "ref": "T-064",
     "req": "RF-062",
     "area": "be",
@@ -5287,7 +5287,7 @@
    "id": "mvaw9b58k2p9b",
    "data": {
     "err": "",
-    "key": "COM-958",
+    "key": "ORTO-958",
     "ref": "T-066",
     "req": "RNF-32",
     "area": "ux-both",
@@ -5318,7 +5318,7 @@
    "id": "mvaw9l2os6b0m",
    "data": {
     "err": "",
-    "key": "COM-959",
+    "key": "ORTO-959",
     "ref": "T-067",
     "req": "RNF-42",
     "area": "be",
@@ -5354,7 +5354,7 @@
    "id": "mvavzebkb1g2q",
    "data": {
     "err": "",
-    "key": "COM-899",
+    "key": "ORTO-899",
     "ref": "T-005",
     "req": "RF-003",
     "area": "ux-web",
@@ -5392,7 +5392,7 @@
    "id": "mvaw3r5vf877y",
    "data": {
     "err": "",
-    "key": "COM-929",
+    "key": "ORTO-929",
     "ref": "T-035",
     "req": "RF-021",
     "area": "ux-web",
@@ -5434,7 +5434,7 @@
    "id": "mvavzevhhcc13",
    "data": {
     "err": "",
-    "key": "COM-900",
+    "key": "ORTO-900",
     "ref": "T-006",
     "req": "RF-003",
     "area": "ux-mobile",
@@ -5471,7 +5471,7 @@
    "id": "mvaw0mypfestx",
    "data": {
     "err": "",
-    "key": "COM-907",
+    "key": "ORTO-907",
     "ref": "T-013",
     "req": "RF-005",
     "area": "be",
@@ -5510,7 +5510,7 @@
    "id": "mvaw0nziufpy2",
    "data": {
     "err": "",
-    "key": "COM-909",
+    "key": "ORTO-909",
     "ref": "T-015",
     "req": "RF-006",
     "area": "ux-mobile",
@@ -5547,7 +5547,7 @@
    "id": "mvaw4ood4iyzz",
    "data": {
     "err": "",
-    "key": "COM-933",
+    "key": "ORTO-933",
     "ref": "T-039",
     "req": "RF-022",
     "area": "ux-both",
@@ -5587,7 +5587,7 @@
    "id": "mvaw4proih3ab",
    "data": {
     "err": "",
-    "key": "COM-934",
+    "key": "ORTO-934",
     "ref": "T-040",
     "req": "RF-022",
     "area": "be",
@@ -5628,88 +5628,88 @@
     "at": 1792151179574,
     "lines": [
      "13:41:38  Inizio creazione.",
-     "13:41:40  Project «Test Prova» → COM-885",
-     "13:41:41  Fase «MVP (pilota)» → COM-886 (sotto COM-885)",
-     "13:41:43  Epica «Autenticazione» → COM-887 (sotto COM-886)",
-     "13:41:45  Epica «Account» → COM-888 (sotto COM-886)",
-     "13:41:46  Epica «Giardini e lotti» → COM-889 (sotto COM-886)",
-     "13:41:48  Epica «Turni e attività comuni» → COM-890 (sotto COM-886)",
-     "13:41:49  Epica «Diario colturale» → COM-891 (sotto COM-886)",
-     "13:41:50  Epica «Scambi e comunità» → COM-892 (sotto COM-886)",
-     "13:41:52  Epica «Notifiche» → COM-893 (sotto COM-886)",
-     "13:41:53  Epica «Cross-cutting polish» → COM-894 (sotto COM-886)",
-     "13:41:56  T-001 → COM-895  [UX - Web/Mobile] Design email registration and email verification flow",
-     "13:41:58  T-002 → COM-896  [BE] Email/password registration and email verification API",
-     "13:42:00  T-003 → COM-897  [UX - Web/Mobile] Design social sign-in buttons for login and registration",
-     "13:42:03  T-004 → COM-898  [BE] Google and Apple sign-in API and account linking",
-     "13:42:05  T-005 → COM-899  [UX - Web] Design profile editing screen with photo upload (web)",
-     "13:42:07  T-006 → COM-900  [UX - Mobile] Design profile editing screen with photo upload (mobile)",
-     "13:42:10  T-007 → COM-901  [BE] User profile data model and API with photo storage",
-     "13:42:12  T-008 → COM-902  [UX - Web/Mobile] Password recovery flow design",
-     "13:42:14  T-009 → COM-903  [BE] Password reset by temporary link",
-     "13:42:16  T-010 → COM-904  [UX - Web] Account deletion and data export flow (web)",
-     "13:42:19  T-011 → COM-905  [UX - Mobile] Account deletion and data export flow (mobile)",
-     "13:42:21  T-012 → COM-906  [BE] Personal data export",
-     "13:42:23  T-013 → COM-907  [BE] Account deletion with data removal and ad anonymization",
-     "13:42:25  T-014 → COM-908  [UX - Web] TOTP setup and login verification flow (web)",
-     "13:42:28  T-015 → COM-909  [UX - Mobile] TOTP setup and login verification flow (mobile)",
-     "13:42:30  T-016 → COM-910  [BE] Optional two-factor authentication with TOTP",
-     "13:42:32  T-017 → COM-911  [UX - Web/Mobile] Garden search with filters and map",
-     "13:42:34  T-018 → COM-912  [BE] Garden search API by position, distance and lot availability",
-     "13:42:37  T-019 → COM-913  [UX - Web/Mobile] Garden detail page",
-     "13:42:39  T-020 → COM-914  [BE] Garden detail data and API",
-     "13:42:41  T-021 → COM-915  [UX - Web] Lot management table in the admin area",
-     "13:42:43  T-022 → COM-916  [BE] Lot list data model and management API",
-     "13:42:45  T-023 → COM-917  [UX - Web/Mobile] Plot request and waiting list position design",
-     "13:42:47  T-024 → COM-918  [BE] Plot request and waiting list API",
-     "13:42:49  T-025 → COM-919  [UX - Web] Referent plot request management design",
-     "13:42:52  T-026 → COM-920  [BE] Plot request decisions and assignment notifications",
-     "13:42:54  T-027 → COM-921  [UX - Web/Mobile] Plot assignment expiry and renewal design",
-     "13:42:56  T-028 → COM-922  [BE] Assignment expiry and renewal reminders",
-     "13:42:58  T-029 → COM-923  [UX - Web] Plot co-management flow design",
-     "13:43:01  T-030 → COM-924  [UX - Mobile] Plot co-management flow design",
-     "13:43:03  T-031 → COM-925  [BE] Plot co-management data and API",
-     "13:43:06  T-032 → COM-926  [UX - Web] Shift calendar view design",
-     "13:43:08  T-033 → COM-927  [UX - Mobile] Shift calendar view design",
-     "13:43:10  T-034 → COM-928  [BE] Shift calendar data and API",
-     "13:43:12  T-035 → COM-929  [UX - Web] Shift enrollment and uncovered state design",
-     "13:43:14  T-036 → COM-930  [UX - Mobile] Shift enrollment and uncovered state design",
-     "13:43:17  T-037 → COM-931  [BE] Shift enrollment, withdrawal and uncovered state",
-     "13:43:19  T-038 → COM-932  [BE] Alert referent on late shift withdrawal",
-     "13:43:21  T-039 → COM-933  [UX - Web/Mobile] Availability declaration and generated shifts preview",
-     "13:43:23  T-040 → COM-934  [BE] Availability declaration API and data model",
-     "13:43:25  T-041 → COM-935  [BE] Rotating shift generation engine and preview",
-     "13:43:27  T-042 → COM-936  [UX - Mobile] QR code check-in scan flow",
-     "13:43:29  T-043 → COM-937  [UX - Web] Attendance register for the site manager",
-     "13:43:31  T-044 → COM-938  [BE] QR check-in validation and attendance register API",
-     "13:43:34  T-045 → COM-939  [UX - Web] Commitment points in the site manager area",
-     "13:43:36  T-046 → COM-940  [BE] Commitment points accrual and read API",
-     "13:43:38  T-047 → COM-941  [UX - Web/Mobile] Design suspended shift state for weather alerts",
-     "13:43:40  T-048 → COM-942  [BE] Automatically suspend shifts on weather alert and notify members",
-     "13:43:43  T-049 → COM-943  [UX - Web/Mobile] Design crop diary entry form and timeline",
-     "13:43:45  T-050 → COM-944  [BE] Store and retrieve crop diary entries for a plot",
-     "13:43:47  T-053 → COM-945  [UX - Web] Exchange board design",
-     "13:43:49  T-054 → COM-946  [UX - Mobile] Exchange board design",
-     "13:43:52  T-055 → COM-947  [BE] Exchange listings data and API",
-     "13:43:54  T-056 → COM-948  [UX - Web] Direct messaging design",
-     "13:43:57  T-057 → COM-949  [UX - Mobile] Direct messaging design",
-     "13:43:59  T-058 → COM-950  [BE] Direct messaging data and API",
-     "13:44:01  T-059 → COM-951  [UX - Web] Notification centre and preferences design",
-     "13:44:03  T-060 → COM-952  [UX - Mobile] Notification centre and preferences design",
-     "13:44:05  T-061 → COM-953  [BE] Notification centre and category preferences API",
-     "13:44:08  T-062 → COM-954  [BE] Push and email notification delivery",
-     "13:44:10  T-063 → COM-955  [BE] Weekly garden activity summary email",
-     "13:44:12  T-064 → COM-956  [BE] Quiet hours settings and enforcement",
-     "13:44:15  T-065 → COM-957  [UX - Web/Mobile] Quiet hours setting design",
-     "13:44:17  T-066 → COM-958  [UX - Web/Mobile] Onboarding and lot request flow design",
-     "13:44:19  T-067 → COM-959  [BE] Structured logging, metrics and alerts on errors and latency",
-     "13:44:21  COM-895 è correlato a COM-896",
-     "13:44:23  COM-895 è correlato a COM-897",
-     "13:44:26  COM-896 è correlato a COM-895",
-     "13:44:28  COM-896 blocca COM-898",
-     "13:44:30  COM-896 blocca COM-901",
-     "13:44:32  COM-897 è correlato a COM-898",
-     "13:44:34  COM-897 è correlato a COM-895",
+     "13:41:40  Project «Test Prova» → ORTO-885",
+     "13:41:41  Fase «MVP (pilota)» → ORTO-886 (sotto ORTO-885)",
+     "13:41:43  Epica «Autenticazione» → ORTO-887 (sotto ORTO-886)",
+     "13:41:45  Epica «Account» → ORTO-888 (sotto ORTO-886)",
+     "13:41:46  Epica «Giardini e lotti» → ORTO-889 (sotto ORTO-886)",
+     "13:41:48  Epica «Turni e attività comuni» → ORTO-890 (sotto ORTO-886)",
+     "13:41:49  Epica «Diario colturale» → ORTO-891 (sotto ORTO-886)",
+     "13:41:50  Epica «Scambi e comunità» → ORTO-892 (sotto ORTO-886)",
+     "13:41:52  Epica «Notifiche» → ORTO-893 (sotto ORTO-886)",
+     "13:41:53  Epica «Cross-cutting polish» → ORTO-894 (sotto ORTO-886)",
+     "13:41:56  T-001 → ORTO-895  [UX - Web/Mobile] Design email registration and email verification flow",
+     "13:41:58  T-002 → ORTO-896  [BE] Email/password registration and email verification API",
+     "13:42:00  T-003 → ORTO-897  [UX - Web/Mobile] Design social sign-in buttons for login and registration",
+     "13:42:03  T-004 → ORTO-898  [BE] Google and Apple sign-in API and account linking",
+     "13:42:05  T-005 → ORTO-899  [UX - Web] Design profile editing screen with photo upload (web)",
+     "13:42:07  T-006 → ORTO-900  [UX - Mobile] Design profile editing screen with photo upload (mobile)",
+     "13:42:10  T-007 → ORTO-901  [BE] User profile data model and API with photo storage",
+     "13:42:12  T-008 → ORTO-902  [UX - Web/Mobile] Password recovery flow design",
+     "13:42:14  T-009 → ORTO-903  [BE] Password reset by temporary link",
+     "13:42:16  T-010 → ORTO-904  [UX - Web] Account deletion and data export flow (web)",
+     "13:42:19  T-011 → ORTO-905  [UX - Mobile] Account deletion and data export flow (mobile)",
+     "13:42:21  T-012 → ORTO-906  [BE] Personal data export",
+     "13:42:23  T-013 → ORTO-907  [BE] Account deletion with data removal and ad anonymization",
+     "13:42:25  T-014 → ORTO-908  [UX - Web] TOTP setup and login verification flow (web)",
+     "13:42:28  T-015 → ORTO-909  [UX - Mobile] TOTP setup and login verification flow (mobile)",
+     "13:42:30  T-016 → ORTO-910  [BE] Optional two-factor authentication with TOTP",
+     "13:42:32  T-017 → ORTO-911  [UX - Web/Mobile] Garden search with filters and map",
+     "13:42:34  T-018 → ORTO-912  [BE] Garden search API by position, distance and lot availability",
+     "13:42:37  T-019 → ORTO-913  [UX - Web/Mobile] Garden detail page",
+     "13:42:39  T-020 → ORTO-914  [BE] Garden detail data and API",
+     "13:42:41  T-021 → ORTO-915  [UX - Web] Lot management table in the admin area",
+     "13:42:43  T-022 → ORTO-916  [BE] Lot list data model and management API",
+     "13:42:45  T-023 → ORTO-917  [UX - Web/Mobile] Plot request and waiting list position design",
+     "13:42:47  T-024 → ORTO-918  [BE] Plot request and waiting list API",
+     "13:42:49  T-025 → ORTO-919  [UX - Web] Referent plot request management design",
+     "13:42:52  T-026 → ORTO-920  [BE] Plot request decisions and assignment notifications",
+     "13:42:54  T-027 → ORTO-921  [UX - Web/Mobile] Plot assignment expiry and renewal design",
+     "13:42:56  T-028 → ORTO-922  [BE] Assignment expiry and renewal reminders",
+     "13:42:58  T-029 → ORTO-923  [UX - Web] Plot co-management flow design",
+     "13:43:01  T-030 → ORTO-924  [UX - Mobile] Plot co-management flow design",
+     "13:43:03  T-031 → ORTO-925  [BE] Plot co-management data and API",
+     "13:43:06  T-032 → ORTO-926  [UX - Web] Shift calendar view design",
+     "13:43:08  T-033 → ORTO-927  [UX - Mobile] Shift calendar view design",
+     "13:43:10  T-034 → ORTO-928  [BE] Shift calendar data and API",
+     "13:43:12  T-035 → ORTO-929  [UX - Web] Shift enrollment and uncovered state design",
+     "13:43:14  T-036 → ORTO-930  [UX - Mobile] Shift enrollment and uncovered state design",
+     "13:43:17  T-037 → ORTO-931  [BE] Shift enrollment, withdrawal and uncovered state",
+     "13:43:19  T-038 → ORTO-932  [BE] Alert referent on late shift withdrawal",
+     "13:43:21  T-039 → ORTO-933  [UX - Web/Mobile] Availability declaration and generated shifts preview",
+     "13:43:23  T-040 → ORTO-934  [BE] Availability declaration API and data model",
+     "13:43:25  T-041 → ORTO-935  [BE] Rotating shift generation engine and preview",
+     "13:43:27  T-042 → ORTO-936  [UX - Mobile] QR code check-in scan flow",
+     "13:43:29  T-043 → ORTO-937  [UX - Web] Attendance register for the site manager",
+     "13:43:31  T-044 → ORTO-938  [BE] QR check-in validation and attendance register API",
+     "13:43:34  T-045 → ORTO-939  [UX - Web] Commitment points in the site manager area",
+     "13:43:36  T-046 → ORTO-940  [BE] Commitment points accrual and read API",
+     "13:43:38  T-047 → ORTO-941  [UX - Web/Mobile] Design suspended shift state for weather alerts",
+     "13:43:40  T-048 → ORTO-942  [BE] Automatically suspend shifts on weather alert and notify members",
+     "13:43:43  T-049 → ORTO-943  [UX - Web/Mobile] Design crop diary entry form and timeline",
+     "13:43:45  T-050 → ORTO-944  [BE] Store and retrieve crop diary entries for a plot",
+     "13:43:47  T-053 → ORTO-945  [UX - Web] Exchange board design",
+     "13:43:49  T-054 → ORTO-946  [UX - Mobile] Exchange board design",
+     "13:43:52  T-055 → ORTO-947  [BE] Exchange listings data and API",
+     "13:43:54  T-056 → ORTO-948  [UX - Web] Direct messaging design",
+     "13:43:57  T-057 → ORTO-949  [UX - Mobile] Direct messaging design",
+     "13:43:59  T-058 → ORTO-950  [BE] Direct messaging data and API",
+     "13:44:01  T-059 → ORTO-951  [UX - Web] Notification centre and preferences design",
+     "13:44:03  T-060 → ORTO-952  [UX - Mobile] Notification centre and preferences design",
+     "13:44:05  T-061 → ORTO-953  [BE] Notification centre and category preferences API",
+     "13:44:08  T-062 → ORTO-954  [BE] Push and email notification delivery",
+     "13:44:10  T-063 → ORTO-955  [BE] Weekly garden activity summary email",
+     "13:44:12  T-064 → ORTO-956  [BE] Quiet hours settings and enforcement",
+     "13:44:15  T-065 → ORTO-957  [UX - Web/Mobile] Quiet hours setting design",
+     "13:44:17  T-066 → ORTO-958  [UX - Web/Mobile] Onboarding and lot request flow design",
+     "13:44:19  T-067 → ORTO-959  [BE] Structured logging, metrics and alerts on errors and latency",
+     "13:44:21  ORTO-895 è correlato a ORTO-896",
+     "13:44:23  ORTO-895 è correlato a ORTO-897",
+     "13:44:26  ORTO-896 è correlato a ORTO-895",
+     "13:44:28  ORTO-896 blocca ORTO-898",
+     "13:44:30  ORTO-896 blocca ORTO-901",
+     "13:44:32  ORTO-897 è correlato a ORTO-898",
+     "13:44:34  ORTO-897 è correlato a ORTO-895",
      "13:44:34  7 collegamenti creati.",
      "13:44:35  Struttura verificata: 10 di 10 livelli collegati come previsto.",
      "13:45:24  Verifica: 0 di 65 ticket con tutti i campi salvati.",
@@ -5723,7 +5723,7 @@
    "id": "mvaw4qptvqy9v",
    "data": {
     "err": "",
-    "key": "COM-936",
+    "key": "ORTO-936",
     "ref": "T-042",
     "req": "RF-023",
     "area": "ux-mobile",
@@ -5762,7 +5762,7 @@
    "id": "mvaw4r6ut0udb",
    "data": {
     "err": "",
-    "key": "COM-937",
+    "key": "ORTO-937",
     "ref": "T-043",
     "req": "RF-023",
     "area": "ux-web",
@@ -5801,7 +5801,7 @@
    "id": "mvaw4rnmjva3a",
    "data": {
     "err": "",
-    "key": "COM-938",
+    "key": "ORTO-938",
     "ref": "T-044",
     "req": "RF-023",
     "area": "be",
@@ -5841,7 +5841,7 @@
    "id": "mvaw8ddanrq3r",
    "data": {
     "err": "",
-    "key": "COM-945",
+    "key": "ORTO-945",
     "ref": "T-053",
     "req": "RF-040",
     "area": "ux-web",
@@ -5879,7 +5879,7 @@
    "id": "mvaw4t38vuac5",
    "data": {
     "err": "",
-    "key": "COM-940",
+    "key": "ORTO-940",
     "ref": "T-046",
     "req": "RF-024",
     "area": "be",
@@ -5914,7 +5914,7 @@
    "id": "mvaw8fgl6zf3q",
    "data": {
     "err": "",
-    "key": "COM-949",
+    "key": "ORTO-949",
     "ref": "T-057",
     "req": "RF-041",
     "area": "ux-mobile",
@@ -5950,7 +5950,7 @@
    "id": "mvavzbkta12hk",
    "data": {
     "err": "",
-    "key": "COM-895",
+    "key": "ORTO-895",
     "ref": "T-001",
     "req": "RF-001",
     "area": "ux-both",
@@ -5993,7 +5993,7 @@
    "id": "mvaw0m0l20z6d",
    "data": {
     "err": "",
-    "key": "COM-905",
+    "key": "ORTO-905",
     "ref": "T-011",
     "req": "RF-005",
     "area": "ux-mobile",
@@ -6035,7 +6035,7 @@
    "id": "mvaw1hhepm3h6",
    "data": {
     "err": "",
-    "key": "COM-911",
+    "key": "ORTO-911",
     "ref": "T-017",
     "req": "RF-010",
     "area": "ux-both",
@@ -6074,7 +6074,7 @@
    "id": "mvaw1hymb7tnb",
    "data": {
     "err": "",
-    "key": "COM-912",
+    "key": "ORTO-912",
     "ref": "T-018",
     "req": "RF-010",
     "area": "be",
@@ -6110,7 +6110,7 @@
    "id": "mvaw9am3cskpc",
    "data": {
     "err": "",
-    "key": "COM-957",
+    "key": "ORTO-957",
     "ref": "T-065",
     "req": "RF-062",
     "area": "ux-both",

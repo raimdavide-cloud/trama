@@ -18,7 +18,7 @@ export default async (req, context) => {
   } catch (e) {
     const code = e.code || "upstream_error";
     if (code !== "tool_error" && code !== "needs_reauth") console.log(`jira ${op} failed: ${code} ${String(e.message).slice(0, 300)}`);
-    return json({ ok: false, code, message: e.message, retryable: !!e.retryable }, code === "needs_reauth" ? 401 : 200);
+    return json({ ok: false, code, message: e.message, retryable: !!e.retryable, ...(e.status ? { status: e.status } : {}) }, code === "needs_reauth" ? 401 : 200);
   }
 };
 

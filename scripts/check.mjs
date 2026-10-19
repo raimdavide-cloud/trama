@@ -54,9 +54,9 @@ for (const f of walk("public").filter((f) => f.endsWith(".html"))) {
 inlineJs.length ? ko(`JavaScript dentro le pagine (la CSP lo blocca: spostalo in un file .js):\n    ${inlineJs.join("\n    ")}`) : ok(`nessuno script nelle pagine HTML (${dataBlocks} blocchi di dati JSON-LD validi)`);
 
 // 3. JSON di configurazione
-for (const f of ["package.json", "vercel.json", "public/manifest.webmanifest"]) {
+for (const f of ["package.json", "vercel.json", "public/site.webmanifest"]) {
   try { JSON.parse(readFileSync(join(ROOT, f), "utf8")); ok(`JSON valido: ${f}`); }
-  catch (e) { if (e.code !== "ENOENT") ko(`JSON non valido: ${f} (${e.message})`); }
+  catch (e) { ko(e.code === "ENOENT" ? `file mancante: ${f}` : `JSON non valido: ${f} (${e.message})`); }
 }
 
 // 4. il ponte scaricabile dai colleghi deve essere identico al sorgente
@@ -77,11 +77,15 @@ for (const f of walk("public").filter((f) => /\.(css|html)$/.test(f) && !f.endsW
 rawColors.length ? ko(`colori scritti a mano fuori da tokens.css (usa i token):\n    ${rawColors.join("\n    ")}`) : ok("colori solo dai token");
 
 // 6. nessun segreto nei file versionati
-const SECRET = /sk-ant-[\w-]{20,}|ATATT[\w-]{20,}|postgres(?:ql)?:\/\/(?!utente:password@host|user:password@host)[^\s"'`]+:[^\s"'`@]+@|-----BEGIN [A-Z ]*PRIVATE KEY-----/;
-let tracked = [];
-try { tracked = execFileSync("git", ["ls-files", "-co", "--exclude-standard"], { cwd: ROOT, encoding: "utf8" }).split("\n").filter(Boolean); } catch {}
-const leaks = tracked.filter((f) => /\.(m?js|json|html|md|toml|ya?ml|txt|example)$/.test(f) && SECRET.test(readFileSync(join(ROOT, f), "utf8")));
-leaks.length ? ko(`possibili segreti in: ${leaks.join(", ")}`) : ok(`nessun segreto in ${tracked.length} file versionati`);
+const SECRET = /sk-ant-[\w-]{20,}|ATATT[\w-]{20,}|\bATOA[\w-]{40,}|\bghp_[A-Za-z0-9]{36}|\bgithub_pat_\w{40,}|\bvercel_[\w-]{20,}|postgres(?:ql)?:\/\/(?!utente:password@host|user:password@host)[^\s"'`]+:[^\s"'`@]+@|-----BEGIN [A-Z ]*PRIVATE KEY-----/;
+let tracked = null;
+try { tracked = execFileSync("git", ["ls-files", "-co", "--exclude-standard"], { cwd: ROOT, encoding: "utf8" }).split("\n").filter(Boolean); }
+catch (e) { ko(`controllo segreti impossibile: git ls-files non riuscito (${e.message.split("\n")[0]})`); }
+if (tracked && !tracked.length) ko("controllo segreti impossibile: git ls-files non ha restituito file");
+else if (tracked) {
+  const leaks = tracked.filter((f) => /\.(m?js|json|html|md|toml|ya?ml|txt|example)$/.test(f) && SECRET.test(readFileSync(join(ROOT, f), "utf8")));
+  leaks.length ? ko(`possibili segreti in: ${leaks.join(", ")}`) : ok(`nessun segreto in ${tracked.length} file versionati`);
+}
 
 if (errors.length) { console.log(`\n${errors.length} controlli non superati.`); process.exit(1); }
 console.log("\nTutti i controlli superati.");

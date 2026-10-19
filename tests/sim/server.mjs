@@ -27,9 +27,13 @@ const user = {
 
 // Scenario «progetto nuovo»: stessi documenti, requisiti e ticket, ma nulla è ancora stato creato in Jira.
 // Con /__sim/reset?completo=1 il progetto di prova resta com'è (già creato, con log e controllo di qualità).
-let store;
+// at: versione dell'elemento in microsecondi come il server (updated_at), da un contatore che non torna mai indietro né si ripete
+let store, lastAt = 0;
+const tick = () => (lastAt = Math.max(lastAt + 1, Date.now() * 1000));
+const nowUs = () => String(Math.max(lastAt, Date.now() * 1000));
+let api503 = 0; // guasto: le prossime N scritture su /api/projects/* rispondono 503
 function resetStore(completo = false) {
-  store = new Map(fixture.items.map((i) => [`${i.col}/${i.id}`, { col: i.col, id: i.id, data: structuredClone(i.data), deleted: false, at: Date.now() }]));
+  store = new Map(fixture.items.map((i) => [`${i.col}/${i.id}`, { col: i.col, id: i.id, data: structuredClone(i.data), deleted: false, at: tick() }]));
   if (completo) return;
   const kit = store.get("meta/kit").data;
   if (kit.hier) { kit.hier.project.key = ""; kit.hier.phases.forEach((f) => (f.key = "")); }
@@ -63,47 +67,70 @@ createServer(async (req, res) => {
   try {
     // comandi del simulatore, usati dai test
     if (p === "/__sim/state") return send(res, 200, { issues: [...sim.issues.values()].map((i) => ({ key: i.key, type: i.type, summary: i.summary, parent: i.parent || null, labels: i.fields?.labels || [], fixVersions: (i.fields?.fixVersions || []).map((v) => v.name) })), links: sim.links || [], calls: sim.calls });
-    if (p === "/__sim/reset") { sim.reset(); sim.links = []; cspReports.length = 0; resetStore(url.searchParams.has("completo")); return send(res, 200, { ok: true }); }
+    if (p === "/__sim/reset") { sim.reset(); sim.links = []; cspReports.length = 0; api503 = 0; resetStore(url.searchParams.has("completo")); return send(res, 200, { ok: true }); }
     if (p === "/__sim/csp") return send(res, 200, { reports: cspReports });
-    if (p === "/__sim/fault") { const b = JSON.parse(raw); sim.faults[b.kind][b.type] = b.times; if ("retryAfter" in b) sim.retryAfter = b.retryAfter; return send(res, 200, sim.faults); }
+    if (p === "/__sim/fault") {
+      const b = JSON.parse(raw);
+      if (b.kind === "api503") api503 = b.times; // guasto dell'API dati, non di Jira
+      else { sim.faults[b.kind][b.type] = b.times; if ("retryAfter" in b) sim.retryAfter = b.retryAfter; }
+      return send(res, 200, { ...sim.faults, api503 });
+    }
 
     // API di Trama
     if (p === "/api/csp-report" && req.method === "POST") { try { cspReports.push(JSON.parse(raw)); } catch {} res.writeHead(204, Object.fromEntries(SECURITY)); return res.end(); }
     if (p === "/api/me") return send(res, 200, { ok: true, user: { accountId: user.account_id, name: user.name, email: user.email, picture: "" }, sites: user.sites });
     if (p === "/api/projects") return send(res, 200, { ok: true, projects: [projectRow()] });
+    if (api503 > 0 && p.startsWith("/api/projects/") && ["PUT", "DELETE", "POST"].includes(req.method)) {
+      api503--;
+      return send(res, 503, { ok: false, code: "server_unavailable", message: "Servizio dati non disponibile (simulato).", retryable: true });
+    }
     let m;
     if ((m = p.match(/^\/api\/projects\/([^/]+)$/)) && req.method === "GET") {
       const since = Number(url.searchParams.get("since") ? Date.parse(url.searchParams.get("since")) : 0) - 3000;
-      const items = [...store.values()].filter((v) => (since > 0 ? v.at > since : !v.deleted)).map((v) => ({ ...lighten({ col: v.col, id: v.id, data: v.deleted ? {} : v.data, deleted: v.deleted }), by: v.by || "" }));
+      const items = [...store.values()].filter((v) => (since > 0 ? v.at > since * 1000 : !v.deleted)).map((v) => ({ ...lighten({ col: v.col, id: v.id, data: v.deleted ? {} : v.data, deleted: v.deleted }), by: v.by || "", at: String(v.at) }));
       return send(res, 200, { ok: true, now: new Date().toISOString(), project: { id: fixture.project.id, name: fixture.project.name, cloudId: fixture.project.cloud_id, siteUrl: fixture.project.site_url, createdBy: user.account_id }, items });
     }
     if ((m = p.match(/^\/api\/projects\/([^/]+)\/items\/([^/]+)\/([^/]+)$/))) {
       const key = `${m[2]}/${decodeURIComponent(m[3])}`;
+      const v = store.get(key), live = !!v && !v.deleted;
       if (req.method === "GET") {
-        const v = store.get(key);
-        if (!v || v.deleted) return send(res, 404, { ok: false, code: "not_found", message: "Documento inesistente o eliminato." });
-        return send(res, 200, { ok: true, item: { col: v.col, id: v.id, data: v.data, v: fingerprint(v.data) } });
+        if (!live) return send(res, 404, { ok: false, code: "not_found", message: "Documento inesistente o eliminato." });
+        return send(res, 200, { ok: true, now: nowUs(), item: { col: v.col, id: v.id, data: v.data, v: fingerprint(v.data), at: String(v.at) } });
       }
+      // x-base come il server: assente = incondizionata, "none" = non esiste o è eliminato, altrimenti l'at atteso
+      const base = req.headers["x-base"];
+      if (base !== undefined && base !== "none" && !/^\d{1,18}$/.test(base)) return send(res, 400, { ok: false, code: "bad_request", message: "Versione di partenza (x-base) non valida." });
+      const conflict = () => send(res, 409, { ok: false, code: "conflict", message: "Un collega ha appena modificato questo documento: rileggilo e riprova.", at: live ? String(v.at) : null });
       if (req.method === "PUT" && isPlaceholder(JSON.parse(raw))) return send(res, 409, { ok: false, code: "placeholder", message: "Contenuto non caricato: il documento completo non è stato sovrascritto." });
-      if (req.method === "PUT") store.set(key, { col: m[2], id: decodeURIComponent(m[3]), data: JSON.parse(raw), deleted: false, at: Date.now(), by: req.headers["x-sim-by"] || user.account_id });
-      else if (store.has(key)) Object.assign(store.get(key), { deleted: true, data: {}, at: Date.now() });
-      return send(res, 200, { ok: true });
+      if (req.method === "PUT") {
+        if (base === "none" ? live : base !== undefined && (!live || String(v.at) !== base)) return conflict();
+        const row = { col: m[2], id: decodeURIComponent(m[3]), data: JSON.parse(raw), deleted: false, at: tick(), by: req.headers["x-sim-by"] || user.account_id };
+        store.set(key, row);
+        return send(res, 200, { ok: true, at: String(row.at) });
+      }
+      if (base !== undefined && !live) return send(res, 200, { ok: true, at: v ? String(v.at) : null }); // già eliminato o mai esistito
+      if (base !== undefined && (base === "none" || String(v.at) !== base)) return conflict();
+      if (v) Object.assign(v, { deleted: true, data: {}, at: tick() });
+      return send(res, 200, { ok: true, at: v ? String(v.at) : null });
     }
     if ((m = p.match(/^\/api\/projects\/([^/]+)\/batch$/)) && req.method === "POST") {
       const { ops } = JSON.parse(raw);
       if (ops.some((o) => isPlaceholder(o.data))) return send(res, 409, { ok: false, code: "placeholder", message: "Contenuto non caricato: il documento completo non è stato sovrascritto." });
+      const saved = new Map();
       for (const o of ops) {
         const key = `${o.col}/${o.id}`;
-        if (o.data === null) { if (store.has(key)) Object.assign(store.get(key), { deleted: true, data: {}, at: Date.now() }); }
-        else store.set(key, { col: o.col, id: o.id, data: o.data, deleted: false, at: Date.now() });
+        // come il server: un'eliminazione è un salvataggio con deleted = true, anche se l'elemento non c'era
+        if (o.data === null) store.set(key, { ...store.get(key), col: o.col, id: o.id, data: {}, deleted: true, at: tick() });
+        else store.set(key, { col: o.col, id: o.id, data: o.data, deleted: false, at: tick() });
+        saved.set(key, { col: o.col, id: o.id, at: String(store.get(key).at) });
       }
-      return send(res, 200, { ok: true, saved: ops.length });
+      return send(res, 200, { ok: true, saved: ops.length, items: [...saved.values()] });
     }
     if ((m = p.match(/^\/api\/jira\/([^/]+)$/)) && req.method === "POST") {
       const op = m[1];
       if (!Object.hasOwn(ops, op)) return send(res, 200, { ok: false, code: "bad_request", message: "Operazione Jira sconosciuta." });
       try { return send(res, 200, { ok: true, payload: await ops[op](user, JSON.parse(raw || "{}")) }); }
-      catch (e) { return send(res, 200, { ok: false, code: e.code || "upstream_error", message: e.message, retryable: !!e.retryable }); }
+      catch (e) { return send(res, 200, { ok: false, code: e.code || "upstream_error", message: e.message, retryable: !!e.retryable, ...(e.status ? { status: e.status } : {}) }); }
     }
     if (p.startsWith("/api/")) return send(res, 404, { ok: false, code: "not_found", message: "Percorso inesistente (simulatore)." });
 

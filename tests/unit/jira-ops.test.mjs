@@ -19,7 +19,7 @@ RETRY.random = () => 0.5;
 
 beforeEach(() => { sim.reset(); sim.types = types; sim.components = ["Web"]; sim.versions = []; sim.links = []; waits = []; });
 
-const create = (o) => ops.createJiraIssue(user, { cloudId, projectKey: "COM", issueTypeName: "Story", summary: "Ticket", ...o });
+const create = (o) => ops.createJiraIssue(user, { cloudId, projectKey: "ORTO", issueTypeName: "Story", summary: "Ticket", ...o });
 
 test("il markdown dei modelli diventa wiki markup di Jira", () => {
   assert.equal(mdToWiki("## Titolo"), "h2. Titolo");
@@ -44,14 +44,14 @@ test("Jira rifiuta un padre del livello sbagliato: l'errore arriva come errore d
   const story = await create({ summary: "A" });
   const other = await create({ summary: "B" });
   await assert.rejects(ops.setIssueParent(user, { cloudId, issueKey: other.key, parentKey: story.key }), (e) => e.code === "tool_error" && /livello/.test(e.message));
-  await assert.rejects(create({ additional_fields: { parent: { key: "COM-9999" } } }), (e) => e.code === "tool_error");
+  await assert.rejects(create({ additional_fields: { parent: { key: "ORTO-9999" } } }), (e) => e.code === "tool_error");
 });
 
 test("chiavi e label non valide sono rifiutate prima di chiamare Jira", async () => {
   const calls = sim.calls.length;
-  await assert.rejects(ops.getJiraIssue(user, { cloudId, issueIdOrKey: "COM-1; DROP" }), (e) => e.code === "tool_error");
-  await assert.rejects(ops.setIssueParent(user, { cloudId, issueKey: "../x", parentKey: "COM-1" }), (e) => e.code === "tool_error");
-  await assert.rejects(ops.setReleaseFields(user, { cloudId, issueKey: "COM-1", labels: ["con spazio"] }), (e) => e.code === "tool_error");
+  await assert.rejects(ops.getJiraIssue(user, { cloudId, issueIdOrKey: "ORTO-1; DROP" }), (e) => e.code === "tool_error");
+  await assert.rejects(ops.setIssueParent(user, { cloudId, issueKey: "../x", parentKey: "ORTO-1" }), (e) => e.code === "tool_error");
+  await assert.rejects(ops.setReleaseFields(user, { cloudId, issueKey: "ORTO-1", labels: ["con spazio"] }), (e) => e.code === "tool_error");
   assert.equal(sim.calls.length, calls, "nessuna chiamata partita");
 });
 
@@ -65,7 +65,7 @@ test("un errore 500 di Jira è segnalato come temporaneo e si può riprovare", a
   sim.faults.before500.Story = 1;
   await assert.rejects(create({ summary: "Prima" }), (e) => e.code === "server_unavailable" && e.retryable === true);
   const ok = await create({ summary: "Poi" });
-  assert.match(ok.key, /^COM-\d+$/);
+  assert.match(ok.key, /^ORTO-\d+$/);
 });
 
 test("senza token valido e senza rinnovo serve un nuovo accesso", async () => {
@@ -75,7 +75,7 @@ test("senza token valido e senza rinnovo serve un nuovo accesso", async () => {
 
 test("ricerca JQL, campi letti e collegamenti", async () => {
   const a = await create({ summary: "Diario colturale" }), b = await create({ summary: "Meteo" });
-  const r = await ops.searchJiraIssuesUsingJql(user, { cloudId, jql: 'project = COM AND summary ~ "diario"', maxResults: 500 });
+  const r = await ops.searchJiraIssuesUsingJql(user, { cloudId, jql: 'project = ORTO AND summary ~ "diario"', maxResults: 500 });
   assert.deepEqual(r.issues.map((i) => i.key), [a.key]);
   const one = await ops.getJiraIssue(user, { cloudId, issueIdOrKey: a.key, fields: ["summary", "bad field!"] });
   assert.equal(one.fields.summary, "Diario colturale");
@@ -85,7 +85,7 @@ test("ricerca JQL, campi letti e collegamenti", async () => {
 
 /* ---------- limiti di Jira: 429 e 5xx ---------- */
 const count = (re) => sim.calls.filter((c) => re.test(c)).length;
-const search = () => ops.searchJiraIssuesUsingJql(user, { cloudId, jql: "project = COM" });
+const search = () => ops.searchJiraIssuesUsingJql(user, { cloudId, jql: "project = ORTO" });
 
 test("una lettura con 429 e Retry-After aspetta quanto chiede Jira e poi riesce", async () => {
   sim.faults.rate429.GET = 1; sim.retryAfter = "2";
@@ -168,4 +168,70 @@ test("aggiornamento di un ticket creato: solo i campi passati, descrizione in wi
   await assert.rejects(ops.editJiraIssue(user, { cloudId, issueKey: "non valida", summary: "x" }), { code: "tool_error" });
   await assert.rejects(ops.editJiraIssue(user, { cloudId, issueKey: key, labels: ["con spazio"] }), { code: "tool_error" });
   await assert.rejects(ops.editJiraIssue(user, { cloudId, issueKey: key, summary: "" }), { code: "tool_error" });
+});
+
+test("anche la creazione rifiuta le label con spazi o troppo lunghe, prima di chiamare Jira", async () => {
+  const calls = sim.calls.length;
+  await assert.rejects(create({ additional_fields: { labels: ["Release 1"] } }), (e) => e.code === "tool_error" && e.message === "Label non valida: niente spazi");
+  await assert.rejects(create({ additional_fields: { labels: ["x".repeat(256)] } }), { code: "tool_error" });
+  assert.equal(sim.calls.length, calls, "nessuna chiamata partita");
+  const ok = await create({ additional_fields: { labels: [" MVP ", "MVP", "Logic"] } });
+  assert.deepEqual(sim.issues.get(ok.key).fields.labels, ["MVP", "Logic"]);
+});
+
+test("gli errori di Jira portano lo status HTTP", async () => {
+  await assert.rejects(ops.getJiraIssue(user, { cloudId, issueIdOrKey: "ORTO-9999" }), (e) => e.code === "tool_error" && e.status === 404);
+  await assert.rejects(create({ additional_fields: { parent: { key: "ORTO-9999" } } }), (e) => e.status === 400);
+  sim.faults.down503.GET = 3;
+  await assert.rejects(ops.getIssueLinkTypes(user, { cloudId }), (e) => e.code === "server_unavailable" && e.status === 503);
+});
+
+/* ---------- Jira finto: comportamenti di Jira vero ---------- */
+const raw = (path, init = {}) => fetch(`https://api.atlassian.com/ex/jira/${cloudId}${path}`, { ...init, body: init.body && JSON.stringify(init.body) });
+
+test("il Jira finto rifiuta le label con spazi in creazione e in modifica, con un 400", async () => {
+  const fields = { project: { key: sim.projectKey }, issuetype: { name: "Story" }, summary: "S", labels: ["Release 1"] };
+  const c = await raw("/rest/api/2/issue", { method: "POST", body: { fields } });
+  assert.equal(c.status, 400);
+  assert.match((await c.json()).errors.labels, /contains spaces/);
+  const t = await create({ summary: "Ok" });
+  const p = await raw(`/rest/api/2/issue/${t.key}`, { method: "PUT", body: { fields: { labels: ["con spazio"] } } });
+  assert.equal(p.status, 400);
+  assert.equal(sim.issues.get(t.key).fields.labels, undefined, "la label non è stata scritta");
+});
+
+test("guasto hidden: il ticket esiste ma non si vede, come con i permessi mancanti", async () => {
+  const a = await create({ summary: "Visibile" }), b = await create({ summary: "Nascosto" });
+  sim.faults.hidden[b.key] = 1;
+  await assert.rejects(ops.getJiraIssue(user, { cloudId, issueIdOrKey: b.key }), (e) => e.status === 404 && /permission/.test(e.message));
+  await assert.rejects(ops.getJiraIssue(user, { cloudId, issueIdOrKey: b.key }), (e) => e.status === 404, "il guasto non si consuma");
+  await assert.rejects(ops.searchJiraIssuesUsingJql(user, { cloudId, jql: `key in (${a.key}, ${b.key})` }), (e) => e.status === 400 && e.message.includes(b.key));
+  assert.deepEqual((await search()).issues.map((i) => i.key), [a.key]);
+  sim.reset();
+  assert.deepEqual(sim.faults.hidden, {});
+});
+
+/* ---------- token cifrati e rinnovo ---------- */
+// le chiamate al server OAuth (auth.atlassian.com) non passano dal Jira finto: si rispondono qui
+async function withAuth(reply, fn) {
+  const prev = globalThis.fetch;
+  globalThis.fetch = async (url, init) => (String(url).startsWith("https://auth.atlassian.com/") ? reply() : prev(url, init));
+  try { return await fn(); } finally { globalThis.fetch = prev; }
+}
+const scaduto = async () => ({ ...user, expires_at: new Date(Date.now() - 1000).toISOString(), refresh_token: await seal("refresh-finto") });
+const reply = (status, data) => () => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
+
+test("un token cifrato che non si decifra più (chiave ruotata) chiede un nuovo accesso", async () => {
+  await assert.rejects(ops.getIssueLinkTypes({ ...user, access_token: "AAAA.BBBB" }, { cloudId }), (e) => e.code === "needs_reauth");
+  const rotto = { ...user, expires_at: new Date(Date.now() - 1000).toISOString(), refresh_token: "non-cifrato" };
+  await assert.rejects(ops.getIssueLinkTypes(rotto, { cloudId }), (e) => e.code === "needs_reauth");
+});
+
+test("rinnovo del token: un 5xx o la rete giù sono temporanei, invalid_grant e i 4xx chiedono un nuovo accesso", async () => {
+  const u = await scaduto();
+  await withAuth(reply(503, { error: "unavailable" }), () => assert.rejects(ops.getIssueLinkTypes(u, { cloudId }), (e) => e.code === "server_unavailable" && e.retryable === true));
+  await withAuth(reply(429, { error: "rate_limited" }), () => assert.rejects(ops.getIssueLinkTypes(u, { cloudId }), (e) => e.code === "server_unavailable" && e.retryable === true && e.status === 429));
+  await withAuth(() => { throw new TypeError("fetch failed"); }, () => assert.rejects(ops.getIssueLinkTypes(u, { cloudId }), (e) => e.code === "server_unavailable" && e.retryable === true));
+  await withAuth(reply(403, { error: "invalid_grant", error_description: "Unknown or invalid refresh token." }), () => assert.rejects(ops.getIssueLinkTypes(u, { cloudId }), (e) => e.code === "needs_reauth"));
+  await withAuth(reply(400, { error: "invalid_request" }), () => assert.rejects(ops.getIssueLinkTypes(u, { cloudId }), (e) => e.code === "needs_reauth"));
 });
