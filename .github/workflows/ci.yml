@@ -12,9 +12,13 @@ on:
   pull_request:
   workflow_dispatch: # «Run workflow» in GitHub › Actions: ripubblica main senza modifiche
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # su main una pubblicazione già partita non si interrompe a metà
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   test:
@@ -50,6 +54,7 @@ jobs:
     needs: test
     if: github.event_name == 'pull_request' && vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -68,6 +73,7 @@ jobs:
     needs: test
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: production
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
