@@ -80,6 +80,8 @@ Lascia aperto il terminale: Trama si collega da solo entro qualche secondo (in a
 
 ## 5. Controlli e test
 
+Come si lavora sul repository (rami, PR, test da far passare, regole del progetto): [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ```bash
 npm run check
 ```
