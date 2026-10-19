@@ -22,16 +22,32 @@ export function authorizeUrl(state) {
   return u.toString();
 }
 
+// Un 5xx, un 429 o la rete giù non dicono che la sessione è finita: si riprova più tardi senza far rientrare l'utente.
 async function tokenRequest(body) {
-  const r = await fetch(`${AUTH}/oauth/token`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ client_id: env("ATLASSIAN_CLIENT_ID"), client_secret: env("ATLASSIAN_CLIENT_SECRET"), ...body }),
-  });
+  let r;
+  try {
+    r = await fetch(`${AUTH}/oauth/token`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ client_id: env("ATLASSIAN_CLIENT_ID"), client_secret: env("ATLASSIAN_CLIENT_SECRET"), ...body }),
+    });
+  } catch {
+    throw Object.assign(new Error("Atlassian non raggiungibile"), { code: "server_unavailable", retryable: true });
+  }
   const data = await r.json().catch(() => ({}));
+  if (r.status === 429 || r.status >= 500) throw Object.assign(new Error(`Atlassian ha risposto ${r.status}`), { code: "server_unavailable", retryable: true, status: r.status });
   if (!r.ok) throw Object.assign(new Error(data.error_description || data.error || `token ${r.status}`), { code: "needs_reauth" });
   return data;
 }
+
+// Un token che non si decifra più (TOKEN_KEY ruotata, dato corrotto) vale come sessione scaduta.
+// TOKEN_KEY assente o malformata è invece un errore di configurazione: passa così com'è (lo lancia tokenKey() in core.mjs).
+const open = (sealed) =>
+  unseal(sealed).catch((e) => {
+    if (/^TOKEN_KEY/.test(e?.message || "")) throw e;
+    console.log(`token Atlassian non decifrabile: ${e?.name || "errore"}, serve un nuovo accesso`);
+    throw Object.assign(new Error("Sessione Atlassian non più leggibile: accedi di nuovo"), { code: "needs_reauth" });
+  });
 
 export const exchangeCode = (code) =>
   tokenRequest({ grant_type: "authorization_code", code, redirect_uri: redirectUri() });
@@ -61,10 +77,10 @@ export async function saveTokens(accountId, t, extra = {}) {
 // Restituisce un access token valido, rinnovandolo se scade entro un minuto.
 export async function accessToken(user, force = false) {
   if (!force && user.access_token && user.expires_at && new Date(user.expires_at).getTime() - Date.now() > 60_000) {
-    return unseal(user.access_token);
+    return open(user.access_token);
   }
   if (!user.refresh_token) throw Object.assign(new Error("Sessione Atlassian scaduta"), { code: "needs_reauth" });
-  const t = await tokenRequest({ grant_type: "refresh_token", refresh_token: await unseal(user.refresh_token) });
+  const t = await tokenRequest({ grant_type: "refresh_token", refresh_token: await open(user.refresh_token) });
   const sites = await fetchSites(t.access_token).catch(() => null);
   await saveTokens(user.account_id, t, { sites });
   if (sites) user.sites = sites;
@@ -74,9 +90,9 @@ export async function accessToken(user, force = false) {
 function jiraError(status, body) {
   const msgs = [...(body?.errorMessages || []), ...Object.entries(body?.errors || {}).map(([k, v]) => `${k}: ${v}`)];
   const message = msgs.join(" · ") || body?.message || `Jira ha risposto ${status}`;
-  if (status === 401) return Object.assign(new Error(message), { code: "needs_reauth" });
-  if (status === 429 || status >= 500) return Object.assign(new Error(message), { code: "server_unavailable", retryable: true });
-  return Object.assign(new Error(message), { code: "tool_error" });
+  if (status === 401) return Object.assign(new Error(message), { code: "needs_reauth", status });
+  if (status === 429 || status >= 500) return Object.assign(new Error(message), { code: "server_unavailable", retryable: true, status });
+  return Object.assign(new Error(message), { code: "tool_error", status });
 }
 
 // Limiti di Jira: si riprovano solo le letture (GET) e le ricerche JQL, che non cambiano nulla.

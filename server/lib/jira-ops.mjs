@@ -24,6 +24,12 @@ export function mdToWiki(md) {
 }
 
 const ALLOWED_FIELDS = /^(components|labels|parent|priority|customfield_\d+)$/;
+// label senza doppioni né spazi: Jira rifiuterebbe l'intera richiesta
+function cleanLabels(list) {
+  const labels = [...new Set(list.map((l) => String(l).trim()).filter(Boolean))];
+  if (labels.some((l) => /\s/.test(l) || l.length > 255)) throw Object.assign(new Error("Label non valida: niente spazi"), { code: "tool_error" });
+  return labels;
+}
 
 export const ops = {
   async getAccessibleAtlassianResources(user) {
@@ -71,6 +77,7 @@ export const ops = {
   },
   async createJiraIssue(user, i) {
     const extra = Object.fromEntries(Object.entries(i.additional_fields || {}).filter(([k]) => ALLOWED_FIELDS.test(k)));
+    if (Array.isArray(extra.labels)) extra.labels = cleanLabels(extra.labels);
     const fields = {
       project: { key: String(i.projectKey) },
       issuetype: { name: String(i.issueTypeName) },
@@ -99,8 +106,7 @@ export const ops = {
   async setReleaseFields(user, i) {
     const key = String(i.issueKey || "").trim();
     if (!/^[A-Za-z][A-Za-z0-9_]*-\d+$/.test(key)) throw Object.assign(new Error("Chiave ticket non valida"), { code: "tool_error" });
-    const labels = [...new Set((Array.isArray(i.labels) ? i.labels : []).map((l) => String(l).trim()).filter(Boolean))];
-    if (labels.some((l) => /\s/.test(l) || l.length > 255)) throw Object.assign(new Error("Label non valida: niente spazi"), { code: "tool_error" });
+    const labels = cleanLabels(Array.isArray(i.labels) ? i.labels : []);
     await jiraFetch(user, i.cloudId, `${V3}/issue/${e(key)}`, { method: "PUT", body: { fields: { labels } } });
     return { ok: true };
   },
@@ -112,9 +118,7 @@ export const ops = {
     if (i.summary !== undefined) fields.summary = String(i.summary).slice(0, 255);
     if (i.description !== undefined) fields.description = mdToWiki(i.description);
     if (Array.isArray(i.labels)) {
-      const labels = [...new Set(i.labels.map((l) => String(l).trim()).filter(Boolean))];
-      if (labels.some((l) => /\s/.test(l) || l.length > 255)) throw Object.assign(new Error("Label non valida: niente spazi"), { code: "tool_error" });
-      fields.labels = labels;
+      fields.labels = cleanLabels(i.labels);
     }
     if (i.parentKey) {
       if (!ok.test(String(i.parentKey))) throw Object.assign(new Error("Chiave dell'epica non valida"), { code: "tool_error" });

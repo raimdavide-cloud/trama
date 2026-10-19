@@ -34,19 +34,27 @@ export async function erasePerson(accountId) {
   await sql`delete from users where account_id = ${accountId}`; // le sessioni si cancellano a cascata
 }
 
+// Rilegge il profilo dal primo sito del reporter che risponde 200. Un 404 o un 403 dicono solo che da quel sito
+// l'account non si vede, non che è chiuso: la cancellazione spetta a «closed» nel report. Senza un 200 non si scrive nulla.
 async function refreshPerson(rep, accountId) {
-  const site = (rep.sites || [])[0];
-  if (!site) return false;
+  const sites = rep.sites || [];
+  if (!sites.length) return false;
   const token = await accessToken(rep);
-  const r = await fetch(`https://api.atlassian.com/ex/jira/${encodeURIComponent(site.id)}/rest/api/3/user?accountId=${encodeURIComponent(accountId)}`, {
-    headers: { authorization: `Bearer ${token}`, accept: "application/json" },
-  });
-  if (r.status === 404) { await erasePerson(accountId); return true; }
-  if (!r.ok) return false;
-  const u = await r.json();
-  await sql`update users set name = ${u.displayName || ""}, email = ${u.emailAddress || ""}, picture = ${u.avatarUrls?.["48x48"] || ""},
-              data_updated_at = now() where account_id = ${accountId}`;
-  return true;
+  for (const site of sites) {
+    let u;
+    try {
+      const r = await fetch(`https://api.atlassian.com/ex/jira/${encodeURIComponent(site.id)}/rest/api/3/user?accountId=${encodeURIComponent(accountId)}`, {
+        headers: { authorization: `Bearer ${token}`, accept: "application/json" },
+      });
+      if (r.status !== 200) continue;
+      u = await r.json();
+    } catch { continue; }
+    // un campo nascosto dal profilo arriva vuoto e va tolto anche qui: i dati salvati seguono il profilo
+    await sql`update users set name = ${u.displayName || ""}, email = ${u.emailAddress || ""}, picture = ${u.avatarUrls?.["48x48"] || ""},
+                data_updated_at = now() where account_id = ${accountId}`;
+    return true;
+  }
+  return false;
 }
 
 export async function runPrivacyReport({ force = false } = {}) {

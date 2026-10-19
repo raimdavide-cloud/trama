@@ -15,10 +15,11 @@ export const sim = {
   counter: 1000,
   calls: [],
   // guasti su richiesta, quante volte fallire: afterCreate500 e before500 per tipo di ticket;
-  // rate429 (con Retry-After = retryAfter, null per ometterlo) e down503 per metodo HTTP o "*" per tutte le richieste
-  faults: { afterCreate500: {}, before500: {}, rate429: {}, down503: {} },
+  // rate429 (con Retry-After = retryAfter, null per ometterlo) e down503 per metodo HTTP o "*" per tutte le richieste;
+  // hidden per chiave ticket: finché il valore è > 0 il ticket esiste ma non si vede (404 e JQL come per una chiave inesistente), non si consuma
+  faults: { afterCreate500: {}, before500: {}, rate429: {}, down503: {}, hidden: {} },
   retryAfter: "1",
-  reset() { this.issues.clear(); this.counter = 1000; this.calls = []; this.faults = { afterCreate500: {}, before500: {}, rate429: {}, down503: {} }; this.retryAfter = "1"; },
+  reset() { this.issues.clear(); this.counter = 1000; this.calls = []; this.faults = { afterCreate500: {}, before500: {}, rate429: {}, down503: {}, hidden: {} }; this.retryAfter = "1"; },
 };
 
 const json = (status, data) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
@@ -26,6 +27,11 @@ const err = (status, errors = {}, errorMessages = []) => json(status, { errorMes
 const typeByName = (n) => sim.types.find((t) => t.name === n);
 const level = (issue) => typeByName(issue.type)?.level ?? 0;
 const now = () => new Date().toISOString();
+const hidden = (key) => (sim.faults.hidden?.[key] || 0) > 0;
+const visible = (key) => (hidden(key) ? undefined : sim.issues.get(key));
+// come Jira: una label con spazi fa fallire l'intera richiesta
+const badLabel = (labels) => (labels || []).find((l) => /\s/.test(String(l)));
+const labelErr = (l) => err(400, { labels: `The label '${l}' contains spaces which is invalid.` });
 
 function view(issue, wanted) {
   const all = {
@@ -56,7 +62,7 @@ function checkParent(childType, parentKey) {
 
 function runJql(jql, body) {
   const [where] = jql.split(/\s+ORDER BY\s+/i);
-  let list = [...sim.issues.values()];
+  let list = [...sim.issues.values()].filter((i) => !hidden(i.key));
   // AND separa le clausole solo fuori dalle virgolette, come in Jira: summary ~ "login and password" è una clausola sola
   for (const clause of where.split(/\s+AND\s+(?=(?:[^"]*"[^"]*")*[^"]*$)/i).map((c) => c.trim()).filter(Boolean)) {
     let m;
@@ -69,7 +75,7 @@ function runJql(jql, body) {
     else if ((m = clause.match(/^parent\s*=\s*"?([A-Z0-9-]+)"?$/i))) list = list.filter((i) => i.parent === m[1]);
     else if ((m = clause.match(/^key\s+in\s*\((.*)\)$/i))) {
       const keys = m[1].split(",").map((k) => k.trim());
-      const missing = keys.find((k) => !sim.issues.has(k));
+      const missing = keys.find((k) => !visible(k));
       if (missing) return err(400, {}, [`An issue with key '${missing}' does not exist for field 'key'.`]);
       list = list.filter((i) => keys.includes(i.key));
     } else return err(400, {}, [`SIMULATORE: clausola JQL non gestita: ${clause}`]);
@@ -97,6 +103,7 @@ async function handle(url, init) {
     if (f.project?.key !== sim.projectKey) return err(400, { project: "Progetto inesistente." });
     if (!typeByName(f.issuetype?.name)) return err(400, { issuetype: "Specificare un tipo di ticket valido." });
     if (!f.summary) return err(400, { summary: "Il riepilogo è obbligatorio." });
+    if (badLabel(f.labels)) return labelErr(badLabel(f.labels));
     for (const c of f.components || []) if (!sim.components.includes(c.name)) return err(400, { components: `Componente «${c.name}» inesistente.` });
     for (const v of f.fixVersions || []) if (!sim.versions.includes(v.name)) return err(400, { fixVersions: `Versione «${v.name}» inesistente.` });
     if (f.parent?.key) { const bad = checkParent(f.issuetype.name, f.parent.key); if (bad) return bad; }
@@ -110,10 +117,11 @@ async function handle(url, init) {
   }
   let m;
   if ((m = p.match(/^\/rest\/api\/[23]\/issue\/([A-Z0-9-]+)$/))) {
-    const issue = sim.issues.get(m[1]);
+    const issue = visible(m[1]);
     if (!issue) return err(404, {}, ["Issue does not exist or you do not have permission to see it."]);
     if (method === "GET") return json(200, view(issue, (u.searchParams.get("fields") || "summary").split(",")));
     if (method === "PUT") {
+      if (badLabel(body.fields?.labels)) return labelErr(badLabel(body.fields.labels));
       const parent = body.fields?.parent?.key;
       if (parent) { const bad = checkParent(issue.type, parent); if (bad) return bad; issue.parent = parent; }
       if (body.fields?.labels) issue.fields.labels = body.fields.labels;
@@ -135,7 +143,7 @@ async function handle(url, init) {
   }
   if (method === "GET" && /\/issue\/createmeta\//.test(p)) return json(200, { fields: [{ fieldId: "components", name: "Components", required: false, allowedValues: sim.components.map((name, i) => ({ id: String(i), name })) }, { fieldId: "fixVersions", name: "Fix versions", required: false, allowedValues: sim.versions.map((name, i) => ({ id: String(i), name })) }] });
   if (method === "POST" && p === "/rest/api/3/issueLink") {
-    const a = sim.issues.get(body.inwardIssue?.key), b = sim.issues.get(body.outwardIssue?.key);
+    const a = visible(body.inwardIssue?.key), b = visible(body.outwardIssue?.key);
     if (!a || !b) return err(404, {}, ["Ticket da collegare inesistente."]);
     (sim.links ??= []).push({ type: body.type?.name, from: a.key, to: b.key });
     return new Response(null, { status: 201 });
