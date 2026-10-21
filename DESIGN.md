@@ -162,6 +162,7 @@ Neutri caldi tinti di indaco, un colore di marchio, un filo, tre stati. Tutto st
 - **Incassato** (`#EDE9DF`, `--sunk`): zone incassate, passaggio del mouse (`--hover`), controlli spenti. Scuro: `#23254A`.
 - **Linea** (`#DCD6C8`, `--line`): separatori e bordi di contenitori. Scuro: `#32356A`.
 - **Linea forte** (`#8B8571`, `--line-strong`): bordo di campi, caselle, zone di rilascio (3:1). Scuro: `#7478B0`.
+- **Linea media** (`#BDB6A3`, `--line-mid`): il perimetro delle griglie e delle liste nelle pagine pubbliche, tra la linea e quella forte; solo decorativa (non serve 3:1). Scuro: `#474B86`.
 - **Inchiostro** (`#1B1A2E`, `--fg`) e **ardesia** (`#5B5870`, `--muted`): testo e testo secondario. Scuro: `#ECEAF5` e `#A6A9C9`.
 
 ### Named Rules
@@ -252,7 +253,7 @@ Il filo ha tre forme: **tratteggiato** = proposta di Tessa (bozza), **pieno** = 
 
 ### Pagine pubbliche (homepage)
 - Il filo organizza le sequenze: i sei passi sono un filo continuo con un nodo numerato per passo; i cinque momenti della demo sono un filo con il nodo pieno su quello che si guarda; i ticket proposti nelle demo e negli esempi hanno il filo tratteggiato.
-- Niente riquadri per i contenuti: vantaggi, regole e garanzie sono colonne separate da una linea sopra, non schede. Le uniche superfici sono la demo (il prodotto) e la fascia scura finale.
+- Ogni sezione ha un perimetro leggibile: le sezioni si alternano tra fondo (`--bg`) e foglio (`--surface`) con una linea sopra e sotto; vantaggi, regole, garanzie e dati chiave sono griglie con le linee condivise (`--line-mid`), senza spazio tra le celle e senza raggio, non schede staccate; i sei passi e i cinque momenti sono liste con una linea sopra e sotto e una sottile tra una voce e l'altra. Le uniche superfici piene sono la demo (il prodotto), le due colonne degli esempi e la fascia scura finale.
 - Niente icone decorative: restano solo dove indicano un'azione (menu, riproduci) o uno stato (spunte).
 - Niente finta finestra con i tre pallini: la demo ha una barra con il titolo e l'etichetta «demo».
 - Le etichette sopra i titoli sono testo discreto (14 px, `--muted`), non maiuscolo monospazio; il filtro per ruolo usa il tono indaco chiaro, le schede degli esempi sono linguette con una linea sotto.
