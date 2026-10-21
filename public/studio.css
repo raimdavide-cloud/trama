@@ -259,7 +259,6 @@ pre.prev{font:var(--fs-xs)/1.5 var(--f-mono);background:var(--sunk);border-radiu
 .act{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface)}
 .act.done{opacity:.85}
 .act-t{font-weight:700;display:flex;gap:6px;align-items:flex-start;line-height:1.4}
-.act-t>.ic{margin-top:calc((1lh - 1.2em)/2)}
 .act-l{font-size:var(--fs-xs);color:var(--muted);margin-top:3px;white-space:pre-wrap;word-break:break-word}
 .act-b{margin-top:8px}
 .bub-foot{margin-top:4px;text-align:right}.bub-foot .link{font-size:var(--fs-xs);color:var(--muted)}
@@ -463,6 +462,7 @@ body.has-recap{--colk:.7} /* finestre medie: senza riepilogo ma con poco spazio 
   body.has-recap .body{grid-template-columns:232px minmax(0,1fr) 264px}
   body.has-recap #recap{display:block;overflow:auto;padding:22px 20px 22px 0}
   body.has-recap .foot button.primary{background:var(--surface);border-color:var(--line);color:var(--fg)}
+  body.has-recap .foot [data-act="go"]:not(:first-child){display:none} /* «Prossimo» nel riepilogo porta già lì: una sola porta in avanti */
 }
 .rc{position:sticky;top:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:16px 18px}
 .rc-h{font:700 var(--fs-l) var(--f-display);letter-spacing:-.01em;margin:0 0 10px}
@@ -564,3 +564,22 @@ html[lang="it"] .lang-btn [data-flag="en"],html[lang="en"] .lang-btn [data-flag=
 .dt .dt-r[data-st="error"] td:first-child::before{border-left-style:dotted;border-left-color:var(--err)}
 .dt .dt-r[data-st="error"] td:first-child::after{background:var(--err)}
 .dt tbody .dt-r[data-st]:last-child td:first-child::before{bottom:50%}
+
+/* Scelte fatte al tuo posto, per ticket: il filo scende dall'intestazione del ticket lungo le sue ipotesi (tratteggiato = bozza, pieno = creato) */
+.as-h{font:600 var(--fs-xs) var(--f-body);color:var(--muted);margin:var(--sp-4) 0 var(--sp-2)}
+.as>.as-h:first-child{margin-top:0}
+.as-l{margin:0;padding-left:var(--sp-5);font-size:var(--fs-s);max-width:80ch}.as-l li{margin:var(--sp-1) 0}
+.as-g{position:relative;padding:0 0 var(--sp-3) var(--sp-5)}
+.as-g::before{content:"";position:absolute;left:var(--sp-2);top:var(--sp-5);bottom:var(--sp-1);width:0;border-left:var(--thread-w) dashed var(--thread)}
+.as-g.created::before{width:var(--thread-w);border-left:0;background:var(--thread)}
+.as-g .as-l{padding-left:var(--sp-4)}
+.as-t{display:flex;gap:var(--sp-2);align-items:baseline;min-width:0;font-size:var(--fs-m)}
+.as-t .key{flex:none}
+.as-n{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+details.as-more{margin:var(--sp-2) 0}
+details.as-more>summary{cursor:pointer;font:600 var(--fs-s) var(--f-body);color:var(--primary);padding:var(--sp-1) 0}
+details.as-more>summary:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+/* proposta di Tessa nella chat: un nodo tratteggiato al posto della scintilla (il filo è ciò che Tessa propone) */
+.act-t>.ic{display:none}
+.act-t::before{content:"";flex:none;width:9px;height:9px;margin-top:calc((1lh - 9px)/2);border-radius:50%;border:var(--thread-w) dashed var(--thread);box-sizing:border-box}
+.act.done .act-t::before{border-style:solid;background:var(--thread)}
