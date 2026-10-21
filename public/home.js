@@ -151,6 +151,15 @@ document.querySelector(".tabs").addEventListener("click",e=>{const t=e.target.cl
 fetch("/api/me?quiet=1",{credentials:"same-origin"}).then(r=>r.ok?r.json():null).then(me=>{if(!me?.user)return;
  for(const id of ["ctaMain","ctaBand"]){const a=document.getElementById(id);if(!a)continue;a.href="/studio";const s=a.querySelector("span")||a;s.textContent="Apri i tuoi progetti"}}).catch(()=>{});
 
+/* Il filo: il groviglio di fonti gira in orbita; «Tira il filo» lo scioglie nel telaio e «Riavvolgi» lo rimette in orbita.
+   In pausa quando non si vede; sotto i 640 px si parte (e si resta) dal telaio. */
+{const st=document.getElementById("stage"),btn=document.getElementById("pull"),ha=document.getElementById("tessA"),hb=document.getElementById("tessB");
+ if(st&&btn){const la=btn.querySelector(".l-a"),lb=btn.querySelector(".l-b");
+  const set=w=>{st.classList.toggle("woven",w);ha.hidden=w;hb.hidden=!w;la.hidden=w;lb.hidden=!w;btn.setAttribute("aria-pressed",String(w))};
+  btn.addEventListener("click",()=>set(!st.classList.contains("woven")));
+  const small=matchMedia("(max-width: 640px)"),fit=()=>{if(small.matches)set(true)};small.addEventListener("change",fit);fit();
+  new IntersectionObserver(es=>es.forEach(e=>st.classList.toggle("is-paused",!e.isIntersecting))).observe(st)}}
+
 /* Aggancio morbido. Quando lo scorrimento (rotella, trackpad, tasti) finisce vicino all'inizio di una sezione, la pagina la porta
    appena sotto l'header. Regole, per non dare mai la sensazione di essere trattenuti:
    - segue la direzione: aggancia la sezione verso cui si stava andando (fino a 160 px); all'indietro solo se ci si è fermati a meno di 40 px;

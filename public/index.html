@@ -208,6 +208,53 @@ section+section{margin-top:-1px}
 .band-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:40px;align-items:end}
 footer{padding-block:28px 40px;color:var(--muted);font-size:14px;display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between;align-items:center}
 footer a{color:var(--muted)}
+/* il filo: il groviglio di fonti gira in orbita; «Tira il filo» lo scioglie nel telaio (requisito → ticket → chiave Jira) */
+.tess-h{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--sp-5) var(--sp-6);align-items:end;margin-bottom:var(--sp-6)}
+.tess-h>div{grid-column:1}.tess-h .btn{grid-column:2;grid-row:1}
+.tess-h p{color:var(--muted);font-size:var(--fs-lede);margin:var(--sp-3) 0 0;max-width:60ch}
+.stage{--u:calc(100cqw / 1160);container-type:inline-size;display:grid;border:1px solid var(--line-mid);border-radius:var(--r-m);background:var(--surface);overflow:hidden}
+.orbit,.loom{grid-area:1/1}
+.orbit{position:relative;width:100%;aspect-ratio:1160/500;align-self:center;transition:opacity .7s var(--ease),transform .9s var(--ease)}
+.ring{position:absolute;left:50%;top:50%;width:calc(var(--d) * var(--u));height:calc(var(--d) * var(--u));margin:calc(var(--d) * var(--u) / -2) 0 0 calc(var(--d) * var(--u) / -2);border:1px dashed var(--line-mid);border-radius:50%;animation:ring-cw var(--t) linear infinite}
+.ring.ccw{animation-name:ring-ccw}
+.pos{position:absolute;inset:0;transform:rotate(var(--a))}
+.anch{position:absolute;left:50%;top:0;width:0;height:0}
+.cc{position:absolute;left:0;top:0;transform:translate(-50%,-50%)}
+.chip{display:block;background:var(--surface);border:1px solid var(--line-mid);border-radius:var(--r-m);padding:6px 10px;white-space:nowrap;text-align:left;font-size:clamp(11px,1.1cqw,13px);line-height:1.3;animation:chip-cw var(--t) linear infinite}
+.ccw .chip{animation-name:chip-ccw}
+.chip b{display:block;font-weight:600;color:var(--fg)}
+.chip span{display:block;color:var(--muted);font-size:.92em}
+.chip.dash{border-style:dashed}
+.core{position:absolute;left:50%;top:50%;width:calc(120 * var(--u));aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:var(--bg);border:2px solid var(--thread);display:grid;place-items:center}
+.core svg{width:46%;height:auto}
+@keyframes ring-cw{to{transform:rotate(360deg)}}
+@keyframes ring-ccw{to{transform:rotate(-360deg)}}
+@keyframes chip-cw{from{transform:rotate(calc(-1 * var(--a)))}to{transform:rotate(calc(-1 * var(--a) - 360deg))}}
+@keyframes chip-ccw{from{transform:rotate(calc(-1 * var(--a)))}to{transform:rotate(calc(-1 * var(--a) + 360deg))}}
+.stage.is-paused .ring,.stage.is-paused .chip{animation-play-state:paused}
+.loom{opacity:0;pointer-events:none;align-self:center;padding:var(--sp-5);transition:opacity .5s var(--ease) .3s}
+.stage.woven .orbit{opacity:0;transform:scale(.35);pointer-events:none}
+.stage.woven .loom{opacity:1;pointer-events:auto}
+.lm-head,.lm-row{display:grid;grid-template-columns:minmax(200px,1fr) minmax(260px,1.3fr) minmax(200px,1fr);gap:var(--sp-5);align-items:center}
+.lm-head{font:600 var(--fs-xs) var(--f-body);color:var(--muted);padding-bottom:var(--sp-2)}
+.lm-warp{display:grid;grid-template-columns:repeat(4,1fr);text-align:center}.lm-warp i{font-style:normal}
+.lm-rows{list-style:none;margin:0;padding:0}
+.lm-row{padding:var(--sp-1) 0;border-top:1px solid var(--line);border-radius:var(--r-s)}
+.lm-row:hover,.lm-row:focus-visible{background:var(--hover);outline:none}
+.lm-row:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
+.lm-req{display:flex;gap:var(--sp-2);align-items:baseline;min-width:0;font-size:var(--fs-m)}
+.lm-req b{font-weight:600}
+.lm-thread{display:block;width:100%;height:56px;overflow:visible}
+.lm-thread .wp line{stroke:var(--line-mid);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.lm-thread .wo line{stroke:var(--line-mid);stroke-width:5;vector-effect:non-scaling-stroke}
+.lm-thread .wf{stroke:var(--thread);stroke-width:3;stroke-dasharray:100;stroke-dashoffset:100;fill:none}
+.stage.woven .wf{stroke-dashoffset:0;transition:stroke-dashoffset 1.4s var(--ease) calc(.6s + var(--i) * .35s)}
+.lm-row:hover .wf,.lm-row:focus-visible .wf{stroke-width:5}
+.lm-tix{display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-2)}
+.tk-k{font:500 var(--fs-xs) var(--f-mono);padding:2px var(--sp-2);border:1px solid var(--line-mid);border-radius:var(--r-s);background:var(--bg);opacity:0;transform:translateX(-6px)}
+.stage.woven .tk-k{opacity:1;transform:none;transition:opacity .5s var(--ease) calc(1.6s + var(--i) * .35s),transform .5s var(--ease) calc(1.6s + var(--i) * .35s)}
+.lm-note{margin:var(--sp-3) 0 0;font-size:var(--fs-s);color:var(--muted)}
+@media(prefers-reduced-motion:reduce){.ring,.chip{animation:none}.chip{transform:rotate(calc(-1 * var(--a)))}.orbit,.loom,.stage.woven .wf,.stage.woven .tk-k{transition:none}}
 @media(max-width:1020px){
   .hero,.sec-h,.demo-layout,.band-grid{grid-template-columns:minmax(0,1fr)}
   .hero{gap:36px;padding-block:20px 56px}
@@ -218,8 +265,11 @@ footer a{color:var(--muted)}
   .example{grid-template-columns:minmax(0,1fr)}
   .example .arrow{transform:rotate(90deg);justify-self:center}
   .chapters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tess-h{grid-template-columns:minmax(0,1fr)}.tess-h .btn{grid-column:1;grid-row:auto;justify-self:start}
+  .lm-head{display:none}.lm-row{grid-template-columns:minmax(0,1fr);gap:var(--sp-1);padding:var(--sp-3) 0}
 }
 @media(max-width:640px){
+  .tess-h .btn{display:none}.orbit{display:none}.stage .loom{opacity:1}.lm-thread{height:40px}.stage .wf{stroke-dashoffset:0}.stage .tk-k{opacity:1;transform:none}
   body{font-size:var(--fs-l)}
   section{padding-block:64px}
   .facts,.trust,.rules,.gains,.chapters{grid-template-columns:minmax(0,1fr)}
@@ -271,6 +321,7 @@ footer a{color:var(--muted)}
       <button type="button" class="dd-btn menu-btn" id="menuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="siteMenu"><svg class="burger" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5.5h14M3 10h14M3 14.5h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Menu</span><span class="lang-flag" data-flag="it"><svg class="flag" viewBox="0 0 24 24" aria-hidden="true"><clipPath id="fl-it"><circle cx="12" cy="12" r="11"/></clipPath><g clip-path="url(#fl-it)"><rect width="8" height="24" fill="#009246"/><rect x="8" width="8" height="24" fill="#FFFFFF"/><rect x="16" width="8" height="24" fill="#CE2B37"/></g><circle cx="12" cy="12" r="11" fill="none" stroke="#DADDEA"/></svg></span><span class="lang-flag" data-flag="en"><svg class="flag" viewBox="0 0 24 24" aria-hidden="true"><clipPath id="fl-en"><circle cx="12" cy="12" r="11"/></clipPath><g clip-path="url(#fl-en)"><rect width="24" height="24" fill="#012169"/><path d="M0 0L24 24M24 0L0 24" stroke="#FFFFFF" stroke-width="4.5"/><path d="M0 0L24 24M24 0L0 24" stroke="#C8102E" stroke-width="1.6"/><path d="M12 0V24M0 12H24" stroke="#FFFFFF" stroke-width="7"/><path d="M12 0V24M0 12H24" stroke="#C8102E" stroke-width="4"/></g><circle cx="12" cy="12" r="11" fill="none" stroke="#DADDEA"/></svg></span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="dd-menu right" id="siteMenu" role="menu" hidden>
         <div class="dd-head"><b>Sezioni</b></div>
+        <a role="menuitem" href="#tessitura">Il filo</a>
         <a role="menuitem" href="#vantaggi">Vantaggi</a>
         <a role="menuitem" href="#passi">Come funziona</a>
         <a role="menuitem" href="#demo">Demo</a>
@@ -312,6 +363,50 @@ footer a{color:var(--muted)}
     <div class="fact"><div><b>La vostra struttura</b><span>Cliente › Project › Fase › Feature Epic › ticket.</span></div></div>
     <div class="fact"><div><b>Controllo prima di scrivere</b><span>Tipi, campi obbligatori e duplicati verificati prima.</span></div></div>
   </div></div>
+</section>
+
+<section id="tessitura" aria-labelledby="tessT">
+  <div class="wrap">
+    <div class="tess-h">
+      <div id="tessA"><div class="eyebrow">Il groviglio</div><h2 class="h-section" id="tessT">Giovedì. Stai ancora spiegando lo stesso ticket.</h2><p>I requisiti arrivano da ogni parte e continuano a girare intorno al tuo backlog: un documento, una mail, una nota di call, e di nuovo la stessa domanda.</p></div>
+      <div id="tessB" hidden><div class="eyebrow">La tessitura</div><h2 class="h-section">Ogni requisito ha il suo filo.</h2><p>Trama li legge, li dispone sull'ordito del tuo Jira e tesse i ticket che servono a ciascuno, fino alla chiave. Passa su una riga per seguirne il filo.</p></div>
+      <button type="button" class="btn" id="pull" aria-pressed="false" aria-controls="stage"><span class="l-a">Tira il filo</span><span class="l-b" hidden>Riavvolgi il filo</span></button>
+    </div>
+    <div class="stage" id="stage">
+      <div class="orbit" aria-hidden="true">
+      <div class="ring cw" style="--d:220;--t:36s"><div class="pos" style="--a:20deg"><div class="anch"><div class="cc"><div class="chip dash"><b>Note della call</b><span>decisioni a voce</span></div></div></div></div><div class="pos" style="--a:200deg"><div class="anch"><div class="cc"><div class="chip dash"><b>Mail del cliente</b><span>le risposte arrivano dopo</span></div></div></div></div></div>
+      <div class="ring ccw" style="--d:330;--t:52s"><div class="pos" style="--a:80deg"><div class="anch"><div class="cc"><div class="chip "><b>Excel dei requisiti</b><span>una riga ciascuno</span></div></div></div></div><div class="pos" style="--a:260deg"><div class="anch"><div class="cc"><div class="chip "><b>Frame di design</b><span>screenshot da trascrivere</span></div></div></div></div></div>
+      <div class="ring cw" style="--d:440;--t:68s"><div class="pos" style="--a:0deg"><div class="anch"><div class="cc"><div class="chip "><b>Requisiti_v2.docx</b><span>e la v3?</span></div></div></div></div><div class="pos" style="--a:130deg"><div class="anch"><div class="cc"><div class="chip "><b>Specifiche.pdf</b><span>48 pagine</span></div></div></div></div><div class="pos" style="--a:250deg"><div class="anch"><div class="cc"><div class="chip dash"><b>Appunti di meeting</b><span>incollati come testo</span></div></div></div></div></div>
+      <div class="core"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#23307A"/><rect x="6" y="7.5" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="6" y="20" width="20" height="4.5" rx="2.25" fill="#fff"/><rect x="13.75" y="4.5" width="4.5" height="23" rx="2.25" fill="#F2A541"/><rect x="6" y="13.75" width="20" height="4.5" rx="2.25" fill="#fff" stroke="#23307A" stroke-width="1.6"/></svg></div>
+      </div>
+      <div class="loom">
+        <div class="lm-head" aria-hidden="true"><span>Requisito</span><span class="lm-warp"><i>Project</i><i>Fase</i><i>Epica</i><i>Label</i></span><span>Ticket e chiavi Jira</span></div>
+        <ul class="lm-rows">
+        <li class="lm-row" style="--i:0" tabindex="0">
+          <div class="lm-req"><span class="key">RF-020</span><b>Calendario dei turni di irrigazione</b></div>
+          <svg class="lm-thread" viewBox="0 0 400 56" preserveAspectRatio="none" aria-hidden="true"><g class="wp"><line x1="50" y1="0" x2="50" y2="56"/><line x1="150" y1="0" x2="150" y2="56"/><line x1="250" y1="0" x2="250" y2="56"/><line x1="350" y1="0" x2="350" y2="56"/></g><line class="wf" x1="0" y1="28" x2="400" y2="28" pathLength="100"/><g class="wo"><line x1="50" y1="21" x2="50" y2="35"/><line x1="250" y1="21" x2="250" y2="35"/></g></svg>
+          <div class="lm-tix"><span class="tk-k" title="[UX - Web/Mobile] Watering shifts calendar design" data-no-i18n>T-014 · ORTO-904</span><span class="tk-k" title="[BE] Shifts API and rotation rules" data-no-i18n>T-015 · ORTO-905</span><span class="tk-k" title="[FE - Web] Shifts calendar" data-no-i18n>T-016 · ORTO-906</span><span class="tk-k" title="[FE - Mobile] Shifts calendar" data-no-i18n>T-017 · ORTO-907</span></div>
+        </li>
+        <li class="lm-row" style="--i:1" tabindex="0">
+          <div class="lm-req"><span class="key">RF-025</span><b>Sospensione dei turni per allerta meteo</b></div>
+          <svg class="lm-thread" viewBox="0 0 400 56" preserveAspectRatio="none" aria-hidden="true"><g class="wp"><line x1="50" y1="0" x2="50" y2="56"/><line x1="150" y1="0" x2="150" y2="56"/><line x1="250" y1="0" x2="250" y2="56"/><line x1="350" y1="0" x2="350" y2="56"/></g><line class="wf" x1="0" y1="28" x2="400" y2="28" pathLength="100"/><g class="wo"><line x1="150" y1="21" x2="150" y2="35"/><line x1="350" y1="21" x2="350" y2="35"/></g></svg>
+          <div class="lm-tix"><span class="tk-k" title="[BE] Weather alert shift suspension" data-no-i18n>T-031 · ORTO-931</span><span class="tk-k" title="[FE - Mobile] Suspended shift banner and push" data-no-i18n>T-032 · ORTO-932</span></div>
+        </li>
+        <li class="lm-row" style="--i:2" tabindex="0">
+          <div class="lm-req"><span class="key">RF-031</span><b>Catalogo specie e varietà</b></div>
+          <svg class="lm-thread" viewBox="0 0 400 56" preserveAspectRatio="none" aria-hidden="true"><g class="wp"><line x1="50" y1="0" x2="50" y2="56"/><line x1="150" y1="0" x2="150" y2="56"/><line x1="250" y1="0" x2="250" y2="56"/><line x1="350" y1="0" x2="350" y2="56"/></g><line class="wf" x1="0" y1="28" x2="400" y2="28" pathLength="100"/><g class="wo"><line x1="50" y1="21" x2="50" y2="35"/><line x1="250" y1="21" x2="250" y2="35"/></g></svg>
+          <div class="lm-tix"><span class="tk-k" title="[UX - Web/Mobile] Design species and varieties catalog" data-no-i18n>T-051 · ORTO-951</span><span class="tk-k" title="[BE] Provide species and varieties catalog with sowing" data-no-i18n>T-052 · ORTO-952</span></div>
+        </li>
+        <li class="lm-row" style="--i:3" tabindex="0">
+          <div class="lm-req"><span class="key">RF-040</span><b>Esportazione del diario in PDF</b></div>
+          <svg class="lm-thread" viewBox="0 0 400 56" preserveAspectRatio="none" aria-hidden="true"><g class="wp"><line x1="50" y1="0" x2="50" y2="56"/><line x1="150" y1="0" x2="150" y2="56"/><line x1="250" y1="0" x2="250" y2="56"/><line x1="350" y1="0" x2="350" y2="56"/></g><line class="wf" x1="0" y1="28" x2="400" y2="28" pathLength="100"/><g class="wo"><line x1="150" y1="21" x2="150" y2="35"/><line x1="350" y1="21" x2="350" y2="35"/></g></svg>
+          <div class="lm-tix"><span class="tk-k" title="[BE] Diary PDF export" data-no-i18n>T-061 · ORTO-961</span></div>
+        </li>
+        </ul>
+        <p class="lm-note">L'ordito è la struttura del tuo Jira; la trama sono i requisiti. Dati di esempio.</p>
+      </div>
+    </div>
+  </div>
 </section>
 
 <section id="vantaggi">
