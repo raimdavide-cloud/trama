@@ -675,6 +675,14 @@ STEPS.push({id:"questions",phase:"Preparazione",short:"Domande di apertura",sub:
 
 /* ---------- 5. Kit ---------- */
 function usedAreas(){const s=new Set();reqList().forEach(r=>(r.components||[]).forEach(c=>{if(c==="Web App")s.add("web");if(c==="Mobile App")s.add("mobile");if(c==="Back-end/Cloud")s.add("be");if(c==="Firmware")s.add("fw")}));return s}
+/* Coerenza del kit con i requisiti: le release usate da requisiti e ticket devono esserci nel kit (il confronto è per nome, alla lettera),
+   e le epiche devono avere nomi diversi (Trama le riconosce per nome: due uguali si confondono). */
+const missingReleases=()=>{const known=new Set(K().releases.map(r=>r.name));return[...new Set([...reqList().map(r=>r.release),...ticketList().map(t=>t.release)].filter(v=>v&&!known.has(v)))]};
+const dupEpics=()=>{const c=new Map();K().epics.forEach(e=>{const n=String(e.name||"").trim().toLowerCase();if(n)c.set(n,(c.get(n)||0)+1)});return[...c].filter(([,n])=>n>1).map(([n])=>K().epics.find(e=>String(e.name||"").trim().toLowerCase()===n).name)};
+const releaseLabel=n=>{const m=String(n).match(/^release\s*(\d+)/i);return m?"Release"+m[1]:String(n).replace(/[^A-Za-z0-9_-]/g,"")};
+const kitWarn=()=>{const miss=missingReleases(),dup=dupEpics();
+  return(miss.length?`<div class="card warn"><b>Release usate dai requisiti e non presenti nel kit:</b> ${miss.map(n=>`<span class="key">${esc(n)}</span>`).join(" ")}. Il confronto è alla lettera: finché non coincidono, i ticket di quelle release restano in errore. ${B("addReqReleases",miss.length===1?"Aggiungi la release al kit":"Aggiungi le release al kit",{cls:"primary"})}</div>`:"")
+   +(dup.length?`<div class="card warn"><b>Epiche con lo stesso nome:</b> ${dup.map(n=>`<span class="key">${esc(n)}</span>`).join(" ")}. Trama riconosce le epiche per nome: tieni una sola epica per nome, oppure distingui quelle di release diverse (es. «Notifiche (Release 2)»).</div>`:"")};
 STEPS.push({id:"kit",phase:"Preparazione",short:"Kit di progetto",sub:"Release, epiche, label",title:"Compila il kit di progetto",
  goal:"Regole e identificativi che rendono coerenti tutti i ticket: release, epiche, struttura, label. Valgono per tutto il team del progetto.",
  rules:["K1: tipi di collegamento e campi personalizzati con i nomi esatti letti da Jira.","K2: ogni release ha un nome e una label (Release1, Release2) ed è una Fase della struttura Jira.","K3: un'epica per area funzionale; infrastruttura, CI e rifiniture trasversali in un'epica dedicata («Cross-cutting polish»).","K4: struttura Cliente › Project › Fase › Feature Epic › ticket: ogni livello sta sotto il proprio Principale.","K5: label sempre scritte allo stesso modo: una variante crea un filtro diverso.","K6: ogni titolo inizia con il prefisso dell'area ([BE], [FE - Web], [FE - Mobile], [UX - …], [FW]).","K7–K8: glossario di dominio e lingue di lavoro, uguali in tutti i ticket.","K9: ogni decisione tecnica che i ticket futuri devono rispettare, con il ticket di riferimento."],
@@ -682,10 +690,13 @@ STEPS.push({id:"kit",phase:"Preparazione",short:"Kit di progetto",sub:"Release, 
   {t:"Tipi di collegamento scelti con il nome esatto (K1)",ok:!!(k.links.relates&&k.links.blocks)},
   {t:"Campi obbligatori del progetto valorizzati (K1)",ok:(S.jira.required||[]).every(f=>k.custom?.[f.key])},
   {t:"Release con nome e label (K2)",ok:k.releases.length>0&&k.releases.every(r=>r.name&&r.label)},
+  {t:"Le release dei requisiti sono nel kit (K2)",ok:missingReleases().length===0},
   {t:"Epiche per area funzionale (K3)",ok:k.epics.length>0},
+  {t:"Ogni epica ha un nome diverso (K3)",ok:dupEpics().length===0},
   {t:"Struttura Jira Project › Fase › Epica completa (K4)",ok:hierProblems().length===0}]},
  view(){const k=K(),j=S.jira;const linkOpts=(j.links||[]).map(l=>[l.name,`${l.name} (${l.outward} / ${l.inward})`]);const typeOpts=(j.types||[]).map(t=>t.name);
   let h=`<div class="toolbar">${B("kitImport","Parti da un kit esistente",{cls:k.epics.length?"":"primary"})}${AIB("proposeKit","Proponi il kit con Claude",{dis:!reqList().length})}${JB("readConfig","Ricontrolla su Jira",{dis:!P().key})}<span class="small muted">Claude compila solo i campi vuoti; quello che hai già scritto resta.</span></div>`;
+  h+=kitWarn();
   h+=`<div class="card"><h2>K1 · Identificativi del tracker</h2><div class="grid">
     ${F("Sito",`<input value="${esc(P().siteUrl||"—")}" disabled>`)}${F("Chiave di progetto",`<input value="${esc(P().key||"—")}" disabled>`)}
     ${Object.keys(k.types).map(t=>F("Tipo «"+t+"» in Jira",typeOpts.length?sel("meta:kit:types."+t,k.types[t],typeOpts.includes(k.types[t])?typeOpts:[k.types[t],...typeOpts],{empty:false}):bind("meta:kit:types."+t,k.types[t]))).join("")}
@@ -770,6 +781,7 @@ STEPS.push({id:"backlog",phase:"Creazione",short:"Backlog",sub:"Scomposizione e 
  view(){const k=K(),rs=reqList(),ts=ticketList();const rels=k.releases.map(r=>r.name);if(!T.rel||!rels.includes(T.rel)&&T.rel!=="*")T.rel=rels[0]||"*";
   if(!T.bTab)T.bTab=ls.get("bTab:"+PID,"tickets");if(!["tickets","quality"].includes(T.bTab))T.bTab="tickets";
   let h="";if(!k.epics.length||!k.releases.length)h+=`<div class="card warn">Completa prima release ed epiche nel kit (passo 4): ogni ticket deve avere epica e release.</div>`;
+  else h+=kitWarn();
   if(ts.length){const errs=ts.filter(t=>issuesOf(t).e.length&&t.state!=="created").length;const byArea={};ts.forEach(t=>byArea[t.area]=(byArea[t.area]||0)+1);
    h+=`<div class="stat card"><div><b>${ts.length}</b><span>ticket</span></div>${Object.entries(byArea).map(([a,n])=>`<div><b>${n}</b><span>${AREAS[a]?.label||a}</span></div>`).join("")}<div><b style="color:${errs?"var(--err)":"var(--ok)"}">${errs}</b><span>con errori</span></div><div><b>${ts.filter(t=>t.state==="created").length}</b><span>creati in Jira</span></div></div>`}
   const qs=qSum();
@@ -1260,6 +1272,9 @@ function autoStructure(){const ts=S.jira.types||[],pname=P().name||"";editKit(k=
   if(!(h.phases||[]).length)h.phases=k.releases.length?k.releases.map(r=>({id:uid(),name:r.name,key:""})):[{id:uid(),name:"Fase 1",key:""}];
   k.epics.forEach(e=>{if(!e.phase||!h.phases.some(f=>f.id===e.phase)){const f=h.phases.find(x=>x.name===e.release)||h.phases[0];e.phase=f?.id||""}})})}
 A.autoStruct=()=>{autoStructure();toast("Struttura generata: controlla tipi, nome del Project e Fasi.")};
+A.addReqReleases=()=>{const miss=missingReleases();if(!miss.length)return;
+  editKit(k=>{miss.forEach(n=>{if(!k.releases.some(r=>r.name===n))k.releases.push({name:n,label:releaseLabel(n),date:""});const h=k.hier;if(h?.enabled&&(h.phases||[]).length&&!h.phases.some(f=>f.name===n))h.phases.push({id:uid(),name:n,key:""})})});
+  toast(miss.length===1?"Release aggiunta al kit.":"Release aggiunte al kit.")};
 A.addEpic=()=>editKit(k=>k.epics.push({name:"Nuova epica",release:"",key:""}));
 A.addPolish=()=>editKit(k=>k.epics.push({name:"Cross-cutting polish",release:"",key:""}));
 A.delEpic=el=>{const i=+el.dataset.i,e=K().epics[i];if(!e)return;const find=sameAt(K().epics,i,x=>x.name===e.name);editKit(k=>{const j=find(k.epics);if(j<0)return null;k.epics.splice(j,1)})};
