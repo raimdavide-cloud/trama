@@ -16,14 +16,14 @@
 /* Impaginazione della sola documentazione: i componenti mostrati usano gli stili veri di Trama */
 body{background:var(--bg)}
 .doc-top{display:flex;align-items:center;gap:18px;padding:14px 0;border-bottom:1px solid var(--line)}
-.doc-top nav{margin-left:auto;display:flex;gap:16px;font-size:14px}
+.doc-top nav{margin-left:auto;display:flex;gap:16px;font-size:var(--fs-m)}
 .doc{max-width:1080px;margin:0 auto;padding:34px 0 90px}
 .doc>header h1{font:800 40px/1.05 var(--f-display);letter-spacing:-.025em;margin:8px 0 12px}
 .doc section{margin-top:52px;scroll-margin-top:20px}
 .doc h2{font:750 26px/1.15 var(--f-display);letter-spacing:-.015em;margin:0 0 6px}
 .doc h3{font:700 16px/1.3 var(--f-display);margin:22px 0 8px}
 .doc .intro{color:var(--muted);max-width:72ch;margin:0 0 16px}
-.toc{display:flex;flex-wrap:wrap;gap:6px 16px;margin:18px 0 0;padding:0;list-style:none;font-size:14px}
+.toc{display:flex;flex-wrap:wrap;gap:6px 16px;margin:18px 0 0;padding:0;list-style:none;font-size:var(--fs-m)}
 .spec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .spec.col{flex-direction:column;align-items:stretch}
 .rules-ok,.rules-no{margin:10px 0 0;padding-left:20px;max-width:80ch}
@@ -33,9 +33,9 @@ body{background:var(--bg)}
 .sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
 .sw>div{border:1px solid var(--line);border-radius:var(--r-m);overflow:hidden;background:var(--surface)}
 .sw i{display:block;height:54px}
-.sw p{margin:0;padding:8px 10px;font-size:13px}
+.sw p{margin:0;padding:8px 10px;font-size:var(--fs-s)}
 .sw code{font:500 12px var(--f-mono)}
-.doc table.gl{width:100%;border-collapse:collapse;font-size:14px}
+.doc table.gl{width:100%;border-collapse:collapse;font-size:var(--fs-m)}
 .doc table.gl th,.doc table.gl td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
 .doc table.gl thead th{border-top:0}
 .spec .sp{position:static;width:100%;max-width:560px;animation:none;box-shadow:none;border:1px solid var(--line);border-radius:var(--r-m)}

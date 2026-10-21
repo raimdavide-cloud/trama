@@ -29,6 +29,12 @@ colors:
   night-slate: "#A6A9C9"
   night-indigo: "#9AA6FF"
   night-thread: "#F2B04F"
+  night-indigo-wash: "#262A5E"
+  night-sage: "#5FCB97"
+  night-sage-wash: "#133126"
+  night-saffron-wash: "#3A2C12"
+  night-coral: "#FF8E7A"
+  night-coral-wash: "#3B1A16"
 typography:
   display:
     fontFamily: "Bricolage Grotesque, Segoe UI, system-ui, sans-serif"
