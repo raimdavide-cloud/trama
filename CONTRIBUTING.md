@@ -65,7 +65,7 @@ La CI (`.github/workflows/ci.yml`) esegue controlli, test unitari e end-to-end. 
 
 ### Testi e lingua
 
-- **Si dice sempre «Trama».** La parola «studio» non compare nei testi visibili.
+- **Si dice sempre «Trama».** La parola «studio» non compare nei testi visibili (lo controlla `npm run check`; restano ammessi i percorsi e i nomi di file come `/studio` e `studio.css`).
 - **Nella chat l'assistente è Tessa**, e Claude non si nomina mai. Fuori dalla chat: «Tessa» dove si parla di cosa fa; «Claude Code» solo dove si spiega il funzionamento tecnico (ponte, sicurezza, installazione).
 - Tono da [BRAND.md](BRAND.md): frasi brevi, voce attiva, la cosa più importante prima. Gli errori dicono cosa è successo e cosa fare. Niente emoji né enfasi.
 - **I testi si scrivono in italiano nel codice.** Ogni testo nuovo ha la sua traduzione in `public/i18n-en.js` (Trama) o `public/i18n-home-en.js` (homepage). I test falliscono se ne manca una.

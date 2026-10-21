@@ -76,6 +76,20 @@ for (const f of walk("public").filter((f) => /\.(css|html)$/.test(f) && !f.endsW
 }
 rawColors.length ? ko(`colori scritti a mano fuori da tokens.css (usa i token):\n    ${rawColors.join("\n    ")}`) : ok("colori solo dai token");
 
+// 5b. la parola «studio» non compare nei testi visibili: il prodotto e la sua interfaccia si chiamano Trama.
+//     Si guardano i testi delle pagine e le stringhe del codice dell'interfaccia; restano fuori i percorsi e i nomi di file
+//     (/studio, studio.css…) e le due pagine che elencano le parole da evitare (marchio e componenti).
+const STUDIO = /(?<![\w\/.-])studio(?![\w-]|\.(?:css|js|html|mjs|png))/i;
+const studioHits = [];
+for (const f of walk("public").filter((f) => /\.(html|js)$/.test(f) && !/(brand|componenti)\.html$/.test(f) && !f.includes("/ponte/"))) {
+  let src = readFileSync(join(ROOT, f), "utf8");
+  if (f.endsWith(".html")) src = src.replace(/<(script|style|code)\b[\s\S]*?<\/\1>/g, " ").replace(/<[^>]*>/g, " ");
+  else src = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const m = src.match(STUDIO);
+  if (m) studioHits.push(`${f}: …${src.slice(Math.max(0, m.index - 25), m.index + 25).replace(/\s+/g, " ")}…`);
+}
+studioHits.length ? ko(`la parola «studio» nei testi visibili (si dice Trama):\n    ${studioHits.join("\n    ")}`) : ok("nessuna parola «studio» nei testi visibili");
+
 // 6. nessun segreto nei file versionati
 const SECRET = /sk-ant-[\w-]{20,}|ATATT[\w-]{20,}|\bATOA[\w-]{40,}|\bghp_[A-Za-z0-9]{36}|\bgithub_pat_\w{40,}|\bvercel_[\w-]{20,}|postgres(?:ql)?:\/\/(?!utente:password@host|user:password@host)[^\s"'`]+:[^\s"'`@]+@|-----BEGIN [A-Z ]*PRIVATE KEY-----/;
 let tracked = null;
