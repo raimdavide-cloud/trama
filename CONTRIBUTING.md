@@ -48,6 +48,8 @@ La CI (`.github/workflows/ci.yml`) esegue controlli, test unitari e end-to-end. 
 | `npm run i18n:mancanti-home` | Testi della homepage senza traduzione inglese | Se tocchi la homepage |
 | `npm run test:visual` | Confronto con le immagini di riferimento (solo in locale, non in CI) | Se cambia qualcosa che si vede |
 | `npm run perf` | Tempi di ridisegno e salvataggi con 67, 134 e 268 ticket | Se tocchi liste, controlli o salvataggi |
+| `npm run design` | Rilevatore di problemi di design ([Impeccable](https://impeccable.style)): 61 controlli fissi su pagine e fogli di stile, senza intelligenza artificiale. Esce con 2 se ci sono segnalazioni | Se tocchi pagine o stili: guarda se ne arrivano di nuove |
+| `npm run design:riepilogo` | Le stesse segnalazioni raggruppate per regola e per file. In CI compaiono nel riepilogo del lavoro e **non bloccano** | Per confrontare prima e dopo |
 | `npm run perf:aggancio` | Aggancio delle sezioni della homepage con uno scorrimento da trackpad: inversioni, fotogrammi, tempi | Se tocchi lo scorrimento della homepage |
 
 - `npm test` esegue unitari ed end-to-end insieme.
@@ -111,8 +113,22 @@ La CI (`.github/workflows/ci.yml`) esegue controlli, test unitari e end-to-end. 
 ### Codice
 
 - **Segui lo stile del file che stai modificando.** Codice compatto; commenti in italiano che spiegano il *perché*, non il *cosa*.
-- **Nessuna dipendenza nuova senza parlarne prima:** oggi in produzione ce n'è una sola (`@neondatabase/serverless`).
+- **Nessuna dipendenza nuova senza parlarne prima:** oggi in produzione ce n'è una sola (`@neondatabase/serverless`). Di sviluppo: Playwright, axe e Impeccable (quest'ultimo con versione esatta, perché le sue regole cambiano tra una versione e l'altra).
 - **Il server gira su Vercel** (Node 22, Francoforte): funzioni in `server/functions`, instradate da `api/router.mjs`.
+
+## Strumenti per Claude Code (facoltativo)
+
+Se lavori con Claude Code sul progetto puoi installare la skill di design [Impeccable](https://impeccable.style) (comandi come `/impeccable critique`, `/audit`, `/polish`, `/typeset`):
+
+```bash
+npx impeccable install -y --providers=claude --scope=project --no-hooks
+```
+
+- La skill va in `.claude/`, che **non è nel repository**: ognuno la installa sul proprio computer. Ricarica Claude Code dopo l'installazione.
+- **Senza hook** (`--no-hooks`): niente controlli automatici a ogni modifica dei file. Se li vuoi, attivali tu sul tuo computer, non nel progetto.
+- Il contesto di design (`PRODUCT.md`, `DESIGN.md`, con `/impeccable init`) invece sta nel repository e vale per tutti.
+- La versione è quella fissa in `package.json`; per aggiornarla si cambia lì e poi `npx impeccable update`.
+- Le segnalazioni del rilevatore sono indizi, non sentenze: alcune sono scelte del nostro stile (etichette numerate, riquadri icona) o letture sbagliate (immagini con indirizzo impostato da script). Se un giorno il controllo diventerà bloccante, quelle accettate andranno in un elenco di esclusioni (`npx impeccable ignores`), con il motivo scritto nella PR.
 
 ## Dubbi
 

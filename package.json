@@ -21,14 +21,17 @@
     "perf": "node scripts/misura-prestazioni.mjs",
     "perf:aggancio": "node scripts/misure/aggancio.mjs",
     "i18n:mancanti": "node scripts/i18n/raccogli.mjs",
-    "i18n:mancanti-home": "node scripts/i18n/raccogli-home.mjs"
+    "i18n:mancanti-home": "node scripts/i18n/raccogli-home.mjs",
+    "design": "impeccable detect public/",
+    "design:riepilogo": "impeccable detect --json public/ | node scripts/design-riepilogo.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
-    "@playwright/test": "^1.64.1"
+    "@playwright/test": "^1.64.1",
+    "impeccable": "4.7.0"
   },
   "engines": {
     "node": ">=22"
