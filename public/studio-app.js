@@ -901,6 +901,13 @@ function assumptionsAll(pl){const k=K(),out=[];
     if(pl.struct.link.length)out.push(`${pl.struct.link.length} epiche già create in Jira senza Fase vengono collegate alla loro Fase (campo «Principale»); il loro tipo non cambia.`)}
   if(pl.dup.length&&!T.createDup)out.push(`${pl.dup.length===1?"1 ticket verrà saltato":pl.dup.length+" ticket verranno saltati"}: in Jira esiste già un ticket con lo stesso titolo.`);
   pl.ready.forEach(t=>(t.assumptions||[]).forEach(a=>out.push(`${t.ref}: ${a}`)));return out}
+/* Le scelte fatte al tuo posto, raggruppate: prima quelle del progetto (struttura, tipi), poi una voce per ticket con le sue ipotesi.
+   Il filo lega le ipotesi al loro ticket: tratteggiato finché il ticket è una bozza, pieno quando è creato. Con «cap» i ticket oltre il limite stanno in una riga da aprire. */
+function assumptionsHtml(pl,cap=0){const all=assumptionsAll(pl),per=pl.ready.filter(t=>(t.assumptions||[]).length),n=per.reduce((s,t)=>s+t.assumptions.length,0),general=all.slice(0,all.length-n);
+  const grp=t=>`<div class="as-g${t.state==="created"?" created":""}"><div class="as-t"><span class="key">${esc(t.ref)}</span>${t.state==="created"&&t.key?browse(t.key):""}<span class="as-n" title="${esc(fullTitle(t))}">${esc(fullTitle(t))}</span></div><ul class="as-l">${t.assumptions.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></div>`;
+  const head=cap&&per.length>cap?per.slice(0,cap):per,rest=cap&&per.length>cap?per.slice(cap):[];
+  return`<div class="as">${general.length?`<div class="as-h">Progetto e struttura</div><ul class="as-l as-gen">${general.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>`:""}
+  ${per.length?`<div class="as-h">Per ticket · scelte ${n}, ticket ${per.length}</div>${head.map(grp).join("")}${rest.length?`<details class="as-more"><summary>Altri ${rest.length} ticket con scelte</summary>${rest.map(grp).join("")}</details>`:""}`:""}</div>`}
 STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e conferma",title:"Crea il backlog su Jira",
  goal:"Trama rilegge Jira, ti mostra cosa creerà e aspetta la tua conferma. Poi crea struttura e ticket, li collega e rilegge ogni ticket per verificare i campi.",
  rules:["Leggere lo stato del tracker prima di scrivere: le epiche cambiano nome, ticket vengono cancellati da altri.","Cercare ticket simili o già esistenti, per non duplicare.","Fermarsi prima di azioni irreversibili o costose: la creazione parte solo dopo la tua conferma.","Creare i collegamenti solo dopo, usando le chiavi reali restituite dal tracker.","Rileggere i ticket per controllare che i campi siano stati salvati.","Rispondere in breve: cosa è stato creato, quali scelte sono state fatte, cosa resta da decidere, cosa fare a mano."],
@@ -919,7 +926,7 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
    ${pl.blocked.length?`<div class="msg err" style="margin-top:12px">${pl.blocked.length} ticket hanno errori di metadati e non verranno creati: correggili al passo 5 (${pl.blocked.slice(0,8).map(t=>t.ref).join(", ")}${pl.blocked.length>8?"…":""}).</div>`:""}
    ${pl.dup.length?`<div class="msg warn" style="margin-top:12px">${pl.dup.length} ticket hanno lo stesso titolo di un ticket esistente: ${pl.dup.slice(0,6).map(t=>`${t.ref} ≈ ${browse(T.pre.existing[fullTitle(t).toLowerCase()])}`).join(", ")}. <label class="row" style="margin-top:6px"><input type="checkbox" id="createDup" ${T.createDup?"checked":""}> Creali comunque</label></div>`:""}
    ${structCols(pl)}</div>
-   <div class="card"><h2>3. Ipotesi e scelte fatte al tuo posto</h2><ul class="small">${assumptionsAll(pl).map(a=>`<li>${esc(a)}</li>`).join("")}</ul><label class="row"><input type="checkbox" id="ackBox" ${T.ack?"checked":""}> Ho letto le ipotesi e le confermo</label></div>
+   <div class="card"><h2>3. Ipotesi e scelte fatte al tuo posto</h2>${assumptionsHtml(pl)}<label class="row"><input type="checkbox" id="ackBox" ${T.ack?"checked":""}> Ho letto le ipotesi e le confermo</label></div>
    <div class="card"><h2>4. Crea su Jira</h2>
    <p class="small muted" style="margin:0 0 10px">Un solo comando, nell'ordine giusto: Project › Fasi › epiche › ticket › collegamenti, poi rilegge Jira per verificare ogni livello.</p>
    <div class="toolbar">${T.running?B("stopRun","Ferma dopo il ticket in corso",{cls:"danger"}):JB("runCreate",T.arm.run?`Conferma: crea tutto (${(pl.struct.project?1:0)+pl.struct.phases.length+pl.epics.length+pl.ready.length-(T.createDup?0:pl.dup.length)} elementi)`:"Crea su Jira",{cls:T.arm.run?"armed":"primary",dis:!T.ack||errs.length>0||!!lockMsg()})}</div>
@@ -1498,8 +1505,10 @@ async function verify(){const p=P(),k=K(),c=ticketList().filter(t=>t.state==="cr
     if(v==="ok")ok++;await put("tickets",t.id,x=>x&&{...x,verify:v,verifyNote:note||""})}}logLine(`Verifica: ${ok} di ${c.length} ticket con tutti i campi salvati.`);return{ok,tot:c.length}}
 function buildReport(v){const ts=ticketList(),c=ts.filter(t=>t.state==="created"),k=K(),pl=planOf();const clar=c.filter(t=>/## Points to clarify\s*\n\s*\*\s*\S/.test(t.desc||"")&&!/## Points to clarify\s*\n\s*\*\s*(none|n\/a)/i.test(t.desc||""));
   const by={};c.forEach(t=>{(by[t.area]=by[t.area]||[]).push(t)});
-  return`<p><b>Creato:</b> ${c.length} ticket${k.epics.filter(e=>e.key).length?` e ${k.epics.filter(e=>e.key).length} epiche`:""}. ${Object.entries(by).map(([a,l])=>`${AREAS[a].label}: ${l.map(t=>browse(t.key)).join(" ")}`).join(" · ")}</p>
-  <p><b>Scelte fatte al tuo posto:</b></p><ul>${assumptionsAll({...pl,ready:c}).slice(0,12).map(a=>`<li>${esc(a)}</li>`).join("")}</ul>
+  return`<p><b>Creato:</b> ${c.length} ticket${k.epics.filter(e=>e.key).length?` e ${k.epics.filter(e=>e.key).length} epiche`:""}:</p>
+  <div class="row" style="margin:0 0 8px">${Object.entries(by).map(([a,l])=>`<span class="pill">${AREAS[a].label} <b>${l.length}</b></span>`).join("")}</div>
+  <details class="as-more"><summary>Chiavi dei ticket creati, per area</summary>${Object.entries(by).map(([a,l])=>`<p class="small" style="margin:6px 0">${AREAS[a].label}: ${l.map(t=>browse(t.key)).join(" ")}</p>`).join("")}</details>
+  <p><b>Scelte fatte al tuo posto:</b></p>${assumptionsHtml({...pl,ready:c},8)}
   <p><b>Cosa resta da decidere:</b> ${clar.length?`${clar.length} ticket hanno punti da chiarire (${clar.slice(0,10).map(t=>browse(t.key)).join(" ")}).`:"nessun punto da chiarire segnalato."}</p>
   ${v?`<p><b>Verifica:</b> ${v.ok} di ${v.tot} ticket con tutti i campi salvati.</p>`:""}`}
 /* Creazione: un ticket alla volta, ciascuno riletto prima (un collega può averlo appena creato o eliminato). Dopo un esito incerto,
@@ -1839,7 +1848,9 @@ function renderChat(){const turns=S.chat?.turns||[];const log=$("#chatLog");cons
    (chatPending?`<div class="bub u" data-no-i18n>${esc(chatPending.q)}</div><div class="bub a" id="liveBub"><div class="bub-who"><svg class="tessa bub-av" viewBox="0 0 32 32" aria-hidden="true"><path class="tz-maze" d="M16 16h3v-4h-7v8h11V9H9v14h17"/><path class="tz-thread" pathLength="100" d="M16 16h3v-4h-7v8h11V9H9v14h17"/><circle class="tz-dot" cx="16" cy="16" r="1.9"/></svg>Tessa</div>${chatPending.a?`<div data-no-i18n>${md(chatPending.a)}</div>`:'<span class="muted">Tessa sta pensando…</span>'}</div>`:"");
   if(atBottom)log.scrollTop=log.scrollHeight;else log.scrollTop=keep;$("#chatFab").classList.toggle("busy",!!chatPending);$("#chatSend").disabled=!!chatPending||!SAMPLE;$("#chatStop").hidden=!chatPending;
   $("#chatImgLbl").hidden=!(SAMPLE&&LIM?.images);$("#chatIn").placeholder=SAMPLE?"Chiedi a Tessa: un dubbio sul requisito, una decisione da registrare, un ticket da correggere…":caps.sample==="login"?"Tessa non è ancora pronta: completa l'accesso nel terminale del ponte (guida nella pagina Installazione).":"Per parlare con Tessa, avvia il ponte sul tuo computer (guida nella pagina Installazione)";
-  renderSugg();renderMem()}
+  chatOnePrimary(log);renderSugg();renderMem()}
+/* un solo pulsante pieno nella chat: «Applica» dell'ultima proposta ancora aperta; se non ce ne sono, «Invia» */
+function chatOnePrimary(log){const ap=[...log.querySelectorAll(".act:not(.done) .act-b button.primary")];ap.slice(0,-1).forEach(b=>b.classList.remove("primary"));$("#chatSend").classList.toggle("primary",!ap.length)}
 $("#chatLog").addEventListener("click",e=>{
   const cp=e.target.closest("[data-copy]");
   if(cp){const t=(S.chat?.turns||[])[+cp.dataset.copy];navigator.clipboard?.writeText(t?.content||"").then(()=>toast("Risposta copiata."),()=>toast("Copia non riuscita: seleziona il testo e copialo a mano."));return}

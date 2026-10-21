@@ -211,7 +211,7 @@ Il filo ha tre forme: **tratteggiato** = proposta di Tessa (bozza), **pieno** = 
 
 ### Buttons
 - **Forma:** 4 px, 34 px di altezza (13 px, 600).
-- **Primario:** indaco pieno, testo `--on-primary`; uno solo per schermata. Hover `--primary-strong`.
+- **Primario:** indaco pieno, testo `--on-primary`; **uno solo per schermata**: «Continua» dentro il passo finché non è completo, poi «Prossimo» nel riepilogo. Hover `--primary-strong`. Dove il riepilogo c'è (da 1300 px) il «Avanti» in fondo non si ripete. Nella chat è pieno solo «Applica» dell'ultima proposta aperta; senza proposte, «Invia».
 - **Secondario:** foglio con bordo `--line`; hover: bordo indaco.
 - **Di testo (`link`):** senza bordo, indaco.
 - **Pericoloso:** testo corallo; dopo il primo clic («Conferma: …») diventa corallo pieno.
@@ -227,6 +227,11 @@ Il filo ha tre forme: **tratteggiato** = proposta di Tessa (bozza), **pieno** = 
 - **Hover:** bordo `--muted`. **Focus:** bordo e anello `--ring`.
 - **Errore** (`aria-invalid="true"`): bordo `--err`, messaggio sotto con icona. **Disattivato:** come i pulsanti.
 - **Segnaposto:** `--muted`.
+
+### Scelte per ticket (`.as`)
+- Le scelte fatte al posto della persona si leggono per ticket: prima il progetto e la struttura, poi un'intestazione per ticket (rif., chiave Jira se c'è, titolo) con le sue ipotesi sotto, legate dal filo (tratteggiato = bozza, pieno = creato).
+- Prima della creazione sono tutte visibili (vanno lette per essere confermate); nel riepilogo dopo la creazione i primi 8 ticket stanno aperti e gli altri in una riga da aprire. Le chiavi dei ticket creati stanno in una riga a parte, non in un paragrafo.
+- Una proposta di Tessa nella chat ha un nodo tratteggiato al posto della scintilla: il filo è ciò che Tessa propone.
 
 ### Tooltip (`data-tip`)
 - Fondo `--tip-bg` (inchiostro), testo `--tip-fg` (carta), 12 px, 4 px di raggio, massimo 260 px.
