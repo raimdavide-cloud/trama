@@ -35,6 +35,10 @@ colors:
   night-saffron-wash: "#3A2C12"
   night-coral: "#FF8E7A"
   night-coral-wash: "#3B1A16"
+  band: "#141B47"
+  night-band: "#18205A"
+  band-ink: "#F2F3FB"
+  band-muted: "#AEB5DD"
 typography:
   display:
     fontFamily: "Bricolage Grotesque, Segoe UI, system-ui, sans-serif"
@@ -42,6 +46,17 @@ typography:
     fontWeight: 800
     lineHeight: 1.15
     letterSpacing: "-0.02em"
+  hero:
+    fontFamily: "Bricolage Grotesque, Segoe UI, system-ui, sans-serif"
+    fontSize: "clamp(36px, 4.6vw, 58px)"
+    fontWeight: 800
+    lineHeight: 1.04
+    letterSpacing: "-0.035em"
+  lede:
+    fontFamily: "Figtree, Segoe UI, system-ui, sans-serif"
+    fontSize: "18px"
+    fontWeight: 400
+    lineHeight: 1.55
   headline:
     fontFamily: "Bricolage Grotesque, Segoe UI, system-ui, sans-serif"
     fontSize: "20px"
@@ -166,6 +181,8 @@ Neutri caldi tinti di indaco, un colore di marchio, un filo, tre stati. Tutto st
 
 ### Hierarchy
 - **Titolo di pagina** (800, `--fs-2xl` 28 px, 1.15): un titolo per passo. Il titolo grande della homepage usa `--fs-3xl` 36 px o più.
+- **Titolo della homepage** (800, 36–58 px fluido, 1.04): una sola volta per pagina, nel blocco iniziale. I titoli di sezione della homepage vanno da 28 a 36 px.
+- **Introduzione** (400, `--fs-lede` 18 px): il paragrafo che accompagna un titolo nelle pagine pubbliche.
 - **Titolo di sezione** (700, `--fs-xl` 20 px): sezioni apribili e riepilogo.
 - **Testo corrente** (400, `--fs-base` 15 px, 1.5): descrizioni, righe lunghe; misura massima 72ch.
 - **Controlli e tabelle** (600/400, `--fs-m` 14 px e `--fs-s` 13 px): pulsanti, campi, celle.
@@ -232,6 +249,13 @@ Il filo ha tre forme: **tratteggiato** = proposta di Tessa (bozza), **pieno** = 
 - Le scelte fatte al posto della persona si leggono per ticket: prima il progetto e la struttura, poi un'intestazione per ticket (rif., chiave Jira se c'è, titolo) con le sue ipotesi sotto, legate dal filo (tratteggiato = bozza, pieno = creato).
 - Prima della creazione sono tutte visibili (vanno lette per essere confermate); nel riepilogo dopo la creazione i primi 8 ticket stanno aperti e gli altri in una riga da aprire. Le chiavi dei ticket creati stanno in una riga a parte, non in un paragrafo.
 - Una proposta di Tessa nella chat ha un nodo tratteggiato al posto della scintilla: il filo è ciò che Tessa propone.
+
+### Pagine pubbliche (homepage)
+- Il filo organizza le sequenze: i sei passi sono un filo continuo con un nodo numerato per passo; i cinque momenti della demo sono un filo con il nodo pieno su quello che si guarda; i ticket proposti nelle demo e negli esempi hanno il filo tratteggiato.
+- Niente riquadri per i contenuti: vantaggi, regole e garanzie sono colonne separate da una linea sopra, non schede. Le uniche superfici sono la demo (il prodotto) e la fascia scura finale.
+- Niente icone decorative: restano solo dove indicano un'azione (menu, riproduci) o uno stato (spunte).
+- Niente finta finestra con i tre pallini: la demo ha una barra con il titolo e l'etichetta «demo».
+- Le etichette sopra i titoli sono testo discreto (14 px, `--muted`), non maiuscolo monospazio; il filtro per ruolo usa il tono indaco chiaro, le schede degli esempi sono linguette con una linea sotto.
 
 ### Tooltip (`data-tip`)
 - Fondo `--tip-bg` (inchiostro), testo `--tip-fg` (carta), 12 px, 4 px di raggio, massimo 260 px.
