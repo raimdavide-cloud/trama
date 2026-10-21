@@ -34,10 +34,6 @@ jobs:
       - run: npm ci
       - name: Controlli (sintassi, JSON, ponte, segreti)
         run: npm run check
-      # Impeccable: rilevatore di problemi di design. Per ora solo riepilogo (non blocca): serve a vedere se le segnalazioni aumentano.
-      - name: Qualità del design (segnala, non blocca)
-        continue-on-error: true
-        run: npm run -s design:riepilogo | tee -a "$GITHUB_STEP_SUMMARY"  # nel log e nel riepilogo del lavoro
       - name: Test unitari
         run: npm run test:unit
       - name: Browser per i test
