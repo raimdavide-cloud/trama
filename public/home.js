@@ -49,7 +49,7 @@ const DEMOS={
    <div data-s="4" style="margin-top:6px"><span class="done-badge">${I("i-check")}Struttura verificata: 57 di 57 livelli collegati</span></div></div>`},
  plan:{title:"trama · Passo 5 di 6 · Qualità del backlog",steps:["Chiedi a Tessa un controllo del backlog.","Segnala un criterio vago, con la correzione.","Le altre segnalazioni, in ordine di gravità.","Correggi e ricontrolla: il backlog è pronto."],
   html:`<div class="d-grid"><div class="stack"><div class="bub u" data-s="0">Controlla la qualità del backlog dell'MVP</div>
-   <div class="card" style="padding:12px" data-s="1"><div class="row"><span class="key">T-016</span><span class="pill err">alta</span><span class="pill primary">Criteri vaghi</span></div><p style="margin:8px 0 4px;font-size:13.5px">«Funziona bene su mobile» non è verificabile.</p><p style="margin:0;font-size:13px;color:var(--muted)">Cosa fare: calendario leggibile da 360 px, caricamento sotto 2 s.</p></div></div>
+   <div class="card" style="padding:12px" data-s="1"><div class="row"><span class="key">T-016</span><span class="pill err">alta</span><span class="pill primary">Criteri vaghi</span></div><p style="margin:8px 0 4px;font-size:13.5px">«Funziona bene su mobile» non è verificabile.</p><p style="margin:0;font-size:var(--fs-s);color:var(--muted)">Cosa fare: calendario leggibile da 360 px, caricamento sotto 2 s.</p></div></div>
    <div class="stack" data-s="2"><p class="label-s">Altre segnalazioni</p>
    <div class="req"><span class="key">T-021</span><b>Storia senza criteri di accettazione</b><span class="pill accent">media</span></div>
    <div class="req"><span class="key">T-033</span><b>Dipendenza dal firmware non indicata</b><span class="pill accent">media</span></div>
@@ -58,7 +58,7 @@ const DEMOS={
 
 function makePlayer(host,key){
   const d=DEMOS[key],reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
-  host.innerHTML=`<div class="player" role="group" aria-label="Demo animata: ${d.title}"><div class="p-bar"><span class="p-dots"><i></i><i></i><i></i></span><span class="p-title">${d.title}</span><span class="pill">demo</span></div><div class="screen">${d.html}</div><div class="p-ctrl"><button class="p-btn" type="button">${I("i-pause")}</button><div class="p-track"><i></i></div><div class="p-cap" aria-live="polite"></div></div></div>`;
+  host.innerHTML=`<div class="player" role="group" aria-label="Demo animata: ${d.title}"><div class="p-bar"><span class="p-title">${d.title}</span><span class="pill">demo</span></div><div class="screen">${d.html}</div><div class="p-ctrl"><button class="p-btn" type="button">${I("i-pause")}</button><div class="p-track"><i></i></div><div class="p-cap" aria-live="polite"></div></div></div>`;
   const pl=host.querySelector(".player"),btn=pl.querySelector(".p-btn"),bar=pl.querySelector(".p-track i"),cap=pl.querySelector(".p-cap");
   const STEP=d.step||2700,N=d.steps.length;let step=N-1,timer=null,playing=false,t0=0,raf=null,userPaused=false,io=null;
   const show=s=>{step=s;pl.querySelectorAll("[data-s]").forEach(e=>e.classList.toggle("on",+e.dataset.s<=s));pl.querySelectorAll("[data-x]").forEach(e=>e.classList.toggle("off",+e.dataset.x<=s));cap.innerHTML=`<b>${s+1}/${N}</b>${d.steps[s]}`};

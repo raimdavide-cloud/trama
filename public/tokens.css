@@ -41,8 +41,8 @@
   --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
   --f-body:"Figtree","Segoe UI",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
-  /* Scala dei caratteri: solo questi gradini. 12 etichette e note, 13 testo secondario, 14 tabelle e controlli, 15 testo corrente, 16 sottotitoli, 20 titoli di sezione, 28 numeri e titoli grandi, 36 titolo di pagina */
-  --fs-xs:12px; --fs-s:13px; --fs-m:14px; --fs-base:15px; --fs-l:16px; --fs-xl:20px; --fs-2xl:28px; --fs-3xl:36px;
+  /* Scala dei caratteri: solo questi gradini. 12 etichette e note, 13 testo secondario, 14 tabelle e controlli, 15 testo corrente, 16 sottotitoli, 18 introduzione delle pagine pubbliche, 20 titoli di sezione, 28 numeri e titoli grandi, 36 titolo di pagina */
+  --fs-xs:12px; --fs-s:13px; --fs-m:14px; --fs-base:15px; --fs-l:16px; --fs-lede:18px; --fs-xl:20px; --fs-2xl:28px; --fs-3xl:36px;
   /* Spazi: multipli di 4. Dentro un gruppo 4–8, tra gruppi 16–24, tra sezioni 32–48 */
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px;
   /* Altezza delle righe di tabella (pulsanti e campi risultano alti 34 px dal loro riempimento, le etichette 22 px) */

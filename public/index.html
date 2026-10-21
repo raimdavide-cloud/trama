@@ -20,7 +20,7 @@
 /* header sopra la pagina (fixed) con uno spazio fisso sotto: compattarlo non sposta il contenuto */
 .site-top{position:fixed;top:0;left:0;right:0;z-index:50;background:var(--bg);transition:box-shadow .2s}
 .top-space{height:78px}
-.site-top.scrolled{box-shadow:0 1px 0 var(--line),0 8px 24px rgba(20,27,71,.06)}
+.site-top.scrolled{box-shadow:0 1px 0 var(--line)}
 nav.top{display:flex;align-items:center;gap:28px;padding-block:18px;transition:padding .2s}
 .site-top.scrolled nav.top{padding-block:10px}
 /* i link del menu portano la sezione appena sotto l'header fisso (compatto: 62 px); l'aggancio morbido allo scorrimento sta in home.js */
@@ -30,21 +30,21 @@ nav.top .btn{min-height:42px;padding:0 16px;font-size:15px}
 nav.top{gap:12px}
 nav.top .site-menu{margin-left:auto}
 .dd{position:relative}
-.dd-btn{display:inline-flex;align-items:center;gap:8px;min-height:42px;background:none;border:1px solid var(--line);border-radius:999px;padding:0 12px 0 14px;color:var(--fg);cursor:pointer;font:600 15px var(--f-body)}
+.dd-btn{display:inline-flex;align-items:center;gap:8px;min-height:42px;background:none;border:1px solid var(--line);border-radius:var(--r-pill);padding:0 12px 0 14px;color:var(--fg);cursor:pointer;font:600 15px var(--f-body)}
 .dd-btn .burger{width:18px;height:18px}
 .dd-btn .flag{width:18px;height:18px}
 .dd-btn:hover,.dd-btn[aria-expanded="true"]{background:var(--sunk)}
 .dd-btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .dd-btn .chev{width:12px;height:12px;color:var(--muted)}
-.dd-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:60;min-width:220px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 1px 2px rgba(20,27,71,.06),0 12px 32px rgba(20,27,71,.14)}
+.dd-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:60;min-width:220px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:6px;box-shadow:var(--shadow-pop)}
 .dd-head{padding:8px 10px 6px;font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .dd-head b{font-weight:600}
-.dd-menu a[role=menuitem]{display:flex;align-items:center;padding:9px 10px;border-radius:8px;color:var(--fg);font:500 15px var(--f-body);text-decoration:none}
+.dd-menu a[role=menuitem]{display:flex;align-items:center;padding:9px 10px;border-radius:var(--r-m);color:var(--fg);font:500 15px var(--f-body);text-decoration:none}
 .dd-menu a[role=menuitem]:hover,.dd-menu a[role=menuitem]:focus-visible{background:var(--sunk);outline:none}
 .dd-menu a[aria-current="true"]{color:var(--primary);font-weight:700}
 .dd-menu a[aria-current="true"]::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--primary);margin-left:auto}
 .dd-sep{height:1px;background:var(--line);margin:6px 4px}
-.dd-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;border-radius:8px;background:none;color:var(--fg);font:500 14px var(--f-body);cursor:pointer;text-align:left}
+.dd-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;border-radius:var(--r-m);background:none;color:var(--fg);font:500 14px var(--f-body);cursor:pointer;text-align:left}
 .dd-menu button:hover,.dd-menu button:focus-visible{background:var(--sunk);outline:none}
 .dd-menu button span{flex:1}
 .dd-menu button[aria-checked="true"]{background:var(--accent-soft);font-weight:700}
@@ -54,25 +54,25 @@ nav.top .site-menu{margin-left:auto}
 .lang-flag{display:inline-flex}
 html[lang="it"] .menu-btn [data-flag="en"],html[lang="en"] .menu-btn [data-flag="it"]{display:none}
 .hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:56px;align-items:center;padding-block:40px 72px}
+.hero .h-display{font-size:clamp(36px,4.6vw,58px);line-height:1.04}
 .hero .h-display span{color:var(--primary)}
 .hero .lede{margin:22px 0 30px}
 .cta{display:flex;gap:12px;flex-wrap:wrap}
-.hero-note{display:flex;gap:16px;flex-wrap:wrap;margin-top:22px;font-size:14px;color:var(--muted)}
+.hero-note{display:grid;gap:6px;margin-top:22px;font-size:var(--fs-m);color:var(--muted)}
 .hero-note span{display:inline-flex;align-items:center;gap:6px}
 .hero-note .ic{color:var(--ok);width:16px;height:16px}
 /* player delle demo */
-.player{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);box-shadow:var(--shadow);overflow:hidden;min-width:0}
+.player{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);overflow:hidden;min-width:0}
 .p-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--sunk)}
-.p-dots{display:flex;gap:6px}.p-dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
-.p-title{font:500 12.5px var(--f-mono);color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.screen{position:relative;padding:18px;min-height:340px;font-size:14px}
+.p-title{font:600 13px var(--f-body);color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen{position:relative;padding:18px;min-height:340px;font-size:var(--fs-m)}
 .p-ctrl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line)}
 .p-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--fg);display:grid;place-items:center;cursor:pointer;flex:none}
 .p-btn:hover{border-color:var(--primary);color:var(--primary)}
 .p-btn .ic{width:16px;height:16px}
-.p-track{flex:1;height:4px;border-radius:2px;background:var(--sunk);overflow:hidden;min-width:40px}
+.p-track{flex:1;height:4px;border-radius:var(--r-s);background:var(--sunk);overflow:hidden;min-width:40px}
 .p-track i{display:block;height:100%;width:0;background:var(--primary)}
-.p-cap{font-size:13.5px;color:var(--fg);flex:2 1 220px;min-width:0}
+.p-cap{font-size:var(--fs-s);color:var(--fg);flex:2 1 220px;min-width:0}
 .p-cap b{color:var(--primary);font:600 12px var(--f-mono);margin-right:6px}
 .player.playing [data-s]{transition:opacity var(--t-slow) var(--ease),transform var(--t-slow) var(--ease)}
 .player.playing [data-s]:not(.on){opacity:0;transform:translateY(8px)}
@@ -81,25 +81,26 @@ html[lang="it"] .menu-btn [data-flag="en"],html[lang="en"] .menu-btn [data-flag=
 .doc{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-m);padding:14px}
 .doc-h{display:flex;align-items:center;gap:8px;font:500 12px var(--f-mono);color:var(--muted);margin-bottom:8px}
 .doc-h .ic{width:16px;height:16px;color:var(--primary)}
-.doc p{margin:5px 0;color:var(--muted);font-size:13px;line-height:1.5}
-.doc mark{background:var(--accent-soft);color:var(--fg);border-radius:3px;padding:0 2px}
+.doc p{margin:5px 0;color:var(--muted);font-size:var(--fs-s);line-height:1.5}
+.doc mark{background:var(--accent-soft);color:var(--fg);border-radius:var(--r-s);padding:0 2px}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.req{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface)}
-.req b{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tk{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:var(--r-m);background:var(--surface)}
-.tk.ux{border-left-color:var(--accent)}
+.req{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.req b{font-weight:600;font-size:var(--fs-s);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* un ticket proposto da Tessa: il filo tratteggiato lo lega a ciò da cui nasce (pieno quando è su Jira) */
+.tk{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:center;padding:9px 0 9px 20px;border-bottom:1px solid var(--line)}
+.tk::before{content:"";position:absolute;left:4px;top:8px;bottom:8px;width:0;border-left:var(--thread-w) dashed var(--thread)}
 .tk .t{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tk .t em{font:500 12px var(--f-mono);color:var(--muted);font-style:normal}
 .tk .m{grid-column:2;display:flex;gap:5px;flex-wrap:wrap}
-.chk{display:flex;align-items:center;gap:8px;font-size:13px}
+.chk{display:flex;align-items:center;gap:8px;font-size:var(--fs-s)}
 .chk .ic{width:16px;height:16px;color:var(--ok)}
 .chk.bad .ic{color:var(--err)}
-.label-s{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.label-s{font:600 var(--fs-xs) var(--f-body);color:var(--muted);margin:0 0 8px}
 .d-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
 .stack{display:grid;gap:8px}
 .tree{display:grid;gap:8px}
-.node{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface)}
-.node .lv{font:600 11px var(--f-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);width:92px;flex:none}
+.node{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.node .lv{font:600 var(--fs-xs) var(--f-body);color:var(--muted);width:92px;flex:none}
 .node b{font-size:13.5px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .n1{margin-left:22px}.n2{margin-left:44px}.n3{margin-left:66px}
 .bub{max-width:88%;padding:9px 12px;border-radius:12px;font-size:13.5px;line-height:1.45}
@@ -112,11 +113,11 @@ html[lang="it"] .menu-btn [data-flag="en"],html[lang="en"] .menu-btn [data-flag=
 .done-badge .ic{width:16px;height:16px}
 /* demo breve dell'hero: dal documento a Jira */
 .flow{display:grid;gap:14px}
-.fl{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface)}
+.fl{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:4px 0}
 .fl>.ic{width:22px;height:22px;color:var(--primary)}
 .fl b{display:block;font-size:14.5px}
 .fl small{display:block;font-size:13px;color:var(--muted)}
-.fl+.fl::before{content:"";position:absolute;left:24px;top:-15px;height:14px;border-left:2px dashed var(--line)}
+.fl+.fl::before{content:"";position:absolute;left:10px;top:-16px;height:16px;width:0;border-left:var(--thread-w) dashed var(--thread)}
 /* demo della Scheda QA */
 .mdv{font:12.5px/1.65 var(--f-mono);background:var(--sunk);border-radius:var(--r-m);padding:12px 14px;display:grid;gap:2px}
 .mdv b{color:var(--primary);font-weight:600}
@@ -126,71 +127,77 @@ html[lang="it"] .menu-btn [data-flag="en"],html[lang="en"] .menu-btn [data-flag=
 /* sezioni */
 section{padding-block:96px;border-top:1px solid var(--line)}
 .sec-h{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:48px;align-items:end;margin-bottom:44px}
-.sec-h p{color:var(--muted);font-size:18px;margin:0;max-width:54ch}
+.sec-h p{color:var(--muted);font-size:var(--fs-lede);margin:0;max-width:54ch}
+.h-section{font-size:clamp(28px,3.2vw,36px);line-height:1.12}
 .facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
-.fact{display:flex;gap:14px;align-items:flex-start}
+.fact{padding-top:var(--sp-4);border-top:1px solid var(--line)}
 .fact b{display:block;font:700 17px/1.3 var(--f-display)}
 .fact span{font-size:14.5px;color:var(--muted)}
 .demo-layout{display:grid;grid-template-columns:minmax(0,.62fr) minmax(0,1.38fr);gap:28px;align-items:start}
-.chapters{display:grid;gap:8px}
-.chapter{display:flex;gap:14px;align-items:flex-start;text-align:left;width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);cursor:pointer;color:var(--fg);font:inherit}
-.chapter:hover{border-color:var(--primary)}
-.chapter[aria-selected="true"]{border-color:var(--primary);box-shadow:inset 3px 0 0 var(--primary)}
-.chapter .icon-tile{width:38px;height:38px}
+/* i cinque momenti sono una sequenza: un filo li lega, il nodo pieno è quello che guardi */
+.chapters{position:relative;display:grid;gap:0}
+.chapter{position:relative;display:block;text-align:left;width:100%;padding:var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-6);border:0;border-radius:var(--r-m);background:none;cursor:pointer;color:var(--fg);font:inherit}
+.chapter::before{content:"";position:absolute;left:4px;top:calc(var(--sp-3) + 4px);width:14px;height:14px;border-radius:50%;border:var(--thread-w) solid var(--thread);background:var(--bg);box-sizing:border-box}
+.chapter:not(:last-child)::after{content:"";position:absolute;left:10px;top:calc(var(--sp-3) + 18px);bottom:calc(-1 * (var(--sp-3) + 4px));width:var(--thread-w);background:var(--thread)}
+.chapter:hover{background:var(--hover)}
+.chapter[aria-selected="true"]::before{background:var(--thread)}
+.chapter:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
 .chapter b{display:block;font:700 16px/1.3 var(--f-display)}
-.chapter span span{font-size:14px;color:var(--muted)}
-.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-l);overflow:hidden;list-style:none;padding:0;margin:0;counter-reset:s}
-.steps li{background:var(--surface);padding:22px;counter-increment:s;display:grid;gap:10px;align-content:start;min-width:0}
-.steps .top{display:flex;align-items:center;justify-content:space-between}
-.steps .top .ic{color:var(--primary)}
-.steps .num{font:700 30px/1 var(--f-display);color:var(--primary);letter-spacing:-.03em}
-.steps .num::before{content:counter(s,decimal-leading-zero)}
-.steps .ph{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.chapter>span>span{font-size:14px;color:var(--muted)}
+/* sei passi in ordine: un filo continuo (pieno: è la sequenza vera) e un nodo numerato per passo */
+.steps{position:relative;display:grid;list-style:none;padding:0;margin:0;counter-reset:s}
+.steps::before{content:"";position:absolute;left:13px;top:30px;bottom:30px;width:var(--thread-w);background:var(--thread)}
+.steps li{position:relative;counter-increment:s;display:grid;grid-template-columns:28px minmax(150px,230px) minmax(0,1fr) 110px;gap:var(--sp-4);align-items:baseline;padding:var(--sp-4) 0;min-width:0}
+.steps .num{align-self:start;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:var(--thread-w) solid var(--thread);background:var(--bg);font:700 var(--fs-xs) var(--f-body);color:var(--fg)}
+.steps .num::before{content:counter(s)}
+.steps .ph{font:500 var(--fs-xs) var(--f-body);color:var(--muted);text-align:right}
 .steps h3{margin:0;font:700 18px/1.25 var(--f-display)}
-.steps p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.5}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
-.tab{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 14.5px var(--f-body);cursor:pointer}
-.tab[aria-selected="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.steps p{margin:0;color:var(--muted);font-size:15px;line-height:1.5}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:var(--sp-5);border-bottom:1px solid var(--line)}
+.tab{min-height:44px;padding:0 var(--sp-4);margin-bottom:-1px;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--muted);font:600 14.5px var(--f-body);cursor:pointer}
+.tab:hover{color:var(--fg)}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--primary)}
+.tab:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
 .example{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1.3fr);gap:20px;align-items:start}
 .example .arrow{align-self:center;color:var(--primary)}
 .example .arrow .ic{width:28px;height:28px}
-.ex-in,.ex-out{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:20px;min-width:0}
-.ex-in h4,.ex-out h4{margin:0 0 12px;font:600 12px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ex-in,.ex-out{padding:var(--sp-4) 0 0;border-top:1px solid var(--line);min-width:0}
+.ex-in h4,.ex-out h4{margin:0 0 12px;font:600 var(--fs-s) var(--f-body);color:var(--muted)}
 .ticket-doc{font:13px/1.6 var(--f-mono);background:var(--sunk);border-radius:var(--r-m);padding:14px;white-space:pre-wrap;word-break:break-word;margin:10px 0 0;max-height:300px;overflow:auto}
 .ticket-doc b{color:var(--primary);font-weight:600}
-.ex-out .tk+.tk{margin-top:8px}
+.ex-out .tk+.tk{margin-top:0}
 .ex-note{margin:14px 0 0;font-size:14px;color:var(--muted)}
-.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.rule{display:grid;gap:12px;align-content:start}
+.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-6) var(--sp-6)}
+.rule{display:grid;gap:12px;align-content:start;border-top:1px solid var(--line);padding:var(--sp-4) 0 0}
 .rule p{margin:0;color:var(--muted);font-size:15px;line-height:1.55}
 .rule .without{padding-top:12px;border-top:1px dashed var(--line);font-size:13.5px;color:var(--muted)}
 .rule .without b{color:var(--accent-text)}
-.gains{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.gain{display:grid;gap:10px;align-content:start}
-.gain .icon-tile{margin-bottom:4px}
+.gains{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-6) var(--sp-6)}
+.gain{display:grid;gap:8px;align-content:start;border-top:1px solid var(--line);padding:var(--sp-4) 0 0}
 .gain[hidden]{display:none}
 .roles{display:flex;gap:8px;flex-wrap:wrap;margin:-20px 0 22px}
-.role-chip{min-height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 14px var(--f-body);cursor:pointer}
+.role-chip{min-height:38px;padding:0 14px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 14px var(--f-body);cursor:pointer}
 .role-chip:hover{border-color:var(--primary)}
-.role-chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.role-chip[aria-pressed="true"]{background:var(--primary-soft);color:var(--primary);border-color:var(--primary)}
 .role-chip:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
-.gain .for{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text)}
+.gain .for{font:600 var(--fs-xs) var(--f-body);color:var(--accent-text)}
 .gain p{margin:0;color:var(--muted);font-size:15px;line-height:1.55}
-.trust{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px}
-.trust h3{font:700 18px/1.25 var(--f-display);margin:14px 0 6px}
+.trust{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-6)}
+.trust>div{padding-top:var(--sp-4);border-top:1px solid var(--line)}
+.trust h3{font:700 18px/1.25 var(--f-display);margin:0 0 6px}
 .trust p{margin:0;color:var(--muted);font-size:15px;line-height:1.55}
-.faq{display:grid;gap:10px;max-width:860px}
-.faq details{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m)}
-.faq summary{cursor:pointer;list-style:none;padding:16px 18px;font-weight:600;display:flex;justify-content:space-between;gap:12px;min-height:44px}
+.faq{display:grid;gap:0;max-width:860px;border-top:1px solid var(--line)}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{cursor:pointer;list-style:none;padding:16px 0;font-weight:600;display:flex;justify-content:space-between;gap:12px;min-height:44px}
 .faq summary::-webkit-details-marker{display:none}
 .faq summary::after{content:"+";font:600 20px/1 var(--f-mono);color:var(--primary)}
 .faq details[open] summary::after{content:"–"}
-.faq p{margin:0;padding:0 18px 18px;color:var(--muted)}
+.faq p{margin:0;padding:0 0 18px;max-width:72ch;color:var(--muted)}
 .band{background:var(--band);color:var(--band-fg);border-top:0}
 .band .eyebrow{color:var(--band-muted)}
 .band .h-section{color:var(--band-fg);max-width:18ch}
 .band p{color:var(--band-muted);font-size:18px;max-width:46ch}
-.band .btn{border-color:rgba(242,243,251,.4);color:var(--band-fg);background:transparent}
+.band .btn{border-color:var(--band-muted);color:var(--band-fg);background:transparent}
 .band .btn.primary{background:var(--band-fg);color:var(--band);border-color:var(--band-fg)}
 .band-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:40px;align-items:end}
 footer{padding-block:28px 40px;color:var(--muted);font-size:14px;display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between;align-items:center}
@@ -198,22 +205,24 @@ footer a{color:var(--muted)}
 @media(max-width:1020px){
   .hero,.sec-h,.demo-layout,.band-grid{grid-template-columns:minmax(0,1fr)}
   .hero{gap:36px;padding-block:20px 56px}
-  .steps,.facts,.trust{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .facts,.trust{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .steps li{grid-template-columns:28px minmax(0,1fr)}.steps p,.steps .ph{grid-column:2}.steps .ph{text-align:left}
+  .chapter::after{display:none}
   .rules,.gains{grid-template-columns:repeat(2,minmax(0,1fr))}
   .example{grid-template-columns:minmax(0,1fr)}
   .example .arrow{transform:rotate(90deg);justify-self:center}
   .chapters{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:640px){
-  body{font-size:16px}
+  body{font-size:var(--fs-l)}
   section{padding-block:64px}
-  .steps,.facts,.trust,.rules,.gains,.chapters{grid-template-columns:minmax(0,1fr)}
+  .facts,.trust,.rules,.gains,.chapters{grid-template-columns:minmax(0,1fr)}
   .d-grid{grid-template-columns:minmax(0,1fr)}
   .screen{min-height:0;padding:14px}
   .n1{margin-left:12px}.n2{margin-left:24px}.n3{margin-left:36px}
   .node .lv{width:auto}
   .cols{grid-template-columns:minmax(0,1fr)}
-  .lede{font-size:17px}
+  .lede{font-size:var(--fs-l)}
   .p-cap{flex-basis:100%;order:3}
 }
 </style>
@@ -292,10 +301,10 @@ footer a{color:var(--muted)}
 
 <section style="padding-block:40px">
   <div class="wrap facts">
-    <div class="fact"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-list"/></svg></div><div><b>6 passi guidati</b><span>Dal documento alla verifica in Jira, sempre nello stesso ordine.</span></div></div>
-    <div class="fact"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-kit"/></svg></div><div><b>Un kit di regole</b><span>Release, epiche, label, prefissi e collegamenti, già impostati.</span></div></div>
-    <div class="fact"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-tree"/></svg></div><div><b>La vostra struttura</b><span>Cliente › Project › Fase › Feature Epic › ticket.</span></div></div>
-    <div class="fact"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-shield"/></svg></div><div><b>Controllo prima di scrivere</b><span>Tipi, campi obbligatori e duplicati verificati prima.</span></div></div>
+    <div class="fact"><div><b>6 passi guidati</b><span>Dal documento alla verifica in Jira, sempre nello stesso ordine.</span></div></div>
+    <div class="fact"><div><b>Un kit di regole</b><span>Release, epiche, label, prefissi e collegamenti, già impostati.</span></div></div>
+    <div class="fact"><div><b>La vostra struttura</b><span>Cliente › Project › Fase › Feature Epic › ticket.</span></div></div>
+    <div class="fact"><div><b>Controllo prima di scrivere</b><span>Tipi, campi obbligatori e duplicati verificati prima.</span></div></div>
   </div>
 </section>
 
@@ -304,15 +313,15 @@ footer a{color:var(--muted)}
     <div class="sec-h"><div><div class="eyebrow">Vantaggi</div><h2 class="h-section">Trama prepara, tutto il team ci guadagna.</h2></div><p>Trama nasce per il Product Owner, ma il vantaggio arriva a tutto il team: chi sviluppa riceve ticket chiari, chi collauda trova la scheda pronta, chi coordina progetti tutti uguali.</p></div>
     <div class="roles" role="group" aria-label="Mostra i vantaggi per ruolo"><button type="button" class="role-chip" data-role="all" aria-pressed="true">Tutti</button><button type="button" class="role-chip" data-role="po" aria-pressed="false">Product Owner</button><button type="button" class="role-chip" data-role="dev" aria-pressed="false">Sviluppo</button><button type="button" class="role-chip" data-role="qa" aria-pressed="false">QA</button><button type="button" class="role-chip" data-role="delivery" aria-pressed="false">Delivery e PMO</button></div>
     <div class="gains" id="gains">
-      <div class="card gain" data-roles="po"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-file"/></svg></div><span class="for">Product Owner</span><h3 class="h-card">Dal documento al backlog in un pomeriggio</h3><p>Requisiti estratti e ordinati, domande e ipotesi sempre in vista, backlog creato in Jira con un comando.</p></div>
-      <div class="card gain" data-roles="dev qa"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-layers"/></svg></div><span class="for">Sviluppo e QA</span><h3 class="h-card">Ticket chiari al primo colpo</h3><p>Contesto, user story, criteri verificabili e punti aperti già scritti: si sviluppa e si collauda senza interpretare.</p></div>
-      <div class="card gain" data-roles="qa"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-check"/></svg></div><span class="for">QA</span><h3 class="h-card">Scheda QA pronta per ogni ticket</h3><p>Criteri come checklist, requisito d'origine, dipendenze e decisioni in un file .md: si collauda senza ricostruire il contesto.</p></div>
-      <div class="card gain" data-roles="qa delivery"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-list"/></svg></div><span class="for">QA e Delivery</span><h3 class="h-card">Piano di test per ogni release</h3><p>Ordine di collaudo dalle dipendenze, rischi aperti e requisiti senza ticket, con tutte le schede in un unico zip.</p></div>
-      <div class="card gain" data-roles="po dev qa delivery"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-chat"/></svg></div><span class="for">Tutto il team</span><h3 class="h-card">Meno riunioni dell'ultimo minuto</h3><p>I dubbi si chiudono prima di creare i ticket e le risposte restano nel registro: niente call di chiarimento a sprint avviato.</p></div>
-      <div class="card gain" data-roles="po dev"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-shield"/></svg></div><span class="for">PO e tech lead</span><h3 class="h-card">Meno revisioni sugli output</h3><p>Stessi modelli, stessi metadati e un controllo qualità per tutti: chi rivede trova il formato giusto e guarda solo il contenuto.</p></div>
-      <div class="card gain" data-roles="delivery"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-tree"/></svg></div><span class="for">Delivery e PMO</span><h3 class="h-card">Progetti Jira tutti uguali</h3><p>Stessa struttura Project › Fase › Epica, stesse label e prefissi: si passa da un progetto all'altro senza reimparare nulla.</p></div>
-      <div class="card gain" data-roles="dev delivery"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-link"/></svg></div><span class="for">Sviluppo e pianificazione</span><h3 class="h-card">Dipendenze sotto gli occhi</h3><p>I blocchi tra BE, FE e firmware diventano collegamenti in Jira: l'ordine di lavoro si legge dal backlog.</p></div>
-      <div class="card gain" data-roles="po dev qa delivery"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-book"/></svg></div><span class="for">Chi arriva dopo</span><h3 class="h-card">Ingresso rapido nel progetto</h3><p>Il registro delle decisioni spiega perché il backlog è fatto così, con fonte e impatto di ogni scelta.</p></div>
+      <div class="gain" data-roles="po"><span class="for">Product Owner</span><h3 class="h-card">Dal documento al backlog in un pomeriggio</h3><p>Requisiti estratti e ordinati, domande e ipotesi sempre in vista, backlog creato in Jira con un comando.</p></div>
+      <div class="gain" data-roles="dev qa"><span class="for">Sviluppo e QA</span><h3 class="h-card">Ticket chiari al primo colpo</h3><p>Contesto, user story, criteri verificabili e punti aperti già scritti: si sviluppa e si collauda senza interpretare.</p></div>
+      <div class="gain" data-roles="qa"><span class="for">QA</span><h3 class="h-card">Scheda QA pronta per ogni ticket</h3><p>Criteri come checklist, requisito d'origine, dipendenze e decisioni in un file .md: si collauda senza ricostruire il contesto.</p></div>
+      <div class="gain" data-roles="qa delivery"><span class="for">QA e Delivery</span><h3 class="h-card">Piano di test per ogni release</h3><p>Ordine di collaudo dalle dipendenze, rischi aperti e requisiti senza ticket, con tutte le schede in un unico zip.</p></div>
+      <div class="gain" data-roles="po dev qa delivery"><span class="for">Tutto il team</span><h3 class="h-card">Meno riunioni dell'ultimo minuto</h3><p>I dubbi si chiudono prima di creare i ticket e le risposte restano nel registro: niente call di chiarimento a sprint avviato.</p></div>
+      <div class="gain" data-roles="po dev"><span class="for">PO e tech lead</span><h3 class="h-card">Meno revisioni sugli output</h3><p>Stessi modelli, stessi metadati e un controllo qualità per tutti: chi rivede trova il formato giusto e guarda solo il contenuto.</p></div>
+      <div class="gain" data-roles="delivery"><span class="for">Delivery e PMO</span><h3 class="h-card">Progetti Jira tutti uguali</h3><p>Stessa struttura Project › Fase › Epica, stesse label e prefissi: si passa da un progetto all'altro senza reimparare nulla.</p></div>
+      <div class="gain" data-roles="dev delivery"><span class="for">Sviluppo e pianificazione</span><h3 class="h-card">Dipendenze sotto gli occhi</h3><p>I blocchi tra BE, FE e firmware diventano collegamenti in Jira: l'ordine di lavoro si legge dal backlog.</p></div>
+      <div class="gain" data-roles="po dev qa delivery"><span class="for">Chi arriva dopo</span><h3 class="h-card">Ingresso rapido nel progetto</h3><p>Il registro delle decisioni spiega perché il backlog è fatto così, con fonte e impatto di ogni scelta.</p></div>
     </div>
   </div>
 </section>
@@ -321,12 +330,12 @@ footer a{color:var(--muted)}
   <div class="wrap">
     <div class="sec-h"><div><div class="eyebrow">Come funziona</div><h2 class="h-section">Sei passi, sempre nello stesso ordine.</h2></div><p>Ogni passo dice cosa serve per completarlo e quali regole applica. Il registro delle decisioni è sempre a portata, fuori dai passi. Lo stato è condiviso: chi lavora sullo stesso sito Atlassian vede lo stesso progetto.</p></div>
     <ol class="steps">
-      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-link"/></svg></div><span class="ph">Avvio</span><h3>Progetto Jira</h3><p>Legge tipi di ticket, campi obbligatori e nomi esatti dei collegamenti.</p></li>
-      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-file"/></svg></div><span class="ph">Preparazione</span><h3>Requisiti</h3><p>Carichi Word, PDF, Excel o immagini; Tessa estrae una riga per requisito, con ID, release e dipendenze. La valida il PO.</p></li>
-      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-help"/></svg></div><span class="ph">Preparazione</span><h3>Domande di apertura</h3><p>Ogni domanda si chiude con una risposta o un'ipotesi, che entra da sola nel registro.</p></li>
-      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-kit"/></svg></div><span class="ph">Preparazione</span><h3>Kit di progetto</h3><p>Release, epiche, label e struttura Project › Fase › Epica.</p></li>
-      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-layers"/></svg></div><span class="ph">Creazione</span><h3>Backlog</h3><p>UX Story, storie BE e FE, con il controllo di qualità in una scheda a parte.</p></li>
-      <li><div class="top"><span class="num"></span><svg class="ic"><use href="/icons.svg#i-send"/></svg></div><span class="ph">Creazione</span><h3>Crea su Jira</h3><p>Controllo, conferma, creazione in ordine, verifica e sincronizzazione.</p></li>
+      <li><span class="num"></span><h3>Progetto Jira</h3><p>Legge tipi di ticket, campi obbligatori e nomi esatti dei collegamenti.</p><span class="ph">Avvio</span></li>
+      <li><span class="num"></span><h3>Requisiti</h3><p>Carichi Word, PDF, Excel o immagini; Tessa estrae una riga per requisito, con ID, release e dipendenze. La valida il PO.</p><span class="ph">Preparazione</span></li>
+      <li><span class="num"></span><h3>Domande di apertura</h3><p>Ogni domanda si chiude con una risposta o un'ipotesi, che entra da sola nel registro.</p><span class="ph">Preparazione</span></li>
+      <li><span class="num"></span><h3>Kit di progetto</h3><p>Release, epiche, label e struttura Project › Fase › Epica.</p><span class="ph">Preparazione</span></li>
+      <li><span class="num"></span><h3>Backlog</h3><p>UX Story, storie BE e FE, con il controllo di qualità in una scheda a parte.</p><span class="ph">Creazione</span></li>
+      <li><span class="num"></span><h3>Crea su Jira</h3><p>Controllo, conferma, creazione in ordine, verifica e sincronizzazione.</p><span class="ph">Creazione</span></li>
     </ol>
   </div>
 </section>
@@ -336,11 +345,11 @@ footer a{color:var(--muted)}
     <div class="sec-h"><div><div class="eyebrow">Guarda come funziona</div><h2 class="h-section">Cinque momenti, in un minuto.</h2></div><p>Brevi animazioni di Trama con dati di esempio. Scegli un capitolo: parte da solo, puoi metterlo in pausa o rivederlo.</p></div>
     <div class="demo-layout">
       <div class="chapters" role="tablist" aria-label="Capitoli della demo">
-        <button class="chapter" role="tab" aria-selected="false" data-demo="extract"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-file"/></svg></span><span><b>Dal documento ai requisiti</b><span>Tessa legge Word, PDF, Excel e immagini.</span></span></button>
-        <button class="chapter" role="tab" aria-selected="true" data-demo="split"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-layers"/></svg></span><span><b>Scomposizione con le regole</b><span>UX Story, storie BE e FE, metadati completi.</span></span></button>
-        <button class="chapter" role="tab" aria-selected="false" data-demo="jira"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-tree"/></svg></span><span><b>Struttura su Jira</b><span>Project, Fasi, epiche e ticket, collegati e verificati.</span></span></button>
-        <button class="chapter" role="tab" aria-selected="false" data-demo="plan"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-shield"/></svg></span><span><b>Qualità del backlog</b><span>Segnalazioni in ordine di gravità, con la correzione.</span></span></button>
-        <button class="chapter" role="tab" aria-selected="false" data-demo="qa"><span class="icon-tile"><svg class="ic"><use href="/icons.svg#i-check"/></svg></span><span><b>Scheda QA per il collaudo</b><span>Criteri, dipendenze e piano di test pronti.</span></span></button>
+        <button class="chapter" role="tab" aria-selected="false" data-demo="extract"><span><b>Dal documento ai requisiti</b><span>Tessa legge Word, PDF, Excel e immagini.</span></span></button>
+        <button class="chapter" role="tab" aria-selected="true" data-demo="split"><span><b>Scomposizione con le regole</b><span>UX Story, storie BE e FE, metadati completi.</span></span></button>
+        <button class="chapter" role="tab" aria-selected="false" data-demo="jira"><span><b>Struttura su Jira</b><span>Project, Fasi, epiche e ticket, collegati e verificati.</span></span></button>
+        <button class="chapter" role="tab" aria-selected="false" data-demo="plan"><span><b>Qualità del backlog</b><span>Segnalazioni in ordine di gravità, con la correzione.</span></span></button>
+        <button class="chapter" role="tab" aria-selected="false" data-demo="qa"><span><b>Scheda QA per il collaudo</b><span>Criteri, dipendenze e piano di test pronti.</span></span></button>
       </div>
       <div id="mainPlayer"></div>
     </div>
@@ -363,12 +372,12 @@ footer a{color:var(--muted)}
   <div class="wrap">
     <div class="sec-h"><div><div class="eyebrow">Regole applicate</div><h2 class="h-section">Ogni regola evita un errore che prima o poi capita.</h2></div><p>Il playbook non è un documento da ricordare: Trama lo controlla prima di scrivere su Jira e lo raccoglie in una pagina sempre a portata.</p></div>
     <div class="rules">
-      <div class="card rule"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-check"/></svg></div><h3 class="h-card">Metadati essenziali, sempre</h3><p>Epica, label di release e di lavoro, prefisso e campi obbligatori di Jira: un ticket incompleto non parte. Componente e assegnatario si aggiungono quando servono.</p><div class="without"><b>Senza:</b> giri di correzione a fine sprint.</div></div>
-      <div class="card rule"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-link"/></svg></div><h3 class="h-card">Nomi esatti dei collegamenti</h3><p>Se in Jira il blocco si chiama «3. Blocking», si usa quel nome, letto dal progetto.</p><div class="without"><b>Senza:</b> collegamenti rifiutati e mai creati.</div></div>
-      <div class="card rule"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-sync"/></svg></div><h3 class="h-card">Prima si legge, poi si scrive</h3><p>Tipi, campi, versioni e ticket esistenti vengono riletti subito prima della creazione.</p><div class="without"><b>Senza:</b> duplicati e versioni sbagliate.</div></div>
-      <div class="card rule"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-help"/></svg></div><h3 class="h-card">Le ipotesi si dichiarano</h3><p>Ogni scelta fatta al posto del PO compare in un elenco da confermare.</p><div class="without"><b>Senza:</b> scelte sbagliate scoperte a sprint avviato.</div></div>
-      <div class="card rule"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-tree"/></svg></div><h3 class="h-card">La struttura si rispetta</h3><p>Project, Fasi, epiche e ticket nell'ordine giusto, ciascuno con il proprio Principale.</p><div class="without"><b>Senza:</b> epiche orfane e report che non tornano.</div></div>
-      <div class="card rule"><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-book"/></svg></div><h3 class="h-card">Le decisioni restano scritte</h3><p>Risposte, ipotesi e cambi di rotta finiscono nel registro, con la riga che sostituiscono.</p><div class="without"><b>Senza:</b> decisioni sparse tra chat e commenti.</div></div>
+      <div class="rule"><h3 class="h-card">Metadati essenziali, sempre</h3><p>Epica, label di release e di lavoro, prefisso e campi obbligatori di Jira: un ticket incompleto non parte. Componente e assegnatario si aggiungono quando servono.</p><div class="without"><b>Senza:</b> giri di correzione a fine sprint.</div></div>
+      <div class="rule"><h3 class="h-card">Nomi esatti dei collegamenti</h3><p>Se in Jira il blocco si chiama «3. Blocking», si usa quel nome, letto dal progetto.</p><div class="without"><b>Senza:</b> collegamenti rifiutati e mai creati.</div></div>
+      <div class="rule"><h3 class="h-card">Prima si legge, poi si scrive</h3><p>Tipi, campi, versioni e ticket esistenti vengono riletti subito prima della creazione.</p><div class="without"><b>Senza:</b> duplicati e versioni sbagliate.</div></div>
+      <div class="rule"><h3 class="h-card">Le ipotesi si dichiarano</h3><p>Ogni scelta fatta al posto del PO compare in un elenco da confermare.</p><div class="without"><b>Senza:</b> scelte sbagliate scoperte a sprint avviato.</div></div>
+      <div class="rule"><h3 class="h-card">La struttura si rispetta</h3><p>Project, Fasi, epiche e ticket nell'ordine giusto, ciascuno con il proprio Principale.</p><div class="without"><b>Senza:</b> epiche orfane e report che non tornano.</div></div>
+      <div class="rule"><h3 class="h-card">Le decisioni restano scritte</h3><p>Risposte, ipotesi e cambi di rotta finiscono nel registro, con la riga che sostituiscono.</p><div class="without"><b>Senza:</b> decisioni sparse tra chat e commenti.</div></div>
     </div>
   </div>
 </section>
@@ -377,10 +386,10 @@ footer a{color:var(--muted)}
   <div class="wrap">
     <div class="sec-h"><div><div class="eyebrow">Sicurezza e dati</div><h2 class="h-section">I tuoi permessi, i tuoi dati.</h2></div><p>Trama non ha un account Jira suo: agisce come te, solo sui siti che puoi già vedere.</p></div>
     <div class="trust">
-      <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-users"/></svg></div><h3>Accesso Atlassian</h3><p>Entri con il tuo account. I ticket risultano creati da te, con i tuoi permessi di progetto.</p></div>
-      <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-lock"/></svg></div><h3>Token cifrati</h3><p>I token di accesso sono cifrati nel database e non arrivano mai al browser.</p></div>
-      <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-chat"/></svg></div><h3>L'AI sul tuo Mac</h3><p>Tessa lavora attraverso il tuo Claude Code, senza chiavi API sul server.</p></div>
-      <div><div class="icon-tile"><svg class="ic"><use href="/icons.svg#i-shield"/></svg></div><h3>Conferma esplicita</h3><p>Nulla viene scritto su Jira senza controllo, elenco delle ipotesi e doppia conferma.</p></div>
+      <div><h3>Accesso Atlassian</h3><p>Entri con il tuo account. I ticket risultano creati da te, con i tuoi permessi di progetto.</p></div>
+      <div><h3>Token cifrati</h3><p>I token di accesso sono cifrati nel database e non arrivano mai al browser.</p></div>
+      <div><h3>L'AI sul tuo Mac</h3><p>Tessa lavora attraverso il tuo Claude Code, senza chiavi API sul server.</p></div>
+      <div><h3>Conferma esplicita</h3><p>Nulla viene scritto su Jira senza controllo, elenco delle ipotesi e doppia conferma.</p></div>
     </div>
   </div>
 </section>
