@@ -8,6 +8,7 @@
     "dev": "vercel dev --listen 8888",
     "claude": "node scripts/claude-bridge.mjs",
     "check": "node scripts/check.mjs",
+    "design:contrasto": "node scripts/misure/contrasto.mjs",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node --test \"tests/unit/*.test.mjs\"",
     "test:e2e": "playwright test --project=e2e",

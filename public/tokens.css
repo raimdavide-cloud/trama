@@ -1,58 +1,78 @@
-/* Trama · token del sistema di design: l'unica fonte di colori, caratteri, raggi e tempi.
-   La usano tutte le pagine (homepage, studio, guida, marchio, privacy, componenti).
-   Nei componenti usa solo i ruoli (--bg, --surface, --primary, --accent, --ok, --warn, --err…), mai i colori grezzi:
-   il controllo `npm run check` rifiuta i colori esadecimali scritti fuori da questo file.
-   Documentazione: /brand (marchio) e /componenti (componenti dello studio). */
+/* Trama · token del sistema di design: l'unica fonte di colori, caratteri, spazi, raggi, bordi e tempi.
+   La usano tutte le pagine (homepage, app, guida, marchio, privacy, componenti).
+   Nei componenti usa solo i ruoli (--bg, --surface, --primary, --thread, --ok, --warn, --err…), mai i colori grezzi:
+   il controllo `npm run check` rifiuta i colori esadecimali scritti fuori da questo file, e
+   `npm run design:contrasto` verifica i rapporti di contrasto di ogni coppia nel tema chiaro e in quello scuro.
+   Chiaro e scuro definiscono gli stessi ruoli: un componente non sa in che tema si trova.
+   Documentazione: DESIGN.md (decisioni), /brand (marchio) e /componenti (componenti). */
 
 :root{--tx-blue:#0072CE;
-  /* Indaco: il colore del marchio */
+  /* Marchio. Indaco: il colore del marchio */
   --indaco-900:#141B47; --indaco-700:#23307A; --indaco-500:#3448C5; --indaco-300:#8A98E8; --indaco-100:#E6E9FA; --indaco-50:#F2F4FD;
-  /* Zafferano: il filo, l'accento. Usalo poco: evidenzia una sola cosa per schermata */
-  --zafferano-700:#9A5B06; --zafferano-500:#F2A541; --zafferano-100:#FCEFD9;
+  /* Zafferano: il filo. Segna ciò che deriva da ciò (requisito → ticket → chiave Jira) e ciò che propone Tessa. Mai come colore di testo. 500 è il colore del marchio (logo), 600 è il filo (3:1 sulla carta) */
+  --zafferano-700:#9A5B06; --zafferano-600:#B06C08; --zafferano-500:#F2A541; --zafferano-100:#FCEFD9;
   /* Stati */
   --salvia-700:#1F6B4A; --salvia-100:#E1F2E9; --corallo-700:#B33A24; --corallo-100:#FBE6E1;
-  /* Neutri, leggermente tinti di indaco */
-  --carta:#F5F6FA; --bianco:#FFFFFF; --nebbia:#ECEEF5; --linea:#DADDEA; --ardesia:#5A6180; --inchiostro:#151A33;
+  /* Neutri: carta calda e inchiostro indaco */
+  --carta:#F6F3EC; --foglio:#FDFCF9; --bianco:#FFFFFF; --nebbia:#EDE9DF; --linea:#DCD6C8; --linea-forte:#8B8571; --ardesia:#5B5870; --inchiostro:#1B1A2E;
 
-  /* Ruoli (usare questi nei componenti, mai i colori grezzi) */
-  --bg:var(--carta); --surface:var(--bianco); --sunk:var(--nebbia); --line:var(--linea);
+  /* Ruoli: superfici, testo, bordi (usare questi nei componenti, mai i colori grezzi) */
+  --bg:var(--carta); --surface:var(--foglio); --sunk:var(--nebbia); --line:var(--linea); --line-strong:var(--linea-forte);
   --fg:var(--inchiostro); --muted:var(--ardesia);
   --primary:var(--indaco-500); --primary-strong:var(--indaco-700); --primary-soft:var(--indaco-100); --on-primary:#FFFFFF;
-  --accent:var(--zafferano-500); --accent-soft:var(--zafferano-100); --accent-text:var(--zafferano-700);
+  /* Il filo: una linea sottile che lega le cose derivate. Tratteggiata = proposta di Tessa, piena = confermata */
+  --thread:var(--zafferano-600); --thread-soft:var(--zafferano-100); --accent-text:var(--zafferano-700);
+  --accent:var(--thread); --accent-soft:var(--thread-soft); /* nomi storici, stessi valori */
   --ok:var(--salvia-700); --ok-soft:var(--salvia-100); --warn:var(--zafferano-700); --warn-soft:var(--zafferano-100); --err:var(--corallo-700); --err-soft:var(--corallo-100);
   --band:var(--indaco-900); --band-fg:#F2F3FB; --band-muted:#AEB5DD;
-  --shadow:0 1px 2px rgba(20,27,71,.06),0 8px 24px rgba(20,27,71,.07);
+  --shadow:0 1px 2px rgba(27,26,46,.06),0 8px 24px rgba(27,26,46,.07);
   /* Ombre degli elementi che stanno sopra la pagina: menu e barre (pop), chat (float), pannello laterale (side), pulsante della chat (fab) */
-  --shadow-pop:0 1px 2px rgba(20,27,71,.06),0 12px 32px rgba(20,27,71,.14);
-  --shadow-float:0 22px 60px rgba(20,27,71,.24),0 3px 10px rgba(20,27,71,.10);
-  --shadow-side:-12px 0 32px rgba(20,27,71,.12);
-  --shadow-fab:0 10px 28px rgba(20,27,71,.32),inset 0 1px 0 rgba(255,255,255,.22);
-  --shadow-fab-hover:0 14px 32px rgba(20,27,71,.36),inset 0 1px 0 rgba(255,255,255,.22);
+  --shadow-pop:0 1px 2px rgba(27,26,46,.06),0 12px 32px rgba(27,26,46,.14);
+  --shadow-float:0 22px 60px rgba(27,26,46,.24),0 3px 10px rgba(27,26,46,.10);
+  --shadow-side:-12px 0 32px rgba(27,26,46,.12);
+  --shadow-fab:0 10px 28px rgba(27,26,46,.32),inset 0 1px 0 rgba(255,255,255,.22);
+  --shadow-fab-hover:0 14px 32px rgba(27,26,46,.36),inset 0 1px 0 rgba(255,255,255,.22);
+
+  /* Stati interattivi (uguali in entrambi i temi: derivano dai ruoli) */
+  --hover:var(--sunk); --selected:var(--primary-soft); --ring:var(--primary);
+  --disabled-bg:var(--sunk); --disabled-fg:var(--muted);
+  --tip-bg:var(--fg); --tip-fg:var(--bg);
 
   --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
   --f-body:"Figtree","Segoe UI",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
   /* Scala dei caratteri: solo questi gradini. 12 etichette e note, 13 testo secondario, 14 tabelle e controlli, 15 testo corrente, 16 sottotitoli, 20 titoli di sezione, 28 numeri e titoli grandi, 36 titolo di pagina */
   --fs-xs:12px; --fs-s:13px; --fs-m:14px; --fs-base:15px; --fs-l:16px; --fs-xl:20px; --fs-2xl:28px; --fs-3xl:36px;
-  --r-s:6px; --r-m:10px; --r-l:16px;
+  /* Spazi: multipli di 4. Dentro un gruppo 4–8, tra gruppi 16–24, tra sezioni 32–48 */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px;
+  /* Altezza delle righe di tabella (pulsanti e campi risultano alti 34 px dal loro riempimento, le etichette 22 px) */
+  --row-h:36px;
+  /* Raggi: piccolo per campi e pulsanti, medio per menu e pannelli, grande per sezioni; pillola solo per etichette di stato */
+  --r-s:4px; --r-m:8px; --r-l:12px; --r-pill:999px;
+  /* Bordi e filo */
+  --bw:1px; --thread-w:2px;
   --t-fast:150ms; --t-base:250ms; --t-slow:400ms; --ease:cubic-bezier(.2,.7,.2,1);
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --tx-blue:#5AAEF5; --bg:#0D1129; --surface:#151A3A; --sunk:#1C2248; --line:#2A3160; --fg:#E8EAF6; --muted:#9BA2C7;
-  --primary:#8C9BFF; --primary-strong:#B3BDFF; --primary-soft:#1F2757; --on-primary:#0D1129;
-  --accent:#F4B45A; --accent-soft:#3A2C12; --accent-text:#F4B45A;
-  --ok:#5FCB97; --ok-soft:#133126; --warn:#F4B45A; --warn-soft:#3A2C12; --err:#FF8E7A; --err-soft:#3B1A16;
-  --band:#18205A; --band-fg:#F2F3FB; --band-muted:#AEB5DD; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  --tx-blue:#5AAEF5;
+  --bg:#12132A; --surface:#1A1C38; --sunk:#23254A; --line:#32356A; --line-strong:#7478B0; --fg:#ECEAF5; --muted:#A6A9C9;
+  --primary:#9AA6FF; --primary-strong:#C0C7FF; --primary-soft:#262A5E; --on-primary:#12132A;
+  --thread:#F2B04F; --thread-soft:#3A2C12; --accent-text:#F2B04F;
+  --ok:#5FCB97; --ok-soft:#133126; --warn:#F2B04F; --warn-soft:#3A2C12; --err:#FF8E7A; --err-soft:#3B1A16;
+  --band:#18205A; --band-fg:#F2F3FB; --band-muted:#AEB5DD;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
   --shadow-pop:0 1px 2px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.5); --shadow-float:0 22px 60px rgba(0,0,0,.55),0 3px 10px rgba(0,0,0,.35); --shadow-side:-12px 0 32px rgba(0,0,0,.4);
   --shadow-fab:0 10px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.22); --shadow-fab-hover:0 14px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.22);
   color-scheme:dark}}
 :root[data-theme="dark"]{
-  --tx-blue:#5AAEF5; --bg:#0D1129; --surface:#151A3A; --sunk:#1C2248; --line:#2A3160; --fg:#E8EAF6; --muted:#9BA2C7;
-  --primary:#8C9BFF; --primary-strong:#B3BDFF; --primary-soft:#1F2757; --on-primary:#0D1129;
-  --accent:#F4B45A; --accent-soft:#3A2C12; --accent-text:#F4B45A;
-  --ok:#5FCB97; --ok-soft:#133126; --warn:#F4B45A; --warn-soft:#3A2C12; --err:#FF8E7A; --err-soft:#3B1A16;
-  --band:#18205A; --band-fg:#F2F3FB; --band-muted:#AEB5DD; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  --tx-blue:#5AAEF5;
+  --bg:#12132A; --surface:#1A1C38; --sunk:#23254A; --line:#32356A; --line-strong:#7478B0; --fg:#ECEAF5; --muted:#A6A9C9;
+  --primary:#9AA6FF; --primary-strong:#C0C7FF; --primary-soft:#262A5E; --on-primary:#12132A;
+  --thread:#F2B04F; --thread-soft:#3A2C12; --accent-text:#F2B04F;
+  --ok:#5FCB97; --ok-soft:#133126; --warn:#F2B04F; --warn-soft:#3A2C12; --err:#FF8E7A; --err-soft:#3B1A16;
+  --band:#18205A; --band-fg:#F2F3FB; --band-muted:#AEB5DD;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
   --shadow-pop:0 1px 2px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.5); --shadow-float:0 22px 60px rgba(0,0,0,.55),0 3px 10px rgba(0,0,0,.35); --shadow-side:-12px 0 32px rgba(0,0,0,.4);
   --shadow-fab:0 10px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.22); --shadow-fab-hover:0 14px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.22);
   color-scheme:dark}
