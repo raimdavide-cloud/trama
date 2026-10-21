@@ -117,3 +117,49 @@ test("aggancio morbido: spento per chi chiede meno animazioni", async ({ browser
   expect(await page.evaluate(() => Math.round(scrollY))).toBe(v - 100);
   await ctx.close();
 });
+
+test("il filo: le fonti girano in orbita; «Tira il filo» le scioglie nel telaio con requisito, ticket e chiave, e «Riavvolgi» le rimette in orbita", async ({ page }) => {
+  await page.goto("/");
+  const stage = page.locator("#stage");
+  await expect(page.locator("#tessA h2")).toHaveText("Giovedì. Stai ancora spiegando lo stesso ticket.");
+  await expect(page.locator("#tessB")).toBeHidden();
+  await expect(stage.locator(".chip")).toHaveCount(7);
+  await expect(stage).not.toContainText("Slack");
+  await expect(stage).not.toContainText("lavagna");
+  await expect(page.locator("#pull")).toHaveAttribute("aria-pressed", "false");
+  await page.locator("#pull").click();
+  await expect(page.locator("#tessB h2")).toHaveText("Ogni requisito ha il suo filo.");
+  await expect(page.locator("#tessA")).toBeHidden();
+  await expect(page.locator("#pull .l-b")).toBeVisible();
+  await expect(page.locator("#pull .l-a")).toBeHidden();
+  await expect(stage).toHaveClass(/woven/);
+  await expect(stage.locator(".lm-row")).toHaveCount(4);
+  const row = stage.locator(".lm-row").first();
+  await expect(row).toContainText("RF-020");
+  await expect(row.locator(".tk-k").first()).toHaveText("T-014 · ORTO-904");
+  await expect(row.locator(".tk-k").first()).toHaveAttribute("title", /Watering shifts calendar design/);
+  await page.locator("#pull").click();
+  await expect(page.locator("#tessA")).toBeVisible();
+  await expect(stage).not.toHaveClass(/woven/);
+});
+
+test("il filo: con «meno animazioni» le carte restano ferme e il pulsante funziona lo stesso", async ({ browser }) => {
+  const ctx = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 1440, height: 900 } });
+  const page = await ctx.newPage();
+  await page.goto("/");
+  expect(await page.locator("#stage .ring").first().evaluate((e) => getComputedStyle(e).animationName)).toBe("none");
+  await page.locator("#pull").click();
+  await expect(page.locator("#stage .lm-row .tk-k").first()).toBeVisible();
+  await ctx.close();
+});
+
+test("il filo: sotto i 640 px si parte dal telaio, senza orbita né pulsante", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 800 } });
+  const page = await ctx.newPage();
+  await page.goto("/");
+  await expect(page.locator("#tessB h2")).toBeVisible();
+  await expect(page.locator("#stage .orbit")).toBeHidden();
+  await expect(page.locator("#pull")).toBeHidden();
+  await expect(page.locator("#stage .lm-row").first()).toBeVisible();
+  await ctx.close();
+});

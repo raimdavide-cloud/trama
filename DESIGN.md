@@ -258,6 +258,10 @@ Il filo ha tre forme: **tratteggiato** = proposta di Tessa (bozza), **pieno** = 
 - Niente finta finestra con i tre pallini: la demo ha una barra con il titolo e l'etichetta «demo».
 - Le etichette sopra i titoli sono testo discreto (14 px, `--muted`), non maiuscolo monospazio; il filtro per ruolo usa il tono indaco chiaro, le schede degli esempi sono linguette con una linea sotto.
 
+### Il filo, sezione dinamica (homepage)
+- Due momenti nello stesso spazio: il **groviglio** (le fonti dei requisiti, in orbita su tre cerchi tratteggiati che ruotano piano; bordo pieno per ciò che è scritto, tratteggiato per ciò che è a voce) e il **telaio** (un filo zafferano per requisito che attraversa l'ordito Project, Fase, Epica, Label e arriva ai ticket con la chiave Jira). «Tira il filo» passa dall'uno all'altro, «Riavvolgi il filo» torna indietro.
+- Il movimento è solo CSS (`transform` e `opacity`), le carte restano dritte, si ferma fuori vista e con «meno animazioni»; sotto i 640 px si mostra solo il telaio. Dati di esempio dichiarati; nessuna fonte che Trama non legge.
+
 ### Tooltip (`data-tip`)
 - Fondo `--tip-bg` (inchiostro), testo `--tip-fg` (carta), 12 px, 4 px di raggio, massimo 260 px.
 - Appare con il mouse e con il focus da tastiera; il testo sta anche nella pagina (`sr-only`), quindi lo leggono i lettori di schermo. Serve a spiegare perché un comando è spento.

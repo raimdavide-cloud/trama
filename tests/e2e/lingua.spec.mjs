@@ -106,7 +106,7 @@ test("homepage: sezioni e lingua in un solo menu nell'header, «Apri Trama» res
   await expect(btn).toContainText("Menu");
   await btn.click();
   await expect(menu).toBeVisible();
-  await expect(menu.getByRole("menuitem")).toHaveText(["Vantaggi", "Come funziona", "Demo", "Esempi", "Regole", "Sicurezza", "Domande"]);
+  await expect(menu.getByRole("menuitem")).toHaveText(["Il filo", "Vantaggi", "Come funziona", "Demo", "Esempi", "Regole", "Sicurezza", "Domande"]);
   await expect(menu.locator('[data-lang="it"]')).toHaveAttribute("aria-checked", "true");
   await expect(menu.getByRole("menuitem").first()).toBeFocused();
   await page.keyboard.press("End");
