@@ -125,14 +125,12 @@ test("kit da un altro progetto: riempie i campi vuoti, non copia le chiavi Jira,
   expect(r.over).toBe("altro");
 });
 
-test("Backlog: le esportazioni stanno in un solo menu; nel passo Crea c'è «Sincronizza e verifica» e niente «Svuota» in Qualità", async ({ page }) => {
+test("Backlog: l'esportazione è un solo pulsante «Esporta in CSV»; nel passo Crea c'è «Sincronizza e verifica» e niente «Svuota» in Qualità", async ({ page }) => {
   await openStudio(page);
   await goToStep(page, "Backlog");
   await openAllSecs(page);
-  await expect(page.locator("#main [data-act=exportTickets]")).toBeHidden();
-  await page.locator(".exp-btn").click();
-  await expect(page.locator(".exp-dd [role=menuitem]")).toHaveText(["Backlog in CSV", "Schede QA e piano di test (.zip)"]);
-  await page.keyboard.press("Escape");
+  await expect(page.locator("#main [data-act=exportTickets]")).toHaveText("Esporta in CSV");
+  await expect(page.locator(".exp-btn, [data-act=qaZip]")).toHaveCount(0);
   await page.locator("[data-act=bTab][data-tab=quality]").click();
   await expect(page.locator("#qaAutoBox")).toBeChecked();
   await expect(page.locator("[data-act=clearQuality]")).toHaveCount(0);

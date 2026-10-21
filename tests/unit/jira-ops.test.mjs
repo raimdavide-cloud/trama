@@ -235,3 +235,29 @@ test("rinnovo del token: un 5xx o la rete giù sono temporanei, invalid_grant e 
   await withAuth(reply(403, { error: "invalid_grant", error_description: "Unknown or invalid refresh token." }), () => assert.rejects(ops.getIssueLinkTypes(u, { cloudId }), (e) => e.code === "needs_reauth"));
   await withAuth(reply(400, { error: "invalid_request" }), () => assert.rejects(ops.getIssueLinkTypes(u, { cloudId }), (e) => e.code === "needs_reauth"));
 });
+
+test("allegato: la scheda .md arriva sul ticket come file multipart, con il nome ripulito", async () => {
+  const { key } = await create({ summary: "Con scheda" });
+  const r = await ops.addJiraAttachment(user, { cloudId, issueKey: key, filename: "../../ORTO-1-scheda.md", text: "# Scheda\n- [ ] AC1" });
+  assert.equal(r.filename, "ORTO-1-scheda.md");
+  const [a] = sim.issues.get(key).attachments;
+  assert.equal(a.filename, "ORTO-1-scheda.md");
+  assert.equal(a.text, "# Scheda\n- [ ] AC1");
+  assert.ok(sim.calls.includes(`POST /rest/api/3/issue/${key}/attachments`));
+});
+
+test("allegato: chiave, nome, contenuto e dimensione sbagliati sono rifiutati prima di chiamare Jira", async () => {
+  const { key } = await create({ summary: "Altro" });
+  const before = sim.calls.length;
+  const bad = (o) => assert.rejects(ops.addJiraAttachment(user, { cloudId, issueKey: key, filename: "a.md", text: "x", ...o }), { code: "tool_error" });
+  await bad({ issueKey: "orto 1" });
+  await bad({ filename: "scheda.exe" });
+  await bad({ filename: "..md" });
+  await bad({ text: "   " });
+  await bad({ text: "x".repeat(200 * 1024 + 1) });
+  assert.equal(sim.calls.length, before, "nessuna chiamata a Jira");
+});
+
+test("allegato: un ticket che non c'è o non si vede dà l'errore di Jira, senza allegare nulla", async () => {
+  await assert.rejects(ops.addJiraAttachment(user, { cloudId, issueKey: "ORTO-99999", filename: "a.md", text: "x" }), /does not exist|permission/i);
+});

@@ -118,12 +118,12 @@ html[lang="it"] .menu-btn [data-flag="en"],html[lang="en"] .menu-btn [data-flag=
 .fl b{display:block;font-size:14.5px}
 .fl small{display:block;font-size:13px;color:var(--muted)}
 .fl+.fl::before{content:"";position:absolute;left:10px;top:-16px;height:16px;width:0;border-left:var(--thread-w) dashed var(--thread)}
-/* demo della Scheda QA */
+/* demo della Scheda QA allegata alla storia */
 .mdv{font:12.5px/1.65 var(--f-mono);background:var(--sunk);border-radius:var(--r-m);padding:12px 14px;display:grid;gap:2px}
 .mdv b{color:var(--primary);font-weight:600}
-.zipcard{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px dashed var(--primary);border-radius:var(--r-m);font-size:13.5px}
-.zipcard .ic{width:20px;height:20px;color:var(--primary)}
-.zipcard small{display:block;color:var(--muted);font-size:12.5px}
+.attach{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px dashed var(--primary);border-radius:var(--r-m);font-size:13.5px}
+.attach .ic{width:20px;height:20px;color:var(--primary)}
+.attach small{display:block;color:var(--muted);font-size:12.5px}
 /* sezioni */
 section{padding-block:96px;border-top:1px solid var(--line)}
 /* ogni sezione ha il suo perimetro: fasce che si alternano (fondo e foglio) con una linea sopra e sotto, e dentro griglie con le linee condivise */
@@ -178,7 +178,7 @@ section+section{margin-top:-1px}
 .rule p{margin:0;color:var(--muted);font-size:15px;line-height:1.55}
 .rule .without{padding-top:12px;border-top:1px dashed var(--line);font-size:13.5px;color:var(--muted)}
 .rule .without b{color:var(--accent-text)}
-.gains{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid var(--line-mid);border-left:1px solid var(--line-mid)}
+.gains{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid var(--line-mid);border-left:1px solid var(--line-mid)}
 .gain{display:grid;gap:8px;align-content:start;border-right:1px solid var(--line-mid);border-bottom:1px solid var(--line-mid);background:var(--bg);padding:var(--sp-5)}
 .gain[hidden]{display:none}
 .roles{display:flex;gap:8px;flex-wrap:wrap;margin:-20px 0 22px}
@@ -321,8 +321,7 @@ footer a{color:var(--muted)}
     <div class="gains" id="gains">
       <div class="gain" data-roles="po"><span class="for">Product Owner</span><h3 class="h-card">Dal documento al backlog in un pomeriggio</h3><p>Requisiti estratti e ordinati, domande e ipotesi sempre in vista, backlog creato in Jira con un comando.</p></div>
       <div class="gain" data-roles="dev qa"><span class="for">Sviluppo e QA</span><h3 class="h-card">Ticket chiari al primo colpo</h3><p>Contesto, user story, criteri verificabili e punti aperti già scritti: si sviluppa e si collauda senza interpretare.</p></div>
-      <div class="gain" data-roles="qa"><span class="for">QA</span><h3 class="h-card">Scheda QA pronta per ogni ticket</h3><p>Criteri come checklist, requisito d'origine, dipendenze e decisioni in un file .md: si collauda senza ricostruire il contesto.</p></div>
-      <div class="gain" data-roles="qa delivery"><span class="for">QA e Delivery</span><h3 class="h-card">Piano di test per ogni release</h3><p>Ordine di collaudo dalle dipendenze, rischi aperti e requisiti senza ticket, con tutte le schede in un unico zip.</p></div>
+      <div class="gain" data-roles="qa"><span class="for">QA</span><h3 class="h-card">Scheda QA allegata a ogni storia</h3><p>Criteri come checklist, requisito d'origine, dipendenze e decisioni in un file .md allegato alla storia su Jira: si collauda senza ricostruire il contesto.</p></div>
       <div class="gain" data-roles="po dev qa delivery"><span class="for">Tutto il team</span><h3 class="h-card">Meno riunioni dell'ultimo minuto</h3><p>I dubbi si chiudono prima di creare i ticket e le risposte restano nel registro: niente call di chiarimento a sprint avviato.</p></div>
       <div class="gain" data-roles="po dev"><span class="for">PO e tech lead</span><h3 class="h-card">Meno revisioni sugli output</h3><p>Stessi modelli, stessi metadati e un controllo qualità per tutti: chi rivede trova il formato giusto e guarda solo il contenuto.</p></div>
       <div class="gain" data-roles="delivery"><span class="for">Delivery e PMO</span><h3 class="h-card">Progetti Jira tutti uguali</h3><p>Stessa struttura Project › Fase › Epica, stesse label e prefissi: si passa da un progetto all'altro senza reimparare nulla.</p></div>
@@ -355,7 +354,7 @@ footer a{color:var(--muted)}
         <button class="chapter" role="tab" aria-selected="true" data-demo="split"><span><b>Scomposizione con le regole</b><span>UX Story, storie BE e FE, metadati completi.</span></span></button>
         <button class="chapter" role="tab" aria-selected="false" data-demo="jira"><span><b>Struttura su Jira</b><span>Project, Fasi, epiche e ticket, collegati e verificati.</span></span></button>
         <button class="chapter" role="tab" aria-selected="false" data-demo="plan"><span><b>Qualità del backlog</b><span>Segnalazioni in ordine di gravità, con la correzione.</span></span></button>
-        <button class="chapter" role="tab" aria-selected="false" data-demo="qa"><span><b>Scheda QA per il collaudo</b><span>Criteri, dipendenze e piano di test pronti.</span></span></button>
+        <button class="chapter" role="tab" aria-selected="false" data-demo="qa"><span><b>Scheda QA per il collaudo</b><span>Criteri, dipendenze e decisioni, allegati alla storia su Jira.</span></span></button>
       </div>
       <div id="mainPlayer"></div>
     </div>
@@ -406,7 +405,7 @@ footer a{color:var(--muted)}
     <div class="faq">
       <details><summary>Trama scrive su Jira da solo?</summary><p>No. Prima esegue un controllo, poi mostra le ipotesi da confermare e chiede una doppia conferma. Solo allora crea, nell'ordine Project › Fasi › epiche › ticket, e rilegge Jira per verificare.</p></details>
       <details><summary>Chi è Tessa?</summary><p>L'assistente di Trama: legge i documenti, propone requisiti, ticket e ipotesi, controlla la qualità del backlog e risponde in chat su tutto il progetto. Funziona con Claude Code sul tuo computer.</p></details>
-      <details><summary>Cosa c'è per chi collauda?</summary><p>Per ogni ticket una Scheda QA in Markdown: criteri come checklist, requisito d'origine, dipendenze, ipotesi e decisioni. Per ogni release uno zip con il piano di test e tutte le schede.</p></details>
+      <details><summary>Cosa c'è per chi collauda?</summary><p>Su Jira, a ogni storia, Trama allega una Scheda QA in Markdown: criteri come checklist, requisito d'origine, dipendenze, ipotesi e decisioni.</p></details>
       <details><summary>Quali documenti posso caricare?</summary><p>Word, PDF, Excel, CSV, testo, Markdown e immagini. Le immagini (frame di design, screenshot, foto di lavagne) vengono trascritte da Tessa.</p></details>
       <details><summary>Serve una chiave API di Claude?</summary><p>No. Trama usa Claude Code sul tuo Mac attraverso un piccolo ponte locale, con il tuo abbonamento. Senza ponte acceso tutto funziona tranne le proposte di Tessa.</p></details>
       <details><summary>Posso usarlo da telefono o tablet?</summary><p>No: Trama è pensato per il computer, con una finestra larga almeno 900 pixel. Lavora con tabelle, pannelli e documenti lunghi, che su uno schermo piccolo diventerebbero scomodi. Da telefono Trama mostra un avviso.</p></details>

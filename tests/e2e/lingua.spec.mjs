@@ -61,11 +61,9 @@ test("inglese: nessun testo dell'interfaccia resta in italiano, in tutti i passi
   await page.locator("#rulesBtn").click();
   await page.locator("[data-act=closeRules]").click();
   await page.locator("#chatFab").click();
-  // selezione dei ticket, menu «Esporta», scheda Qualità e kit da un modello
+  // selezione dei ticket, scheda Qualità e kit da un modello
   await page.evaluate(() => A.go({ dataset: { i: STEPS.findIndex((x) => x.id === "backlog") } }));
   await page.locator(".t-pick").first().check();
-  await page.locator(".exp-btn").click();
-  await page.keyboard.press("Escape");
   await page.locator("[data-act=bTab][data-tab=quality]").click();
   await page.evaluate(() => A.go({ dataset: { i: STEPS.findIndex((x) => x.id === "kit") } }));
   await page.locator("[data-act=kitImport]").click();

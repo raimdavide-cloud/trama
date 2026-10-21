@@ -509,11 +509,6 @@ html[lang="it"] .lang-btn [data-flag="en"],html[lang="en"] .lang-btn [data-flag=
 #langMenu button[aria-checked="false"] .lang-ok{visibility:hidden}
 .lang-ok{width:16px;height:16px;color:var(--fg)}
 
-/* Scheda QA nel pannello del ticket */
-.qa-box{margin-top:12px}
-.qa-gaps{margin:0 0 10px;padding-left:18px}
-.qa-pre{margin:0;max-height:320px;overflow:auto;padding:12px 14px;background:var(--sunk);border-radius:var(--r-m);font:var(--fs-xs)/1.55 var(--f-mono);white-space:pre-wrap;word-break:break-word}
-.qa-pre:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 
 /* «Annulla» nel toast */
 #toast:not([hidden]){display:flex;align-items:center;gap:14px}
@@ -528,9 +523,6 @@ html[lang="it"] .lang-btn [data-flag="en"],html[lang="en"] .lang-btn [data-flag=
 
 .ki-parts label{flex-wrap:nowrap;align-items:flex-start}
 .ki-parts label input{margin-top:2px}
-.exp-btn{border:1px solid var(--line);background:var(--surface);font-weight:600;padding:7px 12px}
-.exp-btn .chev{width:12px;height:12px}
-.exp-dd .dd-menu{min-width:260px}
 .push-box{margin:0 0 16px;padding:0 0 14px;border-bottom:1px solid var(--line)}
 .push-box .h-sub{margin:0 0 6px;font:700 var(--fs-base) var(--f-display)}
 /* confronto con una nuova versione del documento */

@@ -16,10 +16,11 @@ export const sim = {
   calls: [],
   // guasti su richiesta, quante volte fallire: afterCreate500 e before500 per tipo di ticket;
   // rate429 (con Retry-After = retryAfter, null per ometterlo) e down503 per metodo HTTP o "*" per tutte le richieste;
+  // attach500 per chiave ticket: l'allegato di quel ticket fallisce con 500 per le prossime N volte;
   // hidden per chiave ticket: finché il valore è > 0 il ticket esiste ma non si vede (404 e JQL come per una chiave inesistente), non si consuma
-  faults: { afterCreate500: {}, before500: {}, rate429: {}, down503: {}, hidden: {} },
+  faults: { afterCreate500: {}, before500: {}, rate429: {}, down503: {}, hidden: {}, attach500: {} },
   retryAfter: "1",
-  reset() { this.issues.clear(); this.counter = 1000; this.calls = []; this.faults = { afterCreate500: {}, before500: {}, rate429: {}, down503: {}, hidden: {} }; this.retryAfter = "1"; },
+  reset() { this.issues.clear(); this.counter = 1000; this.calls = []; this.faults = { afterCreate500: {}, before500: {}, rate429: {}, down503: {}, hidden: {}, attach500: {} }; this.retryAfter = "1"; },
 };
 
 const json = (status, data) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
@@ -88,7 +89,8 @@ function runJql(jql, body) {
 async function handle(url, init) {
   const u = new URL(url);
   const method = (init.method || "GET").toUpperCase();
-  const body = init.body ? JSON.parse(init.body) : {};
+  const isForm = typeof FormData !== "undefined" && init.body instanceof FormData;
+  const body = init.body && !isForm ? JSON.parse(init.body) : {};
   if (u.pathname === "/oauth/token/accessible-resources") return json(200, [{ id: sim.cloudId, url: "https://esempio.atlassian.net", name: "esempio" }]);
   const p = u.pathname.replace(/^\/ex\/jira\/[^/]+/, "");
   sim.calls.push(`${method} ${p}${body.fields?.issuetype ? " [" + body.fields.issuetype.name + "]" : ""}`);
@@ -147,6 +149,16 @@ async function handle(url, init) {
     if (!a || !b) return err(404, {}, ["Ticket da collegare inesistente."]);
     (sim.links ??= []).push({ type: body.type?.name, from: a.key, to: b.key });
     return new Response(null, { status: 201 });
+  }
+  if (method === "POST" && (m = p.match(/^\/rest\/api\/3\/issue\/([A-Z0-9-]+)\/attachments$/))) {
+    const issue = visible(m[1]);
+    if (!issue) return err(404, {}, ["Issue does not exist or you do not have permission to see it."]);
+    if ((sim.faults.attach500[m[1]] || 0) > 0) { sim.faults.attach500[m[1]]--; return err(500, {}, ["Errore interno (simulato) sull'allegato."]); }
+    if (!isForm || init.headers?.["x-atlassian-token"] !== "no-check") return err(415, {}, ["SIMULATORE: allegato non multipart o senza X-Atlassian-Token."]);
+    const f = init.body.get("file");
+    const a = { id: String(10000 + (issue.attachments?.length || 0) + sim.issues.size), filename: f.name, size: f.size, text: await f.text() };
+    (issue.attachments = issue.attachments || []).push(a);
+    return json(200, [{ id: a.id, filename: a.filename, size: a.size }]);
   }
   if (method === "GET" && p === "/rest/api/3/user/search") return json(200, []);
   return err(404, {}, [`SIMULATORE: percorso non gestito: ${method} ${p}`]);
