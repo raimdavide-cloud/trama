@@ -22,10 +22,18 @@
   --ok:var(--salvia-700); --ok-soft:var(--salvia-100); --warn:var(--zafferano-700); --warn-soft:var(--zafferano-100); --err:var(--corallo-700); --err-soft:var(--corallo-100);
   --band:var(--indaco-900); --band-fg:#F2F3FB; --band-muted:#AEB5DD;
   --shadow:0 1px 2px rgba(20,27,71,.06),0 8px 24px rgba(20,27,71,.07);
+  /* Ombre degli elementi che stanno sopra la pagina: menu e barre (pop), chat (float), pannello laterale (side), pulsante della chat (fab) */
+  --shadow-pop:0 1px 2px rgba(20,27,71,.06),0 12px 32px rgba(20,27,71,.14);
+  --shadow-float:0 22px 60px rgba(20,27,71,.24),0 3px 10px rgba(20,27,71,.10);
+  --shadow-side:-12px 0 32px rgba(20,27,71,.12);
+  --shadow-fab:0 10px 28px rgba(20,27,71,.32),inset 0 1px 0 rgba(255,255,255,.22);
+  --shadow-fab-hover:0 14px 32px rgba(20,27,71,.36),inset 0 1px 0 rgba(255,255,255,.22);
 
   --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
   --f-body:"Figtree","Segoe UI",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  /* Scala dei caratteri: solo questi gradini. 12 etichette e note, 13 testo secondario, 14 tabelle e controlli, 15 testo corrente, 16 sottotitoli, 20 titoli di sezione, 28 numeri e titoli grandi, 36 titolo di pagina */
+  --fs-xs:12px; --fs-s:13px; --fs-m:14px; --fs-base:15px; --fs-l:16px; --fs-xl:20px; --fs-2xl:28px; --fs-3xl:36px;
   --r-s:6px; --r-m:10px; --r-l:16px;
   --t-fast:150ms; --t-base:250ms; --t-slow:400ms; --ease:cubic-bezier(.2,.7,.2,1);
   color-scheme:light;
@@ -36,6 +44,8 @@
   --accent:#F4B45A; --accent-soft:#3A2C12; --accent-text:#F4B45A;
   --ok:#5FCB97; --ok-soft:#133126; --warn:#F4B45A; --warn-soft:#3A2C12; --err:#FF8E7A; --err-soft:#3B1A16;
   --band:#18205A; --band-fg:#F2F3FB; --band-muted:#AEB5DD; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  --shadow-pop:0 1px 2px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.5); --shadow-float:0 22px 60px rgba(0,0,0,.55),0 3px 10px rgba(0,0,0,.35); --shadow-side:-12px 0 32px rgba(0,0,0,.4);
+  --shadow-fab:0 10px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.22); --shadow-fab-hover:0 14px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.22);
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --tx-blue:#5AAEF5; --bg:#0D1129; --surface:#151A3A; --sunk:#1C2248; --line:#2A3160; --fg:#E8EAF6; --muted:#9BA2C7;
@@ -43,4 +53,6 @@
   --accent:#F4B45A; --accent-soft:#3A2C12; --accent-text:#F4B45A;
   --ok:#5FCB97; --ok-soft:#133126; --warn:#F4B45A; --warn-soft:#3A2C12; --err:#FF8E7A; --err-soft:#3B1A16;
   --band:#18205A; --band-fg:#F2F3FB; --band-muted:#AEB5DD; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  --shadow-pop:0 1px 2px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.5); --shadow-float:0 22px 60px rgba(0,0,0,.55),0 3px 10px rgba(0,0,0,.35); --shadow-side:-12px 0 32px rgba(0,0,0,.4);
+  --shadow-fab:0 10px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.22); --shadow-fab-hover:0 14px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.22);
   color-scheme:dark}

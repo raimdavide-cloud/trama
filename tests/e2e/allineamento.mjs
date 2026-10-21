@@ -15,10 +15,19 @@ export function misalignedIcons(tolerance = 1.5) {
     }
     return false;
   };
+  // testo fuori dall'area visibile di un contenitore che scorre (la chat scorre in fondo): non si vede, quindi non conta
+  const clipped = (el, r) => {
+    for (let e = el; e && e !== document.body; e = e.parentElement) {
+      if (getComputedStyle(e).overflowY === "visible") continue;
+      const c = e.getBoundingClientRect();
+      if (r.bottom <= c.top || r.top >= c.bottom) return true;
+    }
+    return false;
+  };
   const textRects = (root, skip) => {
     const out = [];
     const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.textContent.trim() && !skip.contains(n) && !hiddenEl(n.parentElement) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT) });
-    for (let n = w.nextNode(); n; n = w.nextNode()) { const rg = document.createRange(); rg.selectNodeContents(n); for (const r of rg.getClientRects()) if (r.width > 0) out.push({ r, n }); }
+    for (let n = w.nextNode(); n; n = w.nextNode()) { const rg = document.createRange(); rg.selectNodeContents(n); for (const r of rg.getClientRects()) if (r.width > 0 && !clipped(n.parentElement, r)) out.push({ r, n }); }
     return out;
   };
   const res = [], seen = new Set();
