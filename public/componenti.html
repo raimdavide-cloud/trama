@@ -54,7 +54,7 @@ body{background:var(--bg)}
   <h1>Componenti di Trama</h1>
   <p class="lead">Ogni esempio qui sotto usa gli stessi file di Trama in produzione (<span class="mono">tokens.css</span> e <span class="mono">studio.css</span>): se cambia Trama, cambia anche questa pagina. Il marchio e le pagine pubbliche sono descritti in <a href="/brand">/brand</a>.</p>
   <ul class="toc" aria-label="In questa pagina">
-    <li><a href="#token">Token</a></li><li><a href="#tipografia">Tipografia</a></li><li><a href="#pulsanti">Pulsanti</a></li><li><a href="#etichette">Etichette e stati</a></li><li><a href="#messaggi">Messaggi</a></li><li><a href="#campi">Campi</a></li><li><a href="#tabelle">Tabelle e pannello</a></li><li><a href="#menu">Menu</a></li><li><a href="#avanzamento">Avanzamento</a></li><li><a href="#passo">Intestazione del passo</a></li><li><a href="#contenuti">Contenuti</a></li><li><a href="#accessibilita">Accessibilità</a></li><li><a href="#desktop">Solo desktop</a></li>
+    <li><a href="#token">Token</a></li><li><a href="#tipografia">Tipografia</a></li><li><a href="#pulsanti">Pulsanti</a></li><li><a href="#etichette">Etichette e stati</a></li><li><a href="#messaggi">Messaggi</a></li><li><a href="#suggerimenti">Suggerimenti e filo</a></li><li><a href="#campi">Campi</a></li><li><a href="#tabelle">Tabelle e pannello</a></li><li><a href="#menu">Menu</a></li><li><a href="#avanzamento">Avanzamento</a></li><li><a href="#passo">Intestazione del passo</a></li><li><a href="#contenuti">Contenuti</a></li><li><a href="#accessibilita">Accessibilità</a></li><li><a href="#desktop">Solo desktop</a></li>
   </ul>
 </header>
 
@@ -70,12 +70,13 @@ body{background:var(--bg)}
     <div><i style="background:var(--muted)"></i><p><code>--muted</code><br>testo secondario</p></div>
     <div><i style="background:var(--primary)"></i><p><code>--primary</code><br>indaco: azioni e selezione</p></div>
     <div><i style="background:var(--primary-soft)"></i><p><code>--primary-soft</code><br>riga selezionata, etichette</p></div>
-    <div><i style="background:var(--accent)"></i><p><code>--accent</code><br>zafferano: il filo, una sola cosa per schermata</p></div>
+    <div><i style="background:var(--line-strong)"></i><p><code>--line-strong</code><br>bordo di campi e caselle (3:1)</p></div>
+    <div><i style="background:var(--thread)"></i><p><code>--thread</code><br>il filo: lega ciò che deriva da ciò; una sola cosa per schermata</p></div>
     <div><i style="background:var(--ok)"></i><p><code>--ok</code> · <code>--ok-soft</code><br>fatto, verificato</p></div>
     <div><i style="background:var(--warn)"></i><p><code>--warn</code> · <code>--warn-soft</code><br>da guardare, non blocca</p></div>
     <div><i style="background:var(--err)"></i><p><code>--err</code> · <code>--err-soft</code><br>blocca, va corretto</p></div>
   </div>
-  <ul class="rules-ok"><li>Caratteri: <b>Bricolage Grotesque</b> per i titoli, <b>Figtree</b> per il testo, <b>JetBrains Mono</b> per codici e chiavi (<span class="mono">--f-display</span>, <span class="mono">--f-body</span>, <span class="mono">--f-mono</span>).</li><li>Scala dei caratteri: <span class="mono">--fs-xs</span> 12, <span class="mono">--fs-s</span> 13, <span class="mono">--fs-m</span> 14, <span class="mono">--fs-base</span> 15, <span class="mono">--fs-l</span> 16, <span class="mono">--fs-xl</span> 20, <span class="mono">--fs-2xl</span> 28, <span class="mono">--fs-3xl</span> 36 px. Niente altre misure.</li><li>Ombre: <span class="mono">--shadow</span> per le schede, <span class="mono">--shadow-pop</span> per menu e barre, <span class="mono">--shadow-float</span> per la chat, <span class="mono">--shadow-side</span> per il pannello, <span class="mono">--shadow-fab</span> per il pulsante della chat.</li><li>Raggi: <span class="mono">--r-s</span> 6px, <span class="mono">--r-m</span> 10px, <span class="mono">--r-l</span> 16px.</li></ul>
+  <ul class="rules-ok"><li>Caratteri: <b>Bricolage Grotesque</b> per i titoli, <b>Figtree</b> per il testo, <b>JetBrains Mono</b> per codici e chiavi (<span class="mono">--f-display</span>, <span class="mono">--f-body</span>, <span class="mono">--f-mono</span>).</li><li>Scala dei caratteri: <span class="mono">--fs-xs</span> 12, <span class="mono">--fs-s</span> 13, <span class="mono">--fs-m</span> 14, <span class="mono">--fs-base</span> 15, <span class="mono">--fs-l</span> 16, <span class="mono">--fs-xl</span> 20, <span class="mono">--fs-2xl</span> 28, <span class="mono">--fs-3xl</span> 36 px. Niente altre misure.</li><li>Ombre: <span class="mono">--shadow</span> per le schede, <span class="mono">--shadow-pop</span> per menu e barre, <span class="mono">--shadow-float</span> per la chat, <span class="mono">--shadow-side</span> per il pannello, <span class="mono">--shadow-fab</span> per il pulsante della chat.</li><li>Spazi: multipli di 4 (<span class="mono">--sp-1…--sp-7</span>, da 4 a 48 px). Righe di tabella: <span class="mono">--row-h</span> 36 px; pulsanti e campi 34 px, etichette 22 px.</li><li>Raggi: <span class="mono">--r-s</span> 4px per campi e pulsanti, <span class="mono">--r-m</span> 8px per menu e pannelli, <span class="mono">--r-l</span> 12px per sezioni, <span class="mono">--r-pill</span> solo per le etichette di stato. Bordo <span class="mono">--bw</span> 1px.</li><li>Stati: <span class="mono">--hover</span>, <span class="mono">--selected</span>, <span class="mono">--ring</span> (focus), <span class="mono">--disabled-bg</span> e <span class="mono">--disabled-fg</span>. Uguali in chiaro e scuro: derivano dai ruoli.</li><li>Contrasto: <span class="mono">npm run design:contrasto</span> controlla ogni coppia (4,5:1 il testo, 3:1 bordi e icone) nei due temi.</li></ul>
 </section>
 
 <section id="tipografia" aria-labelledby="h-tipo">
@@ -124,6 +125,19 @@ body{background:var(--bg)}
     <div class="msg err">2 controlli bloccano la creazione: risolvili prima di procedere.</div>
   </div>
   <ul class="rules-ok"><li>Prima cosa è successo, poi cosa fare. Una o due frasi, senza «Errore:» davanti.</li><li>I messaggi restano nel passo in cui servono; le notifiche brevi (toast) solo per conferme veloci.</li></ul>
+</section>
+
+<section id="suggerimenti" aria-labelledby="h-tip">
+  <h2 id="h-tip">Suggerimenti e filo</h2>
+  <div class="spec">
+    <span class="ai-off" tabindex="0" data-tip="Serve Tessa: avvia il ponte (indicatore in alto)"><span class="sr-only">Serve Tessa: avvia il ponte (indicatore in alto)</span><button type="button" disabled>Suggerisci altre domande</button></span>
+    <table class="dt" style="max-width:420px"><colgroup><col style="width:40px"><col></colgroup><tbody>
+      <tr class="dt-r" data-st="draft"><td></td><td>Bozza proposta da Tessa: filo tratteggiato</td></tr>
+      <tr class="dt-r" data-st="created"><td></td><td>Creato su Jira: filo pieno</td></tr>
+      <tr class="dt-r" data-st="error"><td></td><td>Errore: filo rosso puntinato</td></tr>
+    </tbody></table>
+  </div>
+  <ul class="rules-ok"><li>Il suggerimento spiega perché un comando è spento o cosa fa; il testo sta anche nella pagina per i lettori di schermo, e appare anche con il focus da tastiera.</li><li>Il filo lega un ticket al requisito da cui nasce: tratteggiato finché è una proposta, pieno quando è su Jira. Non è un elemento decorativo: dove non c'è una derivazione da mostrare, non si usa.</li></ul>
 </section>
 
 <section id="campi" aria-labelledby="h-campi">
