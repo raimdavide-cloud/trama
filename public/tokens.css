@@ -14,10 +14,10 @@
   /* Stati */
   --salvia-700:#1F6B4A; --salvia-100:#E1F2E9; --corallo-700:#B33A24; --corallo-100:#FBE6E1;
   /* Neutri: carta calda e inchiostro indaco */
-  --carta:#F6F3EC; --foglio:#FDFCF9; --bianco:#FFFFFF; --nebbia:#EDE9DF; --linea:#DCD6C8; --linea-forte:#8B8571; --ardesia:#5B5870; --inchiostro:#1B1A2E;
+  --carta:#F6F3EC; --foglio:#FDFCF9; --bianco:#FFFFFF; --nebbia:#EDE9DF; --linea:#DCD6C8; --linea-media:#BDB6A3; --linea-forte:#8B8571; --ardesia:#5B5870; --inchiostro:#1B1A2E;
 
   /* Ruoli: superfici, testo, bordi (usare questi nei componenti, mai i colori grezzi) */
-  --bg:var(--carta); --surface:var(--foglio); --sunk:var(--nebbia); --line:var(--linea); --line-strong:var(--linea-forte);
+  --bg:var(--carta); --surface:var(--foglio); --sunk:var(--nebbia); --line:var(--linea); --line-mid:var(--linea-media); --line-strong:var(--linea-forte);
   --fg:var(--inchiostro); --muted:var(--ardesia);
   --primary:var(--indaco-500); --primary-strong:var(--indaco-700); --primary-soft:var(--indaco-100); --on-primary:#FFFFFF;
   /* Il filo: una linea sottile che lega le cose derivate. Tratteggiata = proposta di Tessa, piena = confermata */
@@ -56,7 +56,7 @@
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --tx-blue:#5AAEF5;
-  --bg:#12132A; --surface:#1A1C38; --sunk:#23254A; --line:#32356A; --line-strong:#7478B0; --fg:#ECEAF5; --muted:#A6A9C9;
+  --bg:#12132A; --surface:#1A1C38; --sunk:#23254A; --line:#32356A; --line-mid:#474B86; --line-strong:#7478B0; --fg:#ECEAF5; --muted:#A6A9C9;
   --primary:#9AA6FF; --primary-strong:#C0C7FF; --primary-soft:#262A5E; --on-primary:#12132A;
   --thread:#F2B04F; --thread-soft:#3A2C12; --accent-text:#F2B04F;
   --ok:#5FCB97; --ok-soft:#133126; --warn:#F2B04F; --warn-soft:#3A2C12; --err:#FF8E7A; --err-soft:#3B1A16;
@@ -67,7 +67,7 @@
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --tx-blue:#5AAEF5;
-  --bg:#12132A; --surface:#1A1C38; --sunk:#23254A; --line:#32356A; --line-strong:#7478B0; --fg:#ECEAF5; --muted:#A6A9C9;
+  --bg:#12132A; --surface:#1A1C38; --sunk:#23254A; --line:#32356A; --line-mid:#474B86; --line-strong:#7478B0; --fg:#ECEAF5; --muted:#A6A9C9;
   --primary:#9AA6FF; --primary-strong:#C0C7FF; --primary-soft:#262A5E; --on-primary:#12132A;
   --thread:#F2B04F; --thread-soft:#3A2C12; --accent-text:#F2B04F;
   --ok:#5FCB97; --ok-soft:#133126; --warn:#F2B04F; --warn-soft:#3A2C12; --err:#FF8E7A; --err-soft:#3B1A16;
