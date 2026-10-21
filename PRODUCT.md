@@ -10,7 +10,7 @@ web
 
 Utente principale: il **Product Owner** di un progetto del gruppo. Lavora al computer, in sessioni lunghe, per trasformare il documento di requisiti del cliente (Word, PDF, Excel, immagini) in un backlog Jira strutturato, passo dopo passo.
 
-Utenti secondari, che leggono e correggono il risultato: **sviluppo** (ticket chiari, dipendenze esplicite), **QA** (criteri di accettazione, Scheda QA e piano di test per release), **Delivery e PMO** (stessa struttura in tutti i progetti, registro delle decisioni).
+Utenti secondari, che leggono e correggono il risultato: **sviluppo** (ticket chiari, dipendenze esplicite), **QA** (criteri di accettazione e Scheda QA allegata a ogni storia su Jira), **Delivery e PMO** (stessa struttura in tutti i progetti, registro delle decisioni).
 
 ## Product Purpose
 

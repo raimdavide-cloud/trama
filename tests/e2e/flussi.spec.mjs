@@ -190,7 +190,6 @@ test("Esportazioni CSV: requisiti, ticket e decisioni con intestazione e una rig
     await goToStep(page, step);
     if (sec) await openSec(page, sec);
     const item = page.locator(`[data-act=${file}]`).first();
-    if (!(await item.isVisible())) await page.locator(".exp-btn").click(); // nel Backlog le esportazioni stanno nel menu «Esporta»
     const [dl] = await Promise.all([page.waitForEvent("download"), item.click()]);
     const text = await (await dl.createReadStream()).toArray().then((c) => Buffer.concat(c).toString("utf8"));
     return { name: dl.suggestedFilename(), lines: text.replace(/^﻿/, "").split("\r\n") };
@@ -350,32 +349,6 @@ test("chat: l'assistente è Tessa e nella chat Claude non compare mai, in italia
   await expect(chat.locator(".chat-h h2")).toHaveText("Tessa");
   await expect(fab).toHaveAttribute("aria-label", "Ask Tessa: close the chat");
   expect(await visible()).not.toMatch(/Claude/);
-});
-
-test("Scheda QA: dal pannello del ticket si vede, si copia e si scarica; dalla lista si scarica lo zip della release", async ({ page }) => {
-  await openStudio(page);
-  await goToStep(page, "Backlog");
-  const ref = await page.evaluate(() => ticketList().find((t) => t.type === "Story" && (t.links || []).length).ref);
-  await page.locator(`#main tr[data-k^="t-"]`, { hasText: ref }).first().click();
-  const box = page.locator(".sp .qa-box");
-  await expect(box.locator("summary")).toContainText("Scheda QA");
-  await box.locator("summary").click();
-  const pre = box.locator(".qa-pre");
-  await expect(pre).toContainText(`ref: ${ref}`);
-  await expect(pre).toContainText("## Cosa verificare");
-  await expect(pre).toContainText("- [ ] AC1 · ");
-  await expect(pre).toContainText("## Da dove nasce");
-  const [md] = await Promise.all([page.waitForEvent("download"), box.getByRole("button", { name: "Scarica .md" }).click()]);
-  expect(md.suggestedFilename()).toMatch(/^(ORTO-\d+|T-\d+)-[a-z0-9-]+\.md$/);
-  await expect(page.locator("#toast")).toHaveText("Scheda QA scaricata.");
-  await page.keyboard.press("Escape");
-  await page.locator(".exp-btn").click();
-  const [zip] = await Promise.all([page.waitForEvent("download"), page.locator("[data-act=qaZip]").click()]);
-  expect(zip.suggestedFilename()).toBe("schede-qa-mvp-pilota.zip");
-  await expect(page.locator("#toast")).toHaveText(/Scaricato il piano di test con \d+ schede QA\./);
-  const buf = Buffer.concat(await (async () => { const out = []; for await (const c of await zip.createReadStream()) out.push(c); return out; })());
-  expect(buf.subarray(0, 4).toString("hex")).toBe("504b0304");
-  expect(buf.includes(Buffer.from("piano-di-test.md"))).toBe(true);
 });
 
 test("CSV: una cella che inizia con = + - @ resta testo (apostrofo davanti), anche per Excel", async ({ page }) => {

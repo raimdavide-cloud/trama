@@ -7,11 +7,11 @@ const DEMOS={
    <div class="fl" data-s="1">${I("i-list")}<div><b>75 requisiti</b><small>Con release e dipendenze · 12 domande aperte</small></div><span class="pill ok">validati</span></div>
    <div class="fl" data-s="2">${I("i-layers")}<div><b>48 ticket</b><small>UX Story, BE, FE Web e FE Mobile · metadati completi</small></div><span class="pill primary">kit</span></div>
    <div class="fl" data-s="3">${I("i-tree")}<div><b>In Jira</b><small>1 Project · 2 Fasi · 6 epiche · 57 di 57 collegati</small></div><span class="pill ok">verificato</span></div></div>`},
- qa:{title:"trama · Passo 5 di 6 · Scheda QA",steps:["Apri un ticket nel Backlog.","Trama prepara la Scheda QA: i criteri diventano una checklist.","Aggiunge requisito d'origine, dipendenze e decisioni.","Per la release: piano di test e tutte le schede in uno zip."],
+ qa:{title:"trama · Passo 5 di 6 · Scheda QA",steps:["Apri un ticket nel Backlog.","Trama prepara la Scheda QA: i criteri diventano una checklist.","Aggiunge requisito d'origine, dipendenze e decisioni.","A fine creazione la allega alla storia su Jira."],
   html:`<div class="d-grid"><div class="stack"><p class="label-s" data-s="0">Ticket nel Backlog</p>
    <div class="tk" data-s="0"><span class="key">T-016</span><span class="t" data-no-i18n><em>[FE - Web]</em> Shifts calendar</span><span class="m"><span class="pill">Story</span><span class="pill">2 AC</span></span></div>
    <div class="req" data-s="0"><span class="key">RF-020</span><b>Calendario dei turni di irrigazione</b><span class="pill primary">MVP</span></div>
-   <div class="zipcard" data-s="3">${I("i-send")}<div><b>schede-qa-mvp.zip</b><small>piano-di-test.md · 31 schede</small></div></div></div>
+   <div class="attach" data-s="3">${I("i-file")}<div><b>Allegata alla storia su Jira</b><small data-no-i18n>ORTO-906-shifts-calendar.md</small></div></div></div>
    <div class="stack"><p class="label-s" data-s="1">Scheda QA · ORTO-906.md</p><div class="mdv">
    <div data-s="1"><b>## Cosa verificare</b></div><div data-s="1" data-no-i18n>☐ AC1 · Week and month views from 360 px</div><div data-s="1" data-no-i18n>☐ AC2 · Loads in under 2 s with 200 shifts</div>
    <div data-s="2"><b>## Da dove nasce</b></div><div data-s="2">RF-020 · Calendario dei turni di irrigazione</div>

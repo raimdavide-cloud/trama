@@ -31,6 +31,10 @@ function cleanLabels(list) {
   return labels;
 }
 
+// nome di file sicuro per un allegato: niente percorsi né caratteri di controllo, estensione .md
+const safeName = (n) => String(n || "").replace(/[\\/:*?"<>|\x00-\x1f]+/g, "-").replace(/^[.-]+/, "").slice(0, 120);
+const MAX_ATTACHMENT = 200 * 1024;
+
 export const ops = {
   async getAccessibleAtlassianResources(user) {
     return fetchSites(await accessToken(user));
@@ -44,6 +48,21 @@ export const ops = {
     });
     if (i.searchString) q.set("query", String(i.searchString).slice(0, 100));
     return jiraFetch(user, i.cloudId, `${V3}/project/search?${q}`);
+  },
+  // allega un file di testo Markdown a un ticket (scheda QA): un solo file per chiamata, mai sostituisce né elimina
+  async addJiraAttachment(user, i) {
+    const key = String(i.issueKey || "");
+    if (!/^[A-Z][A-Z0-9_]*-\d+$/.test(key)) throw Object.assign(new Error("Chiave del ticket non valida"), { code: "tool_error" });
+    const filename = safeName(i.filename);
+    if (!/\.md$/i.test(filename) || filename.length < 4) throw Object.assign(new Error("Il file deve avere estensione .md"), { code: "tool_error" });
+    const text = String(i.text ?? "");
+    if (!text.trim()) throw Object.assign(new Error("Il file è vuoto"), { code: "tool_error" });
+    if (Buffer.byteLength(text, "utf8") > MAX_ATTACHMENT) throw Object.assign(new Error("Il file supera i 200 KB"), { code: "tool_error" });
+    const form = new FormData();
+    form.append("file", new Blob([text], { type: "text/markdown" }), filename);
+    const r = await jiraFetch(user, i.cloudId, `${V3}/issue/${e(key)}/attachments`, { method: "POST", form });
+    const a = Array.isArray(r) ? r[0] : r;
+    return { id: a?.id ?? null, filename: a?.filename ?? filename, size: a?.size ?? null };
   },
   async getIssueLinkTypes(user, i) {
     return jiraFetch(user, i.cloudId, `${V3}/issueLinkType`);

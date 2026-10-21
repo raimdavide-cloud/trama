@@ -788,7 +788,7 @@ function ticketsPanel(k,rs,ts,rels){const inRelAll=rs.filter(r=>T.rel==="*"||r.r
   const groups0=[...inRelAll.map(r=>({r,ts:ts.filter(t=>t.req===r.code)})),{r:null,ts:ts.filter(t=>!rs.some(r=>r.code===t.req)&&(T.rel==="*"||t.release===T.rel))}].filter(g=>g.ts.length);
   const groups=T.bReq?groups0.filter(g=>g.r?.code===T.bReq):groups0;
   const tq=T.tq.trim().toLowerCase();T.tsel=new Set([...T.tsel].filter(id=>S.tickets[id]));
-  h+=`<div class="card"><h2>Ticket per requisito</h2><div class="toolbar list-bar"><input type="search" id="tSearch" class="t-search" placeholder="Cerca per rif., titolo o chiave" aria-label="Cerca ticket per riferimento, titolo o chiave Jira" value="${esc(T.tq)}" autocomplete="off">${T.bReq?`<span class="pill primary">Solo ${esc(T.bReq)}</span><button type="button" class="link" data-act="bReqClear">Mostra tutti</button>`:""}<span style="flex:1"></span><label class="row small"><input type="checkbox" id="onlyIssues" ${T.onlyIssues?"checked":""}> Solo con problemi</label>${B("addTicket","Aggiungi a mano")}<div class="dd exp-dd"><button type="button" class="dd-btn exp-btn" aria-haspopup="menu" aria-expanded="false" ${ts.length?"":"disabled"}>Esporta <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="dd-menu right" role="menu" hidden><button type="button" role="menuitem" data-act="exportTickets">Backlog in CSV</button><button type="button" role="menuitem" data-act="qaZip">Schede QA e piano di test (.zip)</button></div></div></div>`;
+  h+=`<div class="card"><h2>Ticket per requisito</h2><div class="toolbar list-bar"><input type="search" id="tSearch" class="t-search" placeholder="Cerca per rif., titolo o chiave" aria-label="Cerca ticket per riferimento, titolo o chiave Jira" value="${esc(T.tq)}" autocomplete="off">${T.bReq?`<span class="pill primary">Solo ${esc(T.bReq)}</span><button type="button" class="link" data-act="bReqClear">Mostra tutti</button>`:""}<span style="flex:1"></span><label class="row small"><input type="checkbox" id="onlyIssues" ${T.onlyIssues?"checked":""}> Solo con problemi</label>${B("addTicket","Aggiungi a mano")}${B("exportTickets","Esporta in CSV",{ro:1,dis:!ts.length})}</div>`;
   const ids=[];
   const bodies=groups.map(({r,ts:gts})=>{const shown=T.onlyIssues?gts.filter(t=>{const i=issuesOf(t);return i.e.length||i.w.length||t.review}):gts;if(!shown.length)return"";const bad=gts.filter(t=>t.state!=="created"&&issuesOf(t).e.length).length;shown.forEach(t=>ids.push(t.id));
    const vis=shown.filter(t=>tMatch(t,tq));
@@ -834,18 +834,10 @@ function ticketForm(t){const{e,w}=issuesOf(t),k=K(),b="tickets:"+t.id+":",locked
   ${F("Collegamenti (es. blocks: T-004, relates: T-002)",`<input data-links="${t.id}" value="${esc(linksText(t))}" ${READONLY?"disabled":""}>`,"wide")}</div>
  <p class="small muted" style="margin:8px 0 0">Requisito: ${esc(t.req||"—")} · Label: ${labelsOf(t).map(esc).join(", ")||"—"}</p>
  ${(t.assumptions||[]).length?`<div class="card note small" style="margin:10px 0 0"><b>Ipotesi dichiarate da Claude</b><ul style="margin:4px 0 0">${t.assumptions.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></div>`:""}
- ${qaBox(t)}
  <div class="toolbar" style="margin-top:10px">${B("applyTemplate",T.arm["tpl"+t.id]?"Conferma: sostituisci la descrizione":"Usa il modello vuoto",{cls:T.arm["tpl"+t.id]?"armed":"",data:{id:t.id},dis:locked})}${B("delTicket",T.arm["t"+t.id]?"Conferma eliminazione":"Elimina ticket",{cls:T.arm["t"+t.id]?"armed":"danger",data:{id:t.id},dis:locked})}</div>`}
 
-/* Scheda QA: il Markdown per chi collauda (generatore in qa-scheda.js) */
+/* Scheda QA: il Markdown per chi collauda (generatore in qa-scheda.js), allegato alle storie su Jira */
 const qaCtx=()=>({tickets:ticketList(),reqs:reqList(),decisions:arr("decisions"),siteUrl:siteOf(),project:P().name||"",fullTitle,labels:labelsOf,typeName:t=>K().types?.[t.type]||t.type,tr:s=>window.I18N?.t?.(s)??s,today:today()});
-function qaBox(t){if(!window.QA)return"";const q=QA.sheet(t,qaCtx());
-  return`<details class="item qa-box" data-k="qa-${esc(t.id)}"><summary><span class="ttl">Scheda QA</span>${q.ready?'<span class="pill ok">pronta per il collaudo</span>':`<span class="pill warn">${q.gaps.length===1?"1 punto da completare":q.gaps.length+" punti da completare"}</span>`}</summary><div class="in">
-   <p class="small muted" style="margin:0 0 8px">Un file Markdown per chi collauda: criteri da verificare, requisito d'origine, dipendenze, ipotesi e decisioni che toccano il ticket.</p>
-   ${q.gaps.length?`<ul class="qa-gaps small">${q.gaps.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>`:""}
-   <div class="toolbar" style="margin:0 0 10px">${B("qaCopy","Copia la scheda",{ro:1,data:{id:t.id}})}${B("qaDownload","Scarica .md",{ro:1,data:{id:t.id}})}</div>
-   <pre class="qa-pre" tabindex="0" role="region" aria-label="Anteprima della scheda QA">${esc(q.md)}</pre></div></details>`}
-async function saveFile(name,blob){if(DL){try{await DL.save({filename:name,data:blob});return true}catch(e){if(e?.code==="cancelled")return false}}toast("Download non disponibile in questa vista.");return false}
 /* ---------- 7. Creazione su Jira ---------- */
 /* Anteprima della struttura per livelli: Project › Fasi › Epiche › Ticket. Si sceglie una Fase e un'epica per vedere cosa contengono. */
 function structCols(pl){const k=K(),H=k.hier,hon=!!H?.enabled,rd=pl.ready.filter(t=>T.createDup||!pl.dup.includes(t));
@@ -943,8 +935,8 @@ STEPS.push({id:"create",phase:"Creazione",short:"Crea su Jira",sub:"Anteprima e 
   if(esito.length)h+=`<div class="card"><h2>5. Esito della creazione</h2><div class="list">${esito.join("")}</div></div>`;
   // 6 · Sincronizzazione: si ripete nel tempo, resta una sezione a sé
   if(keys.length)h+=`<div class="card"><h2>6. Sincronizzazione con Jira</h2><p class="small muted" style="margin:0 0 10px">Rilegge da Jira tutto ciò che Trama ha creato: stato, Principale e titoli. Quello che in Jira non si trova più o è stato rinominato a mano viene segnalato; i ticket non trovati tornano in bozza solo se lo confermi.</p>
-    ${(()=>{const dirty=ticketList().filter(t=>dirtyOf(t).length),pl=pendingLinks();
-      return`<div class="push-box"><h3 class="h-sub">Modifiche da portare in Jira</h3>${dirty.length||pl?`<p class="small" style="margin:0 0 8px">${dirty.length?(dirty.length===1?"1 ticket modificato in Trama dopo la creazione":dirty.length+" ticket modificati in Trama dopo la creazione"):""}${dirty.length&&pl?" · ":""}${pl?(pl===1?"1 collegamento da creare":pl+" collegamenti da creare"):""}</p>
+    ${(()=>{const dirty=ticketList().filter(t=>dirtyOf(t).length),pl=pendingLinks(),qm=qaTargets().length;
+      return`<div class="push-box"><h3 class="h-sub">Modifiche da portare in Jira</h3>${dirty.length||pl||qm?`<p class="small" style="margin:0 0 8px">${[dirty.length?(dirty.length===1?"1 ticket modificato in Trama dopo la creazione":dirty.length+" ticket modificati in Trama dopo la creazione"):"",pl?(pl===1?"1 collegamento da creare":pl+" collegamenti da creare"):"",qm?(qm===1?"1 scheda QA da allegare":qm+" schede QA da allegare"):""].filter(Boolean).map(x=>`<span>${x}</span>`).join(" · ")}</p>
       ${dirty.length?`<ul class="small" style="margin:0 0 8px">${dirty.slice(0,8).map(t=>`<li>${browse(t.key)} ${esc(fullTitle(t))} · ${dirtyOf(t).map(f=>PUSH_NAMES[f]).join(", ")}</li>`).join("")}${dirty.length>8?`<li>+ ${dirty.length-8} ticket</li>`:""}</ul>`:""}
       <div class="toolbar">${JB("pushCheck","Controlla e aggiorna Jira",{cls:"primary",dis:T.running})}</div>${pushPreview("all")}`:'<p class="small muted" style="margin:0">Nessuna modifica: Jira è allineato a Trama.</p>'}</div>`})()}
     <div class="toolbar">${JB("syncJira","Sincronizza e verifica")}${T.sync?`<span class="small muted">Ultima sincronizzazione ${new Date(T.sync.at).toLocaleTimeString(LOCALE())} · ${T.sync.total} elementi letti</span>`:""}</div>
@@ -1335,7 +1327,6 @@ A.addTicket=()=>{const id=uid(),k=K();put("tickets",id,{ref:fmtRef(nextRef()),re
 A.delTicket=el=>arm("t"+el.dataset.id,el,()=>{T.tsel.delete(el.dataset.id);T.panel=null;trash("tickets",[el.dataset.id],"Ticket eliminato.")});
 A.applyTemplate=el=>arm("tpl"+el.dataset.id,el,()=>put("tickets",el.dataset.id,t=>t?{...t,desc:TEMPLATES[t.type]}:null));
 A.exportTickets=()=>{const k=K();exportCsv("backlog.csv",["Ref","Requisito","Tipo","Titolo","Epica","Label","Collegamenti","Chiave Jira","Descrizione"],ticketList().map(t=>[t.ref,t.req,k.types[t.type]||t.type,fullTitle(t),t.epic,labelsOf(t).join(" "),linksText(t),t.key||"",t.desc]))};
-const qaTicket=el=>ticketList().find(x=>x.id===el.dataset.id);
 A.kitImport=()=>{T.ki=null;T.panel={kind:"kitimp",id:"kitimp"};render()};
 A.kitImportRun=el=>arm("kimp",el,async()=>{const ki=T.ki,src=await kitSource(ki.src);if(!src)return;const before=clone(K()),n=kitMerge(clone(K()),src,ki.parts,ki.over);
   editKit(k=>{kitMerge(k,src,ki.parts,ki.over)});T.panel=null;
@@ -1355,14 +1346,6 @@ A.tBulkApply=()=>{const ep=$("#tbEpic")?.value,rel=$("#tbRel")?.value,wk=$("#tbW
   toast(ids.length===1?"Aggiornato 1 ticket.":`Aggiornati ${ids.length} ticket.`,()=>{snap.forEach(([id,d])=>put("tickets",id,t=>t&&{...t,...(ep?{epic:d.epic}:{}),...(rel?{release:d.release}:{}),...(wk?{work:d.work}:{}),...(lb.length?{labels:d.labels}:{})}));toast("Modifiche annullate.")})};
 A.tBulkDel=el=>arm("tbulk",el,()=>{const ids=[...T.tsel].filter(id=>S.tickets[id]&&S.tickets[id].state!=="created");ids.forEach(id=>T.tsel.delete(id));if(T.panel?.kind==="ticket"&&ids.includes(T.panel.id))T.panel=null;
   trash("tickets",ids,ids.length===1?"Eliminata 1 bozza.":`Eliminate ${ids.length} bozze.`)});
-A.qaCopy=el=>{const t=qaTicket(el);if(t)copyText(QA.sheet(t,qaCtx()).md,el)};
-A.qaDownload=async el=>{const t=qaTicket(el);if(!t)return;const q=QA.sheet(t,qaCtx());if(await saveFile(q.name,new Blob([q.md],{type:"text/markdown;charset=utf-8"})))toast("Scheda QA scaricata.")};
-A.qaZip=async()=>{const k=K(),rels=T.rel==="*"?[...k.releases.map(r=>r.name),...(ticketList().some(t=>!t.release||!k.releases.some(r=>r.name===t.release))?[null]:[])]:[T.rel];
-  const ctx=qaCtx();if(T.rel==="*")ctx.tickets=ctx.tickets.map(t=>t.release&&!k.releases.some(r=>r.name===t.release)?{...t,release:""}:t);
-  const b=QA.bundle(rels,ctx);if(!b.files.length){toast("Nessun ticket da collaudare in questa release.");return}
-  const name="schede-qa-"+QA.slug(T.rel==="*"?(P().name||"progetto"):T.rel)+".zip";
-  if(await saveFile(name,new Blob([QA.zip(b.files)],{type:"application/zip"})))toast(b.sheets===1?"Scaricato il piano di test con 1 scheda QA.":`Scaricato il piano di test con ${b.sheets} schede QA.`)};
-
 /* passo 7 */
 let logTimer=null;
 function logLine(s){T.log.push(new Date().toLocaleTimeString(LOCALE())+"  "+s);scheduleRender();
@@ -1451,10 +1434,10 @@ async function pushItem(it){const t=S.tickets[it.id];if(!t||it.gone)return false
   if(it.d.includes("epic")&&cur.epic)input.parentKey=cur.epic;
   await jira("editJiraIssue",input);const pushed={...cur,epic:input.parentKey||t.pushed.epic};await put("tickets",it.id,x=>x?{...x,pushed,verify:""}:null);
   logLine(`${t.key} aggiornato in Jira: ${it.d.map(f=>PUSH_NAMES[f]).join(", ")}.`);return true}
-function pushPreview(scope){const pp=T.pushPlan;if(!pp||pp.scope!==scope)return"";const n=pp.items.filter(x=>!x.gone).length;
-  return`<div class="card note" style="margin:10px 0 0"><b>${n?(n===1?"1 ticket da aggiornare in Jira":n+" ticket da aggiornare in Jira"):"Nessun ticket da aggiornare"}${pp.links?` · ${pp.links===1?"1 collegamento da creare":pp.links+" collegamenti da creare"}`:""}</b>
+function pushPreview(scope){const pp=T.pushPlan;if(!pp||pp.scope!==scope)return"";const n=pp.items.filter(x=>!x.gone).length,qm=scope==="all"?qaTargets().length:0;
+  return`<div class="card note" style="margin:10px 0 0"><b>${[n?(n===1?"1 ticket da aggiornare in Jira":n+" ticket da aggiornare in Jira"):"Nessun ticket da aggiornare",pp.links?(pp.links===1?"1 collegamento da creare":pp.links+" collegamenti da creare"):"",qm?(qm===1?"1 scheda QA da allegare":qm+" schede QA da allegare"):""].filter(Boolean).map(x=>`<span>${x}</span>`).join(" · ")}</b>
    <ul class="small" style="margin:6px 0 0">${pp.items.map(x=>`<li><span class="key">${esc(x.key)}</span> ${esc(x.title)} · ${x.d.map(f=>PUSH_NAMES[f]).join(", ")}${x.warn.map(w=>`<br><span class="pill warn">${esc(w)}</span>`).join("")}</li>`).join("")}</ul>
-   <div class="toolbar" style="margin-top:10px">${JB("pushRun",n||pp.links?"Conferma: aggiorna Jira":"Niente da aggiornare",{cls:"primary",dis:T.running||!!lockMsg()||!(n||pp.links)})}${B("pushCancel","Annulla",{ro:1})}</div>${lockMsg()?`<p class="small" style="margin:8px 0 0;color:var(--warn)">${esc(lockMsg())}</p>`:""}</div>`}
+   <div class="toolbar" style="margin-top:10px">${JB("pushRun",n||pp.links||qm?"Conferma: aggiorna Jira":"Niente da aggiornare",{cls:"primary",dis:T.running||!!lockMsg()||!(n||pp.links||qm)})}${B("pushCancel","Annulla",{ro:1})}</div>${lockMsg()?`<p class="small" style="margin:8px 0 0;color:var(--warn)">${esc(lockMsg())}</p>`:""}</div>`}
 // chiave di un livello della struttura: se un'altra scheda gliene ha già salvata una diversa non si sovrascrive (quella appena creata è un doppione)
 async function saveNodeKey(name,key,get,set){await editKit(k=>{const x=get(k);if(x&&!(x.key&&x.key!==key))set(x)});const cur=get(K())?.key;
   if(cur&&cur!==key){logLine(`${key} creato in Jira, ma «${name}» era già ${cur}: doppione da eliminare a mano in Jira.`);return false}return true}
@@ -1482,6 +1465,15 @@ async function verifyStructure(){const k=K(),h=k.hier;if(!h?.enabled){T.structRe
   k.epics.forEach(e=>{if(e.key){const ph=(h.phases||[]).find(f=>f.id===e.phase);row("Epica",e.name,e.key,ph?.key||"",true)}});
   editKit(kk=>kk.epics.forEach(e=>{if(!e.key||missing.has(e.key))return;const par=by[e.key]?.fields?.parent?.key;if(par)e.linkedTo=par;else delete e.linkedTo}));
   T.structReport=rep;const bad=rep.filter(r=>!r.ok).length;logLine(`Struttura verificata: ${rep.length-bad} di ${rep.length} livelli collegati come previsto.`)}
+/* Scheda QA allegata alle storie: dopo la creazione e i collegamenti, a ogni Story creata si allega il suo .md (criteri da verificare,
+   requisito d'origine, dipendenze con le chiavi Jira, ipotesi e decisioni). Un ticket già allegato non si ripete; un errore non ferma gli altri
+   e si ritenta da «Controlla e aggiorna Jira». Le UX Story, le epiche e la struttura non hanno la scheda. */
+const qaTargets=()=>ticketList().filter(t=>t.state==="created"&&t.key&&t.type==="Story"&&!t.qaFile);
+async function attachSheets(){const p=P(),ts=window.QA?qaTargets():[];let n=0;
+  for(const t of ts){if(!await lockOk())break;
+    try{const q=QA.sheet(t,qaCtx());await jira("addJiraAttachment",{cloudId:p.cloudId,issueKey:t.key,filename:q.name,text:q.md});await put("tickets",t.id,x=>x&&{...x,qaFile:q.name});n++}
+    catch(e){if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};logLine(`${t.key}: scheda QA non allegata (${jiraMsg(e)}).`)}}
+  return n}
 async function createLinks(){const p=P(),k=K(),ts=ticketList();let n=0;
   for(const t of ts){if(t.state!=="created")continue;for(const l of(t.links||[])){const id=l.type+":"+l.to;if((S.tickets[t.id].linksDone||[]).includes(id))continue;const o=ts.find(x=>x.ref===l.to);if(!o||o.state!=="created"||!S.tickets[o.id]?.key)continue;if(!await lockOk())return n;
    const type=k.links[l.type];if(!type){logLine(`${t.ref}: tipo di collegamento «${l.type}» non scelto nel kit`);continue}
@@ -1523,18 +1515,20 @@ A.runCreate=el=>arm("run",el,()=>run("runCreate","Creazione…",async()=>{T.stop
    if(cut||T.stop){stopped();return}
    const n=await createLinks();logLine(`${n} collegamenti creati.`);
    if(T.stop){if(!T.lost)logLine("Fermato su tua richiesta.");stopped();return}
+   const na=await attachSheets();if(na)logLine(`${na===1?"1 scheda QA allegata":na+" schede QA allegate"} alle storie.`);
+   const left=qaTargets().length;if(left)logLine(`${left===1?"1 scheda QA da allegare":left+" schede QA da allegare"}: si completa da «Controlla e aggiorna Jira».`);
    await verifyStructure();const v=await verify();T.report=buildReport(v);
    addAutoDecision(`Backlog iniziale creato in Jira (${ticketList().filter(t=>t.state==="created").length} ticket).`,"Strumento (passo 6)")}
   catch(e){logLine(`Errore: ${e?.message||jiraMsg(e)}`);throw e}
   finally{T.running=false;T.arm={};await lockRelease()}}));
 A.pushCheck=el=>run("pushCheck","Lettura di Jira…",async()=>{const id=el?.dataset?.id;const items=await pushPlan(id?[id]:null);T.pushPlan={scope:id||"all",items,links:id?0:pendingLinks(),at:Date.now()}});
 A.pushCancel=()=>{T.pushPlan=null;render()};
-A.pushRun=()=>run("pushRun","Aggiornamento di Jira…",async()=>{const pp=T.pushPlan;if(!pp)return;T.stop=false;if(!await lockTake("push"))return;T.running=true;let ok=0,links=0;
+A.pushRun=()=>run("pushRun","Aggiornamento di Jira…",async()=>{const pp=T.pushPlan;if(!pp)return;T.stop=false;if(!await lockTake("push"))return;T.running=true;let ok=0,links=0,qa=0;
   try{for(const it of pp.items){if(!await lockOk())break;try{if(await pushItem(it))ok++}catch(e){if(LIFECYCLE.includes(e?.code))throw{jira:1,...e};logLine(`${it.key} non aggiornato: ${jiraMsg(e)}`)}}
-    if(pp.scope==="all"&&!T.stop){links=await createLinks()}
+    if(pp.scope==="all"&&!T.stop){links=await createLinks();qa=await attachSheets()}
     if(T.lost){const m=`Aggiornamento di Jira interrotto: lock perso. Aggiornati prima dell'interruzione: ${ok===1?"1 ticket":ok+" ticket"}.`;T.pushPlan=null;setMsg("create","warn",m);toast(m);return}
     if(ok)await verify();T.pushPlan=null;
-    setMsg("create",ok===pp.items.filter(x=>!x.gone).length?"ok":"warn",`Jira aggiornato: ${ok===1?"1 ticket":ok+" ticket"}${links?`, ${links===1?"1 collegamento creato":links+" collegamenti creati"}`:""}.`);
+    setMsg("create",ok===pp.items.filter(x=>!x.gone).length?"ok":"warn",`Jira aggiornato: ${ok===1?"1 ticket":ok+" ticket"}${links?`, ${links===1?"1 collegamento creato":links+" collegamenti creati"}`:""}${qa?`, ${qa===1?"1 scheda QA allegata":qa+" schede QA allegate"}`:""}.`);
     toast(ok===1?"1 ticket aggiornato in Jira.":`${ok} ticket aggiornati in Jira.`)}
   finally{T.running=false;await lockRelease()}});
 A.stopRun=()=>{T.stop=true;toast("La creazione si ferma dopo l'operazione in corso.")};

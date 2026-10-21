@@ -1,8 +1,7 @@
 /* Scheda QA: dal ticket e da ciò che lo circonda (requisito, dipendenze, registro decisioni) un Markdown pronto per chi collauda.
-   Per ogni release anche il piano di test e uno zip con tutte le schede. Funzioni pure sui dati: le usano Trama e i test unitari.
+   Trama lo allega alle storie su Jira alla fine della creazione. Funzioni pure sui dati: le usano Trama e i test unitari.
    I titoli delle sezioni passano da ctx.tr (la lingua dell'interfaccia); i contenuti restano nella lingua in cui sono scritti. */
 (function (W) {
-  const OUT_OF_SCOPE = ["Spike", "UX Story"]; // non si collaudano: nel piano finiscono «fuori perimetro»
   // righe segnaposto dei modelli vuoti: non sono contenuto
   const PLACEHOLDER = /^(Verifiable outcomes, one per bullet|Decisions not yet taken, with the options|Tickets that must be done first|Related tickets, documents, design frames|What to build or change, one bullet per piece of work|API, data and compatibility constraints \(what must not break\)|Why this is needed: the requirement, the decision or the gap that triggers it|As a <role>, I want <capability>, so that <benefit>)\.?$/i;
 
@@ -113,101 +112,5 @@
   }
   const fileName = (t, title) => `${t.key || t.ref}-${slug(String(title || "").replace(/^\s*\[[^\]]+\]\s*/, ""))}.md`;
 
-  const inScope = (t) => !OUT_OF_SCOPE.includes(t.type);
-
-  // ordine di collaudo: prima chi non aspetta nessuno, poi chi è sbloccato
-  function testOrder(ts) {
-    const refs = new Set(ts.map((t) => t.ref));
-    const waits = new Map(ts.map((t) => [t.ref, new Set()]));
-    for (const t of ts) for (const l of t.links || []) {
-      if (l.type === "blocks" && refs.has(l.to)) waits.get(l.to).add(t.ref);
-      if (/blocked/i.test(l.type) && refs.has(l.to)) waits.get(t.ref).add(l.to);
-    }
-    const out = [], done = new Set();
-    while (out.length < ts.length) {
-      const next = ts.filter((t) => !done.has(t.ref) && [...waits.get(t.ref)].every((r) => done.has(r)));
-      const step = next.length ? next : ts.filter((t) => !done.has(t.ref)).slice(0, 1); // ciclo: si va avanti comunque
-      for (const t of step) { done.add(t.ref); out.push({ t, after: [...waits.get(t.ref)] }); }
-    }
-    return out;
-  }
-
-  function plan(release, ctx) {
-    const tr = ctx.tr || ((s) => s);
-    const H = (s) => "\n## " + tr(s) + "\n";
-    const ts = (ctx.tickets || []).filter((t) => (release === null ? !t.release : t.release === release));
-    const test = ts.filter(inScope), out = ts.filter((t) => !inScope(t));
-    const info = new Map(test.map((t) => [t, analyze(t, ctx)]));
-    const ready = test.filter((t) => info.get(t).ready).length;
-    const reqs = (ctx.reqs || []).filter((r) => (release === null ? !r.release : r.release === release));
-    const noTickets = reqs.filter((r) => !(ctx.tickets || []).some((t) => t.req === r.code));
-    const nfr = reqs.filter((r) => /^RNF/i.test(r.code));
-    const title = (t) => (ctx.fullTitle ? ctx.fullTitle(t) : t.title);
-    const relName = release === null ? tr("Senza release") : release;
-    let md = "---\n" + [`release: ${yamlStr(relName)}`, `progetto: ${yamlStr(ctx.project || "")}`, `schede: ${test.length}`, `pronte: ${ready}`, `generato: ${yamlStr(ctx.today || "")}`].join("\n") + "\n---\n";
-    md += `# ${tr("Piano di test")} · ${relName}\n\n> ${tr("Generato da Trama: una scheda per ogni ticket nella cartella «schede».")}\n`;
-    md += H("In sintesi") + [
-      `- ${tr("Ticket da collaudare")}: ${test.length} (${tr("pronti")}: ${ready}, ${tr("con punti aperti")}: ${test.length - ready})`,
-      `- ${tr("Fuori perimetro (Spike e UX Story)")}: ${out.length}`,
-      `- ${tr("Requisiti della release")}: ${reqs.length} (${tr("senza ticket")}: ${noTickets.length})`,
-    ].join("\n") + "\n";
-    if (test.length) {
-      md += H("Ordine consigliato") + testOrder(test).map(({ t, after }, n) => `${n + 1}. ${t.ref}${t.key ? ` (${t.key})` : ""} · ${cell(title(t))}${after.length ? ` · ${tr("dopo")} ${after.join(", ")}` : ""}`).join("\n") + "\n";
-      md += H("Perimetro") + `| ${["Ticket", "Jira", "Tipo", "Titolo", "Epica", "Requisito", "AC", "Scheda"].map(tr).join(" | ")} |\n|---|---|---|---|---|---|---|---|\n`;
-      md += test.map((t) => { const i = info.get(t); return `| ${t.ref} | ${t.key || "—"} | ${cell(ctx.typeName ? ctx.typeName(t) : t.type)} | ${cell(title(t))} | ${cell(t.epic || "—")} | ${t.req || "—"} | ${i.ac.length} | ${i.ready ? tr("pronta") : tr("da completare")} |`; }).join("\n") + "\n";
-      const risky = test.filter((t) => !info.get(t).ready);
-      if (risky.length) md += H("Rischi e punti aperti") + risky.map((t) => `- ${t.ref} · ${cell(title(t))}: ${info.get(t).gaps.map(tr).join("; ")}`).join("\n") + "\n";
-    }
-    if (noTickets.length) md += H("Requisiti senza ticket") + noTickets.map((r) => `- ${r.code} · ${cell(r.title)}`).join("\n") + "\n";
-    if (nfr.length) md += H("Requisiti non funzionali da verificare") + nfr.map((r) => `- ${r.code} · ${cell(r.title)}${r.desc ? ": " + cell(r.desc) : ""}`).join("\n") + "\n";
-    const decs = activeDecisions(ctx.decisions);
-    if (decs.length) md += H("Decisioni di progetto") + decs.map((d) => decLine(d, tr)).join("\n") + "\n";
-    if (out.length) md += H("Fuori perimetro") + out.map((t) => `- ${t.ref} · ${cell(ctx.typeName ? ctx.typeName(t) : t.type)} · ${cell(title(t))}`).join("\n") + "\n";
-    md += H("Da compilare a cura del QA") + ["Ambienti", "Dati di test", "Dispositivi e browser", "Criteri di uscita"].map((s) => `- ${tr(s)}: `).join("\n") + "\n";
-    return { md, tickets: test, ready, out: out.length };
-  }
-
-  // tutte le schede e il piano di una o più release: [{ name, text }]
-  function bundle(releases, ctx) {
-    const files = [];
-    let sheets = 0;
-    for (const rel of releases) {
-      const p = plan(rel, ctx);
-      if (!p.tickets.length && !p.out) continue;
-      const dir = releases.length > 1 ? slug(rel === null ? "senza-release" : rel) + "/" : "";
-      files.push({ name: dir + "piano-di-test.md", text: p.md });
-      for (const t of p.tickets) { const s = sheet(t, ctx); files.push({ name: dir + "schede/" + s.name, text: s.md }); sheets++; }
-    }
-    return { files, sheets };
-  }
-
-  // zip senza compressione (metodo STORE): poche righe, nessuna libreria esterna
-  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
-  const crc32 = (b) => { let c = 0xffffffff; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
-  function zip(files, date = new Date()) {
-    const enc = new TextEncoder(), parts = [], central = [];
-    const dosTime = (date.getHours() << 11) | (date.getMinutes() << 5) | (date.getSeconds() >> 1);
-    const dosDate = ((date.getFullYear() - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
-    let off = 0;
-    for (const f of files) {
-      const name = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data);
-      const lh = new DataView(new ArrayBuffer(30));
-      [[0, 0x04034b50, 4], [4, 20, 2], [6, 0x0800, 2], [8, 0, 2], [10, dosTime, 2], [12, dosDate, 2], [14, crc, 4], [18, data.length, 4], [22, data.length, 4], [26, name.length, 2], [28, 0, 2]].forEach(([o, v, s]) => (s === 4 ? lh.setUint32(o, v, true) : lh.setUint16(o, v, true)));
-      const ch = new DataView(new ArrayBuffer(46));
-      [[0, 0x02014b50, 4], [4, 20, 2], [6, 20, 2], [8, 0x0800, 2], [10, 0, 2], [12, dosTime, 2], [14, dosDate, 2], [16, crc, 4], [20, data.length, 4], [24, data.length, 4], [28, name.length, 2], [30, 0, 2], [32, 0, 2], [34, 0, 2], [36, 0, 2], [38, 0, 4], [42, off, 4]].forEach(([o, v, s]) => (s === 4 ? ch.setUint32(o, v, true) : ch.setUint16(o, v, true)));
-      parts.push(new Uint8Array(lh.buffer), name, data);
-      central.push(new Uint8Array(ch.buffer), name);
-      off += 30 + name.length + data.length;
-    }
-    const size = central.reduce((a, b) => a + b.length, 0);
-    const end = new DataView(new ArrayBuffer(22));
-    [[0, 0x06054b50, 4], [4, 0, 2], [6, 0, 2], [8, files.length, 2], [10, files.length, 2], [12, size, 4], [16, off, 4], [20, 0, 2]].forEach(([o, v, s]) => (s === 4 ? end.setUint32(o, v, true) : end.setUint16(o, v, true)));
-    const all = [...parts, ...central, new Uint8Array(end.buffer)];
-    const out = new Uint8Array(all.reduce((a, b) => a + b.length, 0));
-    let p = 0;
-    for (const b of all) { out.set(b, p); p += b.length; }
-    return out;
-  }
-
-  W.QA = { sections, sheet, plan, bundle, zip, crc32, slug, testOrder };
+  W.QA = { sections, sheet, slug };
 })(typeof window !== "undefined" ? window : globalThis);

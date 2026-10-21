@@ -1,8 +1,7 @@
-// Scheda QA e piano di test: contenuto costruito dai dati del progetto di prova, ordine di collaudo, zip leggibile.
+// Scheda QA: contenuto costruito dai dati del progetto di prova (la allega a ogni storia Trama su Jira).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { inflateRawSync } from "node:zlib";
 
 const W = {};
 new Function("window", readFileSync(new URL("../../public/qa-scheda.js", import.meta.url), "utf8"))(W);
@@ -61,61 +60,6 @@ test("titoli tradotti con ctx.tr, contenuti lasciati come sono", () => {
   const md = QA.sheet(T002, { ...ctx, tr }).md;
   assert.match(md, /## What to verify/);
   assert.match(md, /## Where it comes from\n\*\*RF-001 · Registrazione/);
-});
-
-test("ordine di collaudo: chi blocca viene prima, anche con un ciclo si arriva in fondo", () => {
-  const ts = [{ ref: "B", links: [] }, { ref: "A", links: [{ type: "blocks", to: "B" }] }, { ref: "C", links: [{ type: "is blocked by", to: "B" }] }];
-  assert.deepEqual(QA.testOrder(ts).map((x) => x.t.ref), ["A", "B", "C"]);
-  assert.deepEqual(QA.testOrder(ts)[1].after, ["A"]);
-  const ciclo = [{ ref: "X", links: [{ type: "blocks", to: "Y" }] }, { ref: "Y", links: [{ type: "blocks", to: "X" }] }];
-  assert.equal(QA.testOrder(ciclo).length, 2);
-});
-
-test("piano di test della release: sintesi, perimetro, fuori perimetro, requisiti scoperti e campi per il QA", () => {
-  const p = QA.plan("MVP (pilota)", ctx);
-  assert.equal(p.tickets.length, 31);
-  assert.equal(p.out, 36);
-  assert.match(p.md, /# Piano di test · MVP \(pilota\)/);
-  assert.match(p.md, /- Ticket da collaudare: 31 /);
-  assert.match(p.md, /- Fuori perimetro \(Spike e UX Story\): 36/);
-  assert.match(p.md, /\| T-002 \| ORTO-896 \| Story \|/);
-  assert.match(p.md, /## Requisiti non funzionali da verificare\n- RNF-/);
-  assert.match(p.md, /## Da compilare a cura del QA\n- Ambienti: \n- Dati di test: /);
-  const order = p.md.split("## Ordine consigliato")[1];
-  assert.ok(order.indexOf("T-002 ") < order.indexOf("T-004 "), "T-002 sblocca T-004");
-});
-
-test("zip: un piano e una scheda per ticket, file leggibili con CRC corretti e nomi UTF-8", () => {
-  const b = QA.bundle(["MVP (pilota)"], ctx);
-  assert.equal(b.sheets, 31);
-  assert.equal(b.files[0].name, "piano-di-test.md");
-  assert.ok(b.files.slice(1).every((f) => f.name.startsWith("schede/") && f.name.endsWith(".md")));
-  const z = Buffer.from(QA.zip([...b.files, { name: "à-è.md", text: "perché" }]));
-  // lettura con la directory centrale, come fanno gli strumenti di sistema
-  const eocd = z.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
-  const n = z.readUInt16LE(eocd + 10);
-  let p = z.readUInt32LE(eocd + 16);
-  const got = [];
-  for (let i = 0; i < n; i++) {
-    assert.equal(z.readUInt32LE(p), 0x02014b50);
-    assert.equal(z.readUInt16LE(p + 8) & 0x0800, 0x0800);
-    const crc = z.readUInt32LE(p + 16), size = z.readUInt32LE(p + 20), nl = z.readUInt16LE(p + 28), off = z.readUInt32LE(p + 42);
-    const name = z.subarray(p + 46, p + 46 + nl).toString("utf8");
-    const lnl = z.readUInt16LE(off + 26), data = z.subarray(off + 30 + lnl, off + 30 + lnl + size);
-    assert.equal(QA.crc32(data), crc);
-    got.push([name, data.toString("utf8")]);
-    p += 46 + nl;
-  }
-  assert.equal(got.length, b.files.length + 1);
-  assert.deepEqual(got.at(-1), ["à-è.md", "perché"]);
-  assert.equal(got[0][1], b.files[0].text);
-  assert.equal(typeof inflateRawSync, "function"); // metodo STORE: nessuna decompressione necessaria
-});
-
-test("più release: una cartella per release e i ticket senza release a parte", () => {
-  const ts = [{ ref: "T-1", type: "Story", release: "R1", desc: "", links: [] }, { ref: "T-2", type: "Story", release: "", desc: "", links: [] }];
-  const b = QA.bundle(["R1", null], { ...ctx, tickets: ts, reqs: [] });
-  assert.deepEqual(b.files.map((f) => f.name), ["r1/piano-di-test.md", "r1/schede/T-1-senza-nome.md", "senza-release/piano-di-test.md", "senza-release/schede/T-2-senza-nome.md"]);
 });
 
 test("scheda: un codice requisito con metacaratteri delle espressioni regolari non rompe la ricerca delle decisioni", () => {

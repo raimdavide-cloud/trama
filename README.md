@@ -96,7 +96,7 @@ npm test
 
 Test end-to-end di Trama con Playwright contro un **simulatore** (`tests/sim/server.mjs`): API in memoria e Jira finto che rispetta i livelli Project › Fase › Epica › ticket. Non serve né il database né un account Atlassian. In locale i test usano Chrome già installato.
 
-- **Unitari** (`tests/unit`): router (`router`); sessioni, cookie, stessa origine e cifratura dei token (`core`); API dei dati con un database finto, compresa la scrittura condizionale (`api`); operazioni Jira contro il Jira finto: campi ammessi, chiavi e label non valide, errori temporanei, nuovo accesso (`jira-ops`); report privacy di Atlassian (`privacy`); scheda QA e piano di test (`qa-scheda`); segnalazioni CSP (`csp-report`); versioni dei file statici (`versioni`).
+- **Unitari** (`tests/unit`): router (`router`); sessioni, cookie, stessa origine e cifratura dei token (`core`); API dei dati con un database finto, compresa la scrittura condizionale (`api`); operazioni Jira contro il Jira finto: campi ammessi, chiavi e label non valide, errori temporanei, nuovo accesso (`jira-ops`); report privacy di Atlassian (`privacy`); scheda QA allegata alle storie (`qa-scheda`); segnalazioni CSP (`csp-report`); versioni dei file statici (`versioni`).
 - **End-to-end** (`tests/e2e`):
   - percorso principale (`studio.spec.mjs`);
   - flussi a mano, Domande, Kit, Backlog, esportazioni (anche celle che sembrano formule), resilienza della creazione su Jira con errori simulati, chat, presenza e collegamenti delle pagine (`flussi.spec.mjs`);

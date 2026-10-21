@@ -9,12 +9,12 @@ test("vantaggi: il filtro per ruolo mostra le schede di quel ruolo e quelle per 
   await page.goto("/");
   const cards = page.locator("#gains .gain");
   const all = await cards.count();
-  expect(all).toBe(9);
+  expect(all).toBe(8);
   await expect(page.locator('.role-chip[aria-pressed="true"]')).toHaveText("Tutti");
   await page.locator(".role-chip", { hasText: /^QA$/ }).click();
   await expect(page.locator('.role-chip[aria-pressed="true"]')).toHaveText("QA");
   const visible = page.locator("#gains .gain:not([hidden])");
-  await expect(visible.locator("h3")).toContainText(["Ticket chiari al primo colpo", "Scheda QA pronta per ogni ticket", "Piano di test per ogni release"]);
+  await expect(visible.locator("h3")).toContainText(["Ticket chiari al primo colpo", "Scheda QA allegata a ogni storia"]);
   for (const r of await visible.evaluateAll((els) => els.map((e) => e.dataset.roles))) expect(r.split(" ")).toContain("qa");
   expect(await visible.count()).toBeLessThan(all);
   await page.locator(".role-chip", { hasText: "Tutti" }).click();

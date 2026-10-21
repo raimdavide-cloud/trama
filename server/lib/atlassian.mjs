@@ -122,7 +122,7 @@ const backoff = (tries) => RETRY.baseMs * 2 ** (tries - 1) + Math.round(RETRY.ra
 
 // Chiamata REST a Jira Cloud del sito cloudId, con un rinnovo del token in caso di 401
 // e nuovi tentativi su 429 e 5xx per le sole richieste che si possono ripetere.
-export async function jiraFetch(user, cloudId, path, { method = "GET", body } = {}) {
+export async function jiraFetch(user, cloudId, path, { method = "GET", body, form } = {}) {
   const repeatable = canRetry(method, path);
   let refreshed = false, force = false, tries = 0, waited = 0;
   // true se conviene riprovare: in quel caso ha già atteso
@@ -143,9 +143,9 @@ export async function jiraFetch(user, cloudId, path, { method = "GET", body } = 
         headers: {
           authorization: `Bearer ${token}`,
           accept: "application/json",
-          ...(body ? { "content-type": "application/json" } : {}),
+          ...(form ? { "x-atlassian-token": "no-check" } : body ? { "content-type": "application/json" } : {}), // gli allegati sono multipart: il tipo lo imposta fetch
         },
-        body: body ? JSON.stringify(body) : undefined,
+        body: form || (body ? JSON.stringify(body) : undefined),
       });
     } catch (e) {
       if (await pause(backoff(tries))) continue;

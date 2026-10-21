@@ -66,7 +66,7 @@ createServer(async (req, res) => {
   const p = url.pathname;
   try {
     // comandi del simulatore, usati dai test
-    if (p === "/__sim/state") return send(res, 200, { issues: [...sim.issues.values()].map((i) => ({ key: i.key, type: i.type, summary: i.summary, parent: i.parent || null, labels: i.fields?.labels || [], fixVersions: (i.fields?.fixVersions || []).map((v) => v.name) })), links: sim.links || [], calls: sim.calls });
+    if (p === "/__sim/state") return send(res, 200, { issues: [...sim.issues.values()].map((i) => ({ key: i.key, type: i.type, summary: i.summary, parent: i.parent || null, labels: i.fields?.labels || [], fixVersions: (i.fields?.fixVersions || []).map((v) => v.name), attachments: (i.attachments || []).map((a) => ({ filename: a.filename, text: a.text })) })), links: sim.links || [], calls: sim.calls });
     if (p === "/__sim/reset") { sim.reset(); sim.links = []; cspReports.length = 0; api503 = 0; resetStore(url.searchParams.has("completo")); return send(res, 200, { ok: true }); }
     if (p === "/__sim/csp") return send(res, 200, { reports: cspReports });
     if (p === "/__sim/fault") {
