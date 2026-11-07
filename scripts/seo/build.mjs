@@ -23,7 +23,7 @@ const PAGES = [
   { file: "index.html", path: "/", og: "home", img: "trama-og.png", alt: "Trama: dal documento al backlog, con le regole.", ld: true, priority: "1.0", en: true }, // en: versione inglese con ?lang=en
   { file: "brand.html", path: "/brand", og: "brand", img: "trama-og-brand.png", alt: "Il marchio Trama: nome, logo, colori e tipografia.", priority: "0.4" },
   { file: "privacy.html", path: "/privacy", og: "privacy", img: "trama-og-privacy.png", alt: "Come Trama tratta i dati personali.", priority: "0.3" },
-  { file: "installazione.html", path: "/installazione", og: "install", img: "trama-og-install.png", alt: "Collega Claude a Trama sul tuo computer: la guida per i colleghi.", priority: "0.6" },
+  { file: "installazione.html", path: "/installazione", og: "install", img: "trama-og-install.png", alt: "Collega Claude a Trama sul tuo computer: la guida all'installazione.", priority: "0.6" },
   { file: "studio.html", path: "/studio", noindex: true },
 ];
 

@@ -24,9 +24,9 @@
 <div class="url">trama-backlog.vercel.app</div>
 <script>
 const V={
-  home:{e:"Dal requisito a Jira",t:'Dal documento al backlog, <span>con le regole.</span>',s:"Un percorso guidato in 6 passi, con Claude e il playbook del gruppo."},
+  home:{e:"Dal requisito a Jira",t:'Dal documento al backlog, <span>con le regole.</span>',s:"Un percorso guidato in 6 passi, con Claude e le regole di un playbook."},
   brand:{e:"Linee guida del marchio",t:'Il marchio <span>Trama.</span>',s:"Nome, logo, colori, tipografia e tono di voce."},
-  install:{e:"Guida per i colleghi",t:'Collega Claude <span>a Trama.</span>',s:"Ponte Claude Code sul tuo computer, in circa 15 minuti."},
+  install:{e:"Guida all'installazione",t:'Collega Claude <span>a Trama.</span>',s:"Ponte Claude Code sul tuo computer, in circa 15 minuti."},
   privacy:{e:"Informativa privacy",t:'Come Trama <span>tratta i tuoi dati.</span>',s:"Quali dati, dove sono conservati e come cancellarli."}
 }[new URLSearchParams(location.search).get("v")||"home"];
 document.getElementById("eyebrow").textContent=V.e;document.getElementById("title").innerHTML=V.t;document.getElementById("sub").textContent=V.s;
